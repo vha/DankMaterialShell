@@ -34,15 +34,19 @@ FloatingWindow {
     }
 
     function showWithTab(tabIndex: int) {
-        if (tabIndex >= 0)
+        if (tabIndex >= 0) {
             currentTabIndex = tabIndex;
+            sidebar.autoExpandForTab(tabIndex);
+        }
         visible = true;
     }
 
     function showWithTabName(tabName: string) {
         var idx = sidebar.resolveTabIndex(tabName);
-        if (idx >= 0)
+        if (idx >= 0) {
             currentTabIndex = idx;
+            sidebar.autoExpandForTab(idx);
+        }
         visible = true;
     }
 
@@ -315,8 +319,8 @@ FloatingWindow {
                     visible: settingsModal.isCompactMode ? settingsModal.menuVisible : true
                     parentModal: settingsModal
                     currentIndex: settingsModal.currentTabIndex
-                    onCurrentIndexChanged: {
-                        settingsModal.currentTabIndex = currentIndex;
+                    onTabChangeRequested: tabIndex => {
+                        settingsModal.currentTabIndex = tabIndex;
                         if (settingsModal.isCompactMode) {
                             settingsModal.enableAnimations = true;
                             settingsModal.menuVisible = false;

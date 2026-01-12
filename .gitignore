@@ -108,3 +108,5 @@ bin/
 # direnv
 .envrc
 .direnv/
+quickshell/dms-plugins
+__pycache__

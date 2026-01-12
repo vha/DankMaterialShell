@@ -1,5 +1,5 @@
 pragma Singleton
-pragma ComponentBehavior
+pragma ComponentBehavior: Bound
 
 import QtCore
 import QtQuick
@@ -62,12 +62,28 @@ Singleton {
     property bool _hasUnsavedChanges: false
     property var _loadedSettingsSnapshot: null
     property var pluginSettings: ({})
+    property var builtInPluginSettings: ({})
+
+    function getBuiltInPluginSetting(pluginId, key, defaultValue) {
+        if (!builtInPluginSettings[pluginId])
+            return defaultValue;
+        return builtInPluginSettings[pluginId][key] !== undefined ? builtInPluginSettings[pluginId][key] : defaultValue;
+    }
+
+    function setBuiltInPluginSetting(pluginId, key, value) {
+        const updated = JSON.parse(JSON.stringify(builtInPluginSettings));
+        if (!updated[pluginId])
+            updated[pluginId] = {};
+        updated[pluginId][key] = value;
+        builtInPluginSettings = updated;
+        saveSettings();
+    }
 
     property alias dankBarLeftWidgetsModel: leftWidgetsModel
     property alias dankBarCenterWidgetsModel: centerWidgetsModel
     property alias dankBarRightWidgetsModel: rightWidgetsModel
 
-    property string currentThemeName: "blue"
+    property string currentThemeName: "purple"
     property string currentThemeCategory: "generic"
     property string customThemeFile: ""
     property var registryThemeVariants: ({})
@@ -81,6 +97,13 @@ Singleton {
     property real cornerRadius: 12
     property int niriLayoutGapsOverride: -1
     property int niriLayoutRadiusOverride: -1
+    property int niriLayoutBorderSize: -1
+    property int hyprlandLayoutGapsOverride: -1
+    property int hyprlandLayoutRadiusOverride: -1
+    property int hyprlandLayoutBorderSize: -1
+    property int mangoLayoutGapsOverride: -1
+    property int mangoLayoutRadiusOverride: -1
+    property int mangoLayoutBorderSize: -1
 
     property bool use24HourClock: true
     property bool showSeconds: false
@@ -171,26 +194,34 @@ Singleton {
     ]
 
     property bool showWorkspaceIndex: false
+    property bool showWorkspaceName: false
     property bool showWorkspacePadding: false
     property bool workspaceScrolling: false
     property bool showWorkspaceApps: false
     property bool groupWorkspaceApps: true
     property int maxWorkspaceIcons: 3
-    property bool workspacesPerMonitor: true
+    property bool workspaceFollowFocus: false
     property bool showOccupiedWorkspacesOnly: false
     property bool reverseScrolling: false
     property bool dwlShowAllTags: false
+    property string workspaceColorMode: "default"
+    property string workspaceUnfocusedColorMode: "default"
+    property string workspaceUrgentColorMode: "default"
+    property bool workspaceFocusedBorderEnabled: false
+    property string workspaceFocusedBorderColor: "primary"
+    property int workspaceFocusedBorderThickness: 2
     property var workspaceNameIcons: ({})
     property bool waveProgressEnabled: true
     property bool scrollTitleEnabled: true
     property bool audioVisualizerEnabled: true
-    property bool audioScrollEnabled: true
+    property string audioScrollMode: "volume"
     property bool clockCompactMode: false
     property bool focusedWindowCompactMode: false
     property bool runningAppsCompactMode: true
     property bool keyboardLayoutNameCompactMode: false
     property bool runningAppsCurrentWorkspace: false
     property bool runningAppsGroupByApp: false
+    property var appIdSubstitutions: []
     property string centeringMode: "index"
     property string clockDateFormat: ""
     property string lockDateFormat: ""
@@ -221,6 +252,25 @@ Singleton {
     property bool qt5ctAvailable: false
     property bool qt6ctAvailable: false
     property bool gtkAvailable: false
+
+    property var cursorSettings: ({
+            "theme": "System Default",
+            "size": 24,
+            "niri": {
+                "hideWhenTyping": false,
+                "hideAfterInactiveMs": 0
+            },
+            "hyprland": {
+                "hideOnKeyPress": false,
+                "hideOnTouch": false,
+                "inactiveTimeout": 0
+            },
+            "dwl": {
+                "cursorHideTimeout": 0
+            }
+        })
+    property var availableCursorThemes: ["System Default"]
+    property string systemDefaultCursorTheme: ""
 
     property string launcherLogoMode: "apps"
     property string launcherLogoCustomPath: ""
@@ -275,8 +325,10 @@ Singleton {
     property int batteryChargeLimit: 100
     property bool lockBeforeSuspend: false
     property bool loginctlLockIntegration: true
-    property bool fadeToLockEnabled: false
+    property bool fadeToLockEnabled: true
     property int fadeToLockGracePeriod: 5
+    property bool fadeToDpmsEnabled: true
+    property int fadeToDpmsGracePeriod: 5
     property string launchPrefix: ""
     property var brightnessDevicePins: ({})
     property var wifiNetworkPins: ({})
@@ -292,6 +344,8 @@ Singleton {
     property bool runDmsMatugenTemplates: true
     property bool matugenTemplateGtk: true
     property bool matugenTemplateNiri: true
+    property bool matugenTemplateHyprland: true
+    property bool matugenTemplateMangowc: true
     property bool matugenTemplateQt5ct: true
     property bool matugenTemplateQt6ct: true
     property bool matugenTemplateFirefox: true
@@ -344,12 +398,20 @@ Singleton {
     property bool fprintdAvailable: false
     property string lockScreenActiveMonitor: "all"
     property string lockScreenInactiveColor: "#000000"
+    property int lockScreenNotificationMode: 0
     property bool hideBrightnessSlider: false
 
     property int notificationTimeoutLow: 5000
     property int notificationTimeoutNormal: 5000
     property int notificationTimeoutCritical: 0
+    property bool notificationCompactMode: false
     property int notificationPopupPosition: SettingsData.Position.Top
+    property bool notificationHistoryEnabled: true
+    property int notificationHistoryMaxCount: 50
+    property int notificationHistoryMaxAgeDays: 7
+    property bool notificationHistorySaveLow: true
+    property bool notificationHistorySaveNormal: true
+    property bool notificationHistorySaveCritical: true
 
     property bool osdAlwaysShowValue: false
     property int osdPosition: SettingsData.Position.BottomCenter
@@ -428,7 +490,11 @@ Singleton {
             "maximizeDetection": true,
             "scrollEnabled": true,
             "scrollXBehavior": "column",
-            "scrollYBehavior": "workspace"
+            "scrollYBehavior": "workspace",
+            "shadowIntensity": 0,
+            "shadowOpacity": 60,
+            "shadowColorMode": "text",
+            "shadowCustomColor": "#000000"
         }
     ]
 
@@ -693,10 +759,15 @@ Singleton {
         }
     }
 
-    function updateNiriLayout() {
-        if (typeof NiriService !== "undefined" && typeof CompositorService !== "undefined" && CompositorService.isNiri) {
+    function updateCompositorLayout() {
+        if (typeof CompositorService === "undefined")
+            return;
+        if (CompositorService.isNiri && typeof NiriService !== "undefined")
             NiriService.generateNiriLayoutConfig();
-        }
+        if (CompositorService.isHyprland && typeof HyprlandService !== "undefined")
+            HyprlandService.generateLayoutConfig();
+        if (CompositorService.isDwl && typeof DwlService !== "undefined")
+            DwlService.generateLayoutConfig();
     }
 
     function applyStoredIconTheme() {
@@ -772,9 +843,10 @@ Singleton {
     readonly property var _hooks: ({
             "applyStoredTheme": applyStoredTheme,
             "regenSystemThemes": regenSystemThemes,
-            "updateNiriLayout": updateNiriLayout,
+            "updateCompositorLayout": updateCompositorLayout,
             "applyStoredIconTheme": applyStoredIconTheme,
-            "updateBarConfigs": updateBarConfigs
+            "updateBarConfigs": updateBarConfigs,
+            "updateCompositorCursor": updateCompositorCursor
         })
 
     function set(key, value) {
@@ -802,15 +874,16 @@ Singleton {
 
             Store.parse(root, obj);
 
-            if (obj.weatherLocation !== undefined)
+            if (obj?.weatherLocation !== undefined)
                 _legacyWeatherLocation = obj.weatherLocation;
-            if (obj.weatherCoordinates !== undefined)
+            if (obj?.weatherCoordinates !== undefined)
                 _legacyWeatherCoordinates = obj.weatherCoordinates;
 
             _loadedSettingsSnapshot = JSON.stringify(Store.toJson(root));
             _hasLoaded = true;
             applyStoredTheme();
             applyStoredIconTheme();
+            updateCompositorCursor();
             Processes.detectQtTools();
 
             _checkSettingsWritable();
@@ -834,11 +907,19 @@ Singleton {
     }
 
     function _onWritableCheckComplete(writable) {
+        const wasReadOnly = _isReadOnly;
         _isReadOnly = !writable;
         if (_isReadOnly) {
-            console.info("SettingsData: settings.json is read-only (NixOS home-manager mode)");
-        } else if (_pendingMigration) {
-            settingsFile.setText(JSON.stringify(_pendingMigration, null, 2));
+            _hasUnsavedChanges = _checkForUnsavedChanges();
+            if (!wasReadOnly)
+                console.info("SettingsData: settings.json is now read-only");
+        } else {
+            _loadedSettingsSnapshot = JSON.stringify(Store.toJson(root));
+            _hasUnsavedChanges = false;
+            if (wasReadOnly)
+                console.info("SettingsData: settings.json is now writable");
+            if (_pendingMigration)
+                settingsFile.setText(JSON.stringify(_pendingMigration, null, 2));
         }
         _pendingMigration = null;
     }
@@ -883,11 +964,9 @@ Singleton {
     function saveSettings() {
         if (_loading || _parseError || !_hasLoaded)
             return;
-        if (_isReadOnly) {
-            _hasUnsavedChanges = _checkForUnsavedChanges();
-            return;
-        }
         settingsFile.setText(JSON.stringify(Store.toJson(root), null, 2));
+        if (_isReadOnly)
+            _checkSettingsWritable();
     }
 
     function savePluginSettings() {
@@ -932,6 +1011,46 @@ Singleton {
                 }
             }
             availableIconThemes = themes;
+        });
+    }
+
+    function detectAvailableCursorThemes() {
+        const xdgDataDirs = Quickshell.env("XDG_DATA_DIRS") || "";
+        const localData = Paths.strip(StandardPaths.writableLocation(StandardPaths.GenericDataLocation));
+        const homeDir = Paths.strip(StandardPaths.writableLocation(StandardPaths.HomeLocation));
+
+        const dataDirs = xdgDataDirs.trim() !== "" ? xdgDataDirs.split(":").concat([localData]) : ["/usr/share", "/usr/local/share", localData];
+
+        const cursorPaths = dataDirs.map(d => d + "/icons").concat([homeDir + "/.icons", homeDir + "/.local/share/icons"]);
+        const pathsArg = cursorPaths.join(" ");
+
+        const script = `
+            echo "SYSDEFAULT:$(gsettings get org.gnome.desktop.interface cursor-theme 2>/dev/null | sed "s/'//g" || echo '')"
+            for dir in ${pathsArg}; do
+                [ -d "$dir" ] || continue
+                for theme in "$dir"/*/; do
+                    [ -d "$theme" ] || continue
+                    [ -d "$theme/cursors" ] || continue
+                    basename "$theme"
+                done
+            done | grep -v '^icons$' | grep -v '^default$' | sort -u
+        `;
+
+        Proc.runCommand("detectCursorThemes", ["sh", "-c", script], (output, exitCode) => {
+            const themes = ["System Default"];
+            if (output && output.trim()) {
+                const lines = output.trim().split('\n');
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line.startsWith("SYSDEFAULT:")) {
+                        systemDefaultCursorTheme = line.substring(11).trim();
+                        continue;
+                    }
+                    if (line)
+                        themes.push(line);
+                }
+            }
+            availableCursorThemes = themes;
         });
     }
 
@@ -1447,7 +1566,7 @@ Singleton {
 
     function setCornerRadius(radius) {
         set("cornerRadius", radius);
-        NiriService.generateNiriLayoutConfig();
+        updateCompositorLayout();
     }
 
     function setWeatherLocation(displayName, coordinates) {
@@ -1461,6 +1580,94 @@ Singleton {
         saveSettings();
         if (typeof Theme !== "undefined" && Theme.currentTheme === Theme.dynamic)
             Theme.generateSystemThemesFromCurrentTheme();
+    }
+
+    function setCursorTheme(themeName) {
+        const updated = JSON.parse(JSON.stringify(cursorSettings));
+        updated.theme = themeName;
+        cursorSettings = updated;
+        saveSettings();
+        updateCompositorCursor();
+    }
+
+    function setCursorSize(size) {
+        const updated = JSON.parse(JSON.stringify(cursorSettings));
+        updated.size = size;
+        cursorSettings = updated;
+        saveSettings();
+        updateCompositorCursor();
+    }
+
+    // This solution for xwayland cursor themes is from the xwls discussion:
+    // https://github.com/Supreeeme/xwayland-satellite/issues/104
+    // no idea if this matters on other compositors but we also set XCURSOR stuff in the launcher
+    function updateCompositorCursor() {
+        updateXResources();
+        if (typeof CompositorService === "undefined")
+            return;
+        if (CompositorService.isNiri && typeof NiriService !== "undefined") {
+            NiriService.generateNiriCursorConfig();
+            return;
+        }
+        if (CompositorService.isHyprland && typeof HyprlandService !== "undefined") {
+            HyprlandService.generateCursorConfig();
+            return;
+        }
+        if (CompositorService.isDwl && typeof DwlService !== "undefined") {
+            DwlService.generateCursorConfig();
+            return;
+        }
+    }
+
+    function updateXResources() {
+        const homeDir = Paths.strip(StandardPaths.writableLocation(StandardPaths.HomeLocation));
+        const xresourcesPath = homeDir + "/.Xresources";
+        const themeName = cursorSettings.theme === "System Default" ? systemDefaultCursorTheme : cursorSettings.theme;
+        const size = cursorSettings.size || 24;
+
+        if (!themeName)
+            return;
+
+        const script = `
+            xresources_file="${xresourcesPath}"
+            temp_file="\${xresources_file}.tmp.$$"
+            theme_name="${themeName}"
+            cursor_size="${size}"
+
+            if [ -f "$xresources_file" ]; then
+                grep -v '^[[:space:]]*Xcursor\\.theme:' "$xresources_file" | grep -v '^[[:space:]]*Xcursor\\.size:' > "$temp_file" 2>/dev/null || true
+            else
+                touch "$temp_file"
+            fi
+
+            echo "Xcursor.theme: $theme_name" >> "$temp_file"
+            echo "Xcursor.size: $cursor_size" >> "$temp_file"
+            mv "$temp_file" "$xresources_file"
+            xrdb -merge "$xresources_file" 2>/dev/null || true
+        `;
+
+        Quickshell.execDetached(["sh", "-c", script]);
+    }
+
+    function getCursorEnvironment() {
+        const isSystemDefault = cursorSettings.theme === "System Default";
+        const isDefaultSize = !cursorSettings.size || cursorSettings.size === 24;
+        if (isSystemDefault && isDefaultSize)
+            return {};
+
+        const themeName = isSystemDefault ? "" : cursorSettings.theme;
+        const size = String(cursorSettings.size || 24);
+        const env = {};
+
+        if (!isDefaultSize) {
+            env["XCURSOR_SIZE"] = size;
+            env["HYPRCURSOR_SIZE"] = size;
+        }
+        if (themeName) {
+            env["XCURSOR_THEME"] = themeName;
+            env["HYPRCURSOR_THEME"] = themeName;
+        }
+        return env;
     }
 
     function setGtkThemingEnabled(enabled) {
@@ -1529,9 +1736,7 @@ Singleton {
                 "spacing": spacing
             });
         }
-        if (typeof NiriService !== "undefined" && CompositorService.isNiri) {
-            NiriService.generateNiriLayoutConfig();
-        }
+        updateCompositorLayout();
     }
 
     function setDankBarPosition(position) {
@@ -1640,6 +1845,48 @@ Singleton {
 
     function getWorkspaceNameIcon(workspaceName) {
         return workspaceNameIcons[workspaceName] || null;
+    }
+
+    function addAppIdSubstitution(pattern, replacement, type) {
+        var subs = JSON.parse(JSON.stringify(appIdSubstitutions));
+        subs.push({
+            pattern: pattern,
+            replacement: replacement,
+            type: type
+        });
+        appIdSubstitutions = subs;
+        saveSettings();
+    }
+
+    function updateAppIdSubstitution(index, pattern, replacement, type) {
+        var subs = JSON.parse(JSON.stringify(appIdSubstitutions));
+        if (index < 0 || index >= subs.length)
+            return;
+        subs[index] = {
+            pattern: pattern,
+            replacement: replacement,
+            type: type
+        };
+        appIdSubstitutions = subs;
+        saveSettings();
+    }
+
+    function removeAppIdSubstitution(index) {
+        var subs = JSON.parse(JSON.stringify(appIdSubstitutions));
+        if (index < 0 || index >= subs.length)
+            return;
+        subs.splice(index, 1);
+        appIdSubstitutions = subs;
+        saveSettings();
+    }
+
+    function getDefaultAppIdSubstitutions() {
+        return Spec.SPEC.appIdSubstitutions.def;
+    }
+
+    function resetAppIdSubstitutions() {
+        appIdSubstitutions = JSON.parse(JSON.stringify(Spec.SPEC.appIdSubstitutions.def));
+        saveSettings();
     }
 
     function getRegistryThemeVariant(themeId, defaultVariant) {
@@ -1869,6 +2116,7 @@ Singleton {
                 _hasLoaded = true;
                 applyStoredTheme();
                 applyStoredIconTheme();
+                updateCompositorCursor();
             } catch (e) {
                 _parseError = true;
                 const msg = e.message;
@@ -1882,6 +2130,10 @@ Singleton {
             if (!isGreeterMode) {
                 applyStoredTheme();
             }
+        }
+        onSaveFailed: error => {
+            root._isReadOnly = true;
+            root._hasUnsavedChanges = root._checkForUnsavedChanges();
         }
     }
 
@@ -1912,7 +2164,7 @@ Singleton {
 
         property string settingsPath: Paths.strip(settingsFile.path)
 
-        command: ["sh", "-c", "[ -w \"" + settingsPath + "\" ] && echo 'writable' || echo 'readonly'"]
+        command: ["sh", "-c", "[ ! -f \"" + settingsPath + "\" ] || [ -w \"" + settingsPath + "\" ] && echo 'writable' || echo 'readonly'"]
         running: false
 
         stdout: StdioCollector {

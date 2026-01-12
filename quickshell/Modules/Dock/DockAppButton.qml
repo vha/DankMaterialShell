@@ -49,6 +49,13 @@ Item {
             updateDesktopEntry();
         }
     }
+
+    Connections {
+        target: SettingsData
+        function onAppIdSubstitutionsChanged() {
+            updateDesktopEntry();
+        }
+    }
     property bool isWindowFocused: {
         if (!appData) {
             return false;
@@ -225,7 +232,7 @@ Item {
                     AppUsageHistoryData.addAppUsage({
                         "id": appData.appId,
                         "name": pinnedEntry.name || appData.appId,
-                        "icon": pinnedEntry.icon || "",
+                        "icon": pinnedEntry.icon ? String(pinnedEntry.icon) : "",
                         "exec": pinnedEntry.exec || "",
                         "comment": pinnedEntry.comment || ""
                     });
@@ -246,7 +253,7 @@ Item {
                         AppUsageHistoryData.addAppUsage({
                             "id": appData.appId,
                             "name": groupedEntry.name || appData.appId,
-                            "icon": groupedEntry.icon || "",
+                            "icon": groupedEntry.icon ? String(groupedEntry.icon) : "",
                             "exec": groupedEntry.exec || "",
                             "comment": groupedEntry.comment || ""
                         });
@@ -316,7 +323,7 @@ Item {
                         AppUsageHistoryData.addAppUsage({
                             "id": appData.appId,
                             "name": desktopEntry.name || appData.appId,
-                            "icon": desktopEntry.icon || "",
+                            "icon": desktopEntry.icon ? String(desktopEntry.icon) : "",
                             "exec": desktopEntry.exec || "",
                             "comment": desktopEntry.comment || ""
                         });
@@ -389,20 +396,6 @@ Item {
                 saturation: 0
                 colorization: 1
                 colorizationColor: Theme.primary
-            }
-        }
-
-        DankIcon {
-            anchors.centerIn: parent
-            size: actualIconSize
-            name: "sports_esports"
-            color: Theme.surfaceText
-            visible: {
-                if (!appData || !appData.appId || appData.appId === "__SEPARATOR__") {
-                    return false;
-                }
-                const moddedId = Paths.moddedAppId(appData.appId);
-                return moddedId.toLowerCase().includes("steam_app");
             }
         }
 

@@ -399,14 +399,14 @@ Item {
                                                         text: "•"
                                                         font.pixelSize: Theme.fontSizeSmall
                                                         color: Theme.surfaceVariantText
-                                                        visible: modelData.ip && modelData.ip.length > 0
+                                                        visible: (modelData.ip || "").length > 0
                                                     }
 
                                                     StyledText {
                                                         text: modelData.ip || ""
                                                         font.pixelSize: Theme.fontSizeSmall
                                                         color: Theme.surfaceVariantText
-                                                        visible: modelData.ip && modelData.ip.length > 0
+                                                        visible: (modelData.ip || "").length > 0
                                                     }
                                                 }
                                             }
@@ -587,16 +587,30 @@ Item {
                                                         spacing: Theme.spacingS
 
                                                         DankIcon {
+                                                            id: wiredLoadIcon
                                                             name: "sync"
                                                             size: 16
                                                             color: Theme.surfaceVariantText
 
-                                                            RotationAnimation on rotation {
+                                                            SequentialAnimation {
                                                                 running: NetworkService.networkWiredInfoLoading
                                                                 loops: Animation.Infinite
-                                                                from: 0
-                                                                to: 360
-                                                                duration: 1000
+                                                                NumberAnimation {
+                                                                    target: wiredLoadIcon
+                                                                    property: "opacity"
+                                                                    to: 0.3
+                                                                    duration: 400
+                                                                    easing.type: Easing.InOutQuad
+                                                                }
+                                                                NumberAnimation {
+                                                                    target: wiredLoadIcon
+                                                                    property: "opacity"
+                                                                    to: 1.0
+                                                                    duration: 400
+                                                                    easing.type: Easing.InOutQuad
+                                                                }
+                                                                onRunningChanged: if (!running)
+                                                                    wiredLoadIcon.opacity = 1.0
                                                             }
                                                         }
 
@@ -755,19 +769,17 @@ Item {
                             spacing: Theme.spacingS
 
                             DankActionButton {
+                                iconName: "wifi_find"
+                                buttonSize: 32
+                                visible: NetworkService.backend === "networkmanager" && NetworkService.wifiEnabled && !NetworkService.wifiToggling
+                                onClicked: PopoutService.showHiddenNetworkModal()
+                            }
+
+                            DankActionButton {
                                 iconName: "refresh"
                                 buttonSize: 32
-                                visible: NetworkService.wifiEnabled && !NetworkService.wifiToggling
-                                enabled: !NetworkService.isScanning
+                                visible: NetworkService.wifiEnabled && !NetworkService.wifiToggling && !NetworkService.isScanning
                                 onClicked: NetworkService.scanWifi()
-
-                                RotationAnimation on rotation {
-                                    running: NetworkService.isScanning
-                                    loops: Animation.Infinite
-                                    from: 0
-                                    to: 360
-                                    duration: 1000
-                                }
                             }
 
                             DankToggle {
@@ -956,17 +968,31 @@ Item {
                                 spacing: Theme.spacingS
 
                                 DankIcon {
-                                    name: "refresh"
+                                    id: scanningIcon
+                                    name: "wifi_find"
                                     size: 32
                                     color: Theme.surfaceVariantText
                                     anchors.horizontalCenter: parent.horizontalCenter
 
-                                    RotationAnimation on rotation {
-                                        running: true
+                                    SequentialAnimation {
+                                        running: NetworkService.isScanning
                                         loops: Animation.Infinite
-                                        from: 0
-                                        to: 360
-                                        duration: 1000
+                                        NumberAnimation {
+                                            target: scanningIcon
+                                            property: "opacity"
+                                            to: 0.3
+                                            duration: 400
+                                            easing.type: Easing.InOutQuad
+                                        }
+                                        NumberAnimation {
+                                            target: scanningIcon
+                                            property: "opacity"
+                                            to: 1.0
+                                            duration: 400
+                                            easing.type: Easing.InOutQuad
+                                        }
+                                        onRunningChanged: if (!running)
+                                            scanningIcon.opacity = 1.0
                                     }
                                 }
 
@@ -1083,6 +1109,14 @@ Item {
                                                             visible: isPinned
                                                             anchors.verticalCenter: parent.verticalCenter
                                                         }
+
+                                                        DankIcon {
+                                                            name: "visibility_off"
+                                                            size: 14
+                                                            color: Theme.surfaceVariantText
+                                                            visible: modelData.hidden || false
+                                                            anchors.verticalCenter: parent.verticalCenter
+                                                        }
                                                     }
 
                                                     Row {
@@ -1106,6 +1140,20 @@ Item {
                                                             font.pixelSize: Theme.fontSizeSmall
                                                             color: Theme.primary
                                                             visible: modelData.saved
+                                                        }
+
+                                                        StyledText {
+                                                            text: "•"
+                                                            font.pixelSize: Theme.fontSizeSmall
+                                                            color: Theme.surfaceVariantText
+                                                            visible: modelData.hidden || false
+                                                        }
+
+                                                        StyledText {
+                                                            text: I18n.tr("Hidden")
+                                                            font.pixelSize: Theme.fontSizeSmall
+                                                            color: Theme.surfaceVariantText
+                                                            visible: modelData.hidden || false
                                                         }
 
                                                         StyledText {
@@ -1241,16 +1289,30 @@ Item {
                                                             spacing: Theme.spacingS
 
                                                             DankIcon {
+                                                                id: wifiInfoLoadIcon
                                                                 name: "sync"
                                                                 size: 16
                                                                 color: Theme.surfaceVariantText
 
-                                                                RotationAnimation on rotation {
+                                                                SequentialAnimation {
                                                                     running: NetworkService.networkInfoLoading
                                                                     loops: Animation.Infinite
-                                                                    from: 0
-                                                                    to: 360
-                                                                    duration: 1000
+                                                                    NumberAnimation {
+                                                                        target: wifiInfoLoadIcon
+                                                                        property: "opacity"
+                                                                        to: 0.3
+                                                                        duration: 400
+                                                                        easing.type: Easing.InOutQuad
+                                                                    }
+                                                                    NumberAnimation {
+                                                                        target: wifiInfoLoadIcon
+                                                                        property: "opacity"
+                                                                        to: 1.0
+                                                                        duration: 400
+                                                                        easing.type: Easing.InOutQuad
+                                                                    }
+                                                                    onRunningChanged: if (!running)
+                                                                        wifiInfoLoadIcon.opacity = 1.0
                                                                 }
                                                             }
 
@@ -1707,9 +1769,31 @@ Item {
                                                 spacing: Theme.spacingS
 
                                                 DankIcon {
+                                                    id: vpnLoadIcon
                                                     name: "sync"
                                                     size: 16
                                                     color: Theme.surfaceVariantText
+
+                                                    SequentialAnimation {
+                                                        running: VPNService.configLoading
+                                                        loops: Animation.Infinite
+                                                        NumberAnimation {
+                                                            target: vpnLoadIcon
+                                                            property: "opacity"
+                                                            to: 0.3
+                                                            duration: 400
+                                                            easing.type: Easing.InOutQuad
+                                                        }
+                                                        NumberAnimation {
+                                                            target: vpnLoadIcon
+                                                            property: "opacity"
+                                                            to: 1.0
+                                                            duration: 400
+                                                            easing.type: Easing.InOutQuad
+                                                        }
+                                                        onRunningChanged: if (!running)
+                                                            vpnLoadIcon.opacity = 1.0
+                                                    }
                                                 }
 
                                                 StyledText {

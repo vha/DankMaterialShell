@@ -69,6 +69,7 @@ Item {
 
     property int _desktopEntriesUpdateTrigger: 0
     property int _toplevelsUpdateTrigger: 0
+    property int _appIdSubstitutionsTrigger: 0
 
     readonly property var sortedToplevels: {
         _toplevelsUpdateTrigger;
@@ -93,6 +94,13 @@ Item {
         target: DesktopEntries
         function onApplicationsChanged() {
             _desktopEntriesUpdateTrigger++;
+        }
+    }
+
+    Connections {
+        target: SettingsData
+        function onAppIdSubstitutionsChanged() {
+            _appIdSubstitutionsTrigger++;
         }
     }
     readonly property var groupedWindows: {
@@ -327,7 +335,8 @@ Item {
                     property int windowCount: isGrouped ? modelData.windows.length : 1
                     property string tooltipText: {
                         root._desktopEntriesUpdateTrigger;
-                        const desktopEntry = appId ? DesktopEntries.heuristicLookup(appId) : null;
+                        const moddedId = Paths.moddedAppId(appId);
+                        const desktopEntry = moddedId ? DesktopEntries.heuristicLookup(moddedId) : null;
                         const appName = appId ? Paths.getAppName(appId, desktopEntry) : "Unknown";
 
                         if (isGrouped && windowCount > 1) {
@@ -363,9 +372,11 @@ Item {
                             height: Theme.barIconSize(root.barThickness)
                             source: {
                                 root._desktopEntriesUpdateTrigger;
+                                root._appIdSubstitutionsTrigger;
                                 if (!appId)
                                     return "";
-                                const desktopEntry = DesktopEntries.heuristicLookup(appId);
+                                const moddedId = Paths.moddedAppId(appId);
+                                const desktopEntry = DesktopEntries.heuristicLookup(moddedId);
                                 return Paths.getAppIcon(appId, desktopEntry);
                             }
                             smooth: true
@@ -382,33 +393,16 @@ Item {
                             }
                         }
 
-                        DankIcon {
-                            anchors.left: parent.left
-                            anchors.leftMargin: (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode) ? Math.round((parent.width - Theme.barIconSize(root.barThickness)) / 2) : Theme.spacingXS
-                            anchors.verticalCenter: parent.verticalCenter
-                            size: Theme.barIconSize(root.barThickness)
-                            name: "sports_esports"
-                            color: Theme.widgetTextColor
-                            visible: {
-                                const moddedId = Paths.moddedAppId(appId);
-                                return moddedId.toLowerCase().includes("steam_app");
-                            }
-                        }
-
-                        // Fallback text if no icon found
                         Text {
                             anchors.centerIn: parent
-                            visible: {
-                                const moddedId = Paths.moddedAppId(appId);
-                                const isSteamApp = moddedId.toLowerCase().includes("steam_app");
-                                return !iconImg.visible && !isSteamApp;
-                            }
+                            visible: !iconImg.visible
                             text: {
                                 root._desktopEntriesUpdateTrigger;
                                 if (!appId)
                                     return "?";
 
-                                const desktopEntry = DesktopEntries.heuristicLookup(appId);
+                                const moddedId = Paths.moddedAppId(appId);
+                                const desktopEntry = DesktopEntries.heuristicLookup(moddedId);
                                 const appName = Paths.getAppName(appId, desktopEntry);
                                 return appName.charAt(0).toUpperCase();
                             }
@@ -436,7 +430,6 @@ Item {
                             }
                         }
 
-                        // Window title text (only visible in expanded mode)
                         StyledText {
                             anchors.left: iconImg.right
                             anchors.leftMargin: Theme.spacingXS
@@ -576,7 +569,8 @@ Item {
                     property int windowCount: isGrouped ? modelData.windows.length : 1
                     property string tooltipText: {
                         root._desktopEntriesUpdateTrigger;
-                        const desktopEntry = appId ? DesktopEntries.heuristicLookup(appId) : null;
+                        const moddedId = Paths.moddedAppId(appId);
+                        const desktopEntry = moddedId ? DesktopEntries.heuristicLookup(moddedId) : null;
                         const appName = appId ? Paths.getAppName(appId, desktopEntry) : "Unknown";
 
                         if (isGrouped && windowCount > 1) {
@@ -611,9 +605,11 @@ Item {
                             height: Theme.barIconSize(root.barThickness)
                             source: {
                                 root._desktopEntriesUpdateTrigger;
+                                root._appIdSubstitutionsTrigger;
                                 if (!appId)
                                     return "";
-                                const desktopEntry = DesktopEntries.heuristicLookup(appId);
+                                const moddedId = Paths.moddedAppId(appId);
+                                const desktopEntry = DesktopEntries.heuristicLookup(moddedId);
                                 return Paths.getAppIcon(appId, desktopEntry);
                             }
                             smooth: true
@@ -630,32 +626,16 @@ Item {
                             }
                         }
 
-                        DankIcon {
-                            anchors.left: parent.left
-                            anchors.leftMargin: (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode) ? Math.round((parent.width - Theme.barIconSize(root.barThickness)) / 2) : Theme.spacingXS
-                            anchors.verticalCenter: parent.verticalCenter
-                            size: Theme.barIconSize(root.barThickness)
-                            name: "sports_esports"
-                            color: Theme.widgetTextColor
-                            visible: {
-                                const moddedId = Paths.moddedAppId(appId);
-                                return moddedId.toLowerCase().includes("steam_app");
-                            }
-                        }
-
                         Text {
                             anchors.centerIn: parent
-                            visible: {
-                                const moddedId = Paths.moddedAppId(appId);
-                                const isSteamApp = moddedId.toLowerCase().includes("steam_app");
-                                return !iconImg.visible && !isSteamApp;
-                            }
+                            visible: !iconImg.visible
                             text: {
                                 root._desktopEntriesUpdateTrigger;
                                 if (!appId)
                                     return "?";
 
-                                const desktopEntry = DesktopEntries.heuristicLookup(appId);
+                                const moddedId = Paths.moddedAppId(appId);
+                                const desktopEntry = DesktopEntries.heuristicLookup(moddedId);
                                 const appName = Paths.getAppName(appId, desktopEntry);
                                 return appName.charAt(0).toUpperCase();
                             }

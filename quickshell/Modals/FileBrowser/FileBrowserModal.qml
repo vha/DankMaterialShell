@@ -41,14 +41,18 @@ FloatingWindow {
 
     onVisibleChanged: {
         if (visible) {
-            if (parentModal) {
+            if (parentModal && "shouldHaveFocus" in parentModal) {
                 parentModal.shouldHaveFocus = false;
                 parentModal.allowFocusOverride = true;
             }
-            content.reset();
-            Qt.callLater(() => content.forceActiveFocus());
+            Qt.callLater(() => {
+                if (content) {
+                    content.reset();
+                    content.forceActiveFocus();
+                }
+            });
         } else {
-            if (parentModal) {
+            if (parentModal && "allowFocusOverride" in parentModal) {
                 parentModal.allowFocusOverride = false;
                 parentModal.shouldHaveFocus = Qt.binding(() => parentModal.shouldBeVisible);
             }
@@ -56,26 +60,34 @@ FloatingWindow {
         }
     }
 
-    FileBrowserContent {
-        id: content
+    Loader {
+        id: contentLoader
         anchors.fill: parent
-        focus: true
-        closeOnEscape: false
-        windowControls: windowControls
+        active: fileBrowserModal.visible
+        sourceComponent: FileBrowserContent {
+            id: content
+            anchors.fill: parent
+            focus: true
+            closeOnEscape: false
+            windowControls: fileBrowserModal.windowControlsRef
 
-        browserTitle: fileBrowserModal.browserTitle
-        browserIcon: fileBrowserModal.browserIcon
-        browserType: fileBrowserModal.browserType
-        fileExtensions: fileBrowserModal.fileExtensions
-        showHiddenFiles: fileBrowserModal.showHiddenFiles
-        saveMode: fileBrowserModal.saveMode
-        defaultFileName: fileBrowserModal.defaultFileName
+            browserTitle: fileBrowserModal.browserTitle
+            browserIcon: fileBrowserModal.browserIcon
+            browserType: fileBrowserModal.browserType
+            fileExtensions: fileBrowserModal.fileExtensions
+            showHiddenFiles: fileBrowserModal.showHiddenFiles
+            saveMode: fileBrowserModal.saveMode
+            defaultFileName: fileBrowserModal.defaultFileName
 
-        Component.onCompleted: initialize()
+            Component.onCompleted: initialize()
 
-        onFileSelected: path => fileBrowserModal.fileSelected(path)
-        onCloseRequested: fileBrowserModal.close()
+            onFileSelected: path => fileBrowserModal.fileSelected(path)
+            onCloseRequested: fileBrowserModal.close()
+        }
     }
+
+    property alias content: contentLoader.item
+    property alias windowControlsRef: windowControls
 
     FloatingWindowControls {
         id: windowControls

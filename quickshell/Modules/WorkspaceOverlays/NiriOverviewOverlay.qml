@@ -14,7 +14,7 @@ Scope {
     property bool isClosing: false
     property bool releaseKeyboard: false
     readonly property bool spotlightModalOpen: PopoutService.spotlightModal?.spotlightOpen ?? false
-    property bool overlayActive: (NiriService.inOverview && !spotlightModalOpen) || searchActive
+    property bool overlayActive: NiriService.inOverview || searchActive
 
     function showSpotlight(screenName) {
         isClosing = false;
@@ -125,7 +125,12 @@ Scope {
                 }
 
                 onShouldShowSpotlightChanged: {
-                    if (shouldShowSpotlight || !isActiveScreen)
+                    if (shouldShowSpotlight) {
+                        if (spotlightContent?.appLauncher)
+                            spotlightContent.appLauncher.ensureInitialized();
+                        return;
+                    }
+                    if (!isActiveScreen)
                         return;
                     Qt.callLater(() => keyboardFocusScope.forceActiveFocus());
                 }
