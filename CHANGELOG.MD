@@ -1,5 +1,15 @@
 This file is more of a quick reference so I know what to account for before next releases.
 
+# 1.4.0
+
+- Overhauled system monitor, graphs, styling
+- dbus API for plugins, KDEConnect
+- new dank16 algorithm
+- launcher actions, customize env, args, name, icon
+- launcher v2 - omega stuff, GIF search, supa powerful
+- dock on bar
+- window rule manager, with IPC - #TODO verify RTL layout (niri only)
+
 # 1.2.0
 
 - Added clipboard and clipboard history integration

@@ -47,6 +47,7 @@
           kirigami.unwrapped
           sonnet
           qtmultimedia
+          qtimageformats
         ];
     in
     {
@@ -78,7 +79,7 @@
               inherit version;
               pname = "dms-shell";
               src = ./core;
-              vendorHash = "sha256-9CnZFtjXXWYELRiBX2UbZvWopnl9Y1ILuK+xP6YQZ9U=";
+              vendorHash = "sha256-vsfCgpilOHzJbTaJjJfMK/cSvtyFYJsPDjY4m3iuoFg=";
 
               subPackages = [ "cmd/dms" ];
 

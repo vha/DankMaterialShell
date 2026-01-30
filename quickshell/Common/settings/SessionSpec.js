@@ -35,10 +35,20 @@ var SPEC = {
     nightModeUseIPLocation: { def: false },
     nightModeLocationProvider: { def: "" },
 
+    themeModeAutoEnabled: { def: false },
+    themeModeAutoMode: { def: "time" },
+    themeModeStartHour: { def: 18 },
+    themeModeStartMinute: { def: 0 },
+    themeModeEndHour: { def: 6 },
+    themeModeEndMinute: { def: 0 },
+    themeModeShareGammaSettings: { def: true },
+
     weatherLocation: { def: "New York, NY" },
     weatherCoordinates: { def: "40.7128,-74.0060" },
 
     pinnedApps: { def: [] },
+    barPinnedApps: { def: [] },
+    dockLauncherPosition: { def: 0 },
     hiddenTrayIds: { def: [] },
     recentColors: { def: [] },
     showThirdPartyPlugins: { def: false },
@@ -55,9 +65,25 @@ var SPEC = {
     enabledGpuPciIds: { def: [] },
 
     wifiDeviceOverride: { def: "" },
-    weatherHourlyDetailed: { def: true }
+    weatherHourlyDetailed: { def: true },
+
+    hiddenApps: { def: [] },
+    appOverrides: { def: {} },
+    searchAppActions: { def: true },
+
+    vpnLastConnected: { def: "" }
 };
 
 function getValidKeys() {
     return Object.keys(SPEC).concat(["configVersion"]);
+}
+
+function set(root, key, value, saveFn, hooks) {
+    if (!(key in SPEC)) return;
+    root[key] = value;
+    var hookName = SPEC[key].onChange;
+    if (hookName && hooks && hooks[hookName]) {
+        hooks[hookName](root);
+    }
+    saveFn();
 }

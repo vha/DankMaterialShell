@@ -63,15 +63,15 @@ Item {
                     onToggled: checked => SettingsData.set("showWorkspaceApps", checked)
                 }
 
-                Row {
-                    width: parent.width - Theme.spacingL
-                    spacing: Theme.spacingL
+                Item {
+                    width: parent.width
+                    height: maxAppsColumn.height
                     visible: SettingsData.showWorkspaceApps
                     opacity: visible ? 1 : 0
-                    anchors.left: parent.left
-                    anchors.leftMargin: Theme.spacingL
 
                     Column {
+                        id: maxAppsColumn
+                        x: Theme.spacingL
                         width: 120
                         spacing: Theme.spacingS
 
@@ -80,14 +80,15 @@ Item {
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceText
                             font.weight: Font.Medium
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         DankTextField {
                             width: 100
                             height: 28
-                            placeholderText: "#ffffff"
+                            placeholderText: "3"
                             text: SettingsData.maxWorkspaceIcons
-                            maximumLength: 7
+                            maximumLength: 2
                             font.pixelSize: Theme.fontSizeSmall
                             topPadding: Theme.spacingXS
                             bottomPadding: Theme.spacingXS
@@ -101,6 +102,17 @@ Item {
                             easing.type: Theme.emphasizedEasing
                         }
                     }
+                }
+
+                SettingsSliderRow {
+                    visible: SettingsData.showWorkspaceApps
+                    text: I18n.tr("Icon Size")
+                    value: SettingsData.workspaceAppIconSizeOffset
+                    minimum: 0
+                    maximum: 10
+                    unit: "px"
+                    defaultValue: 0
+                    onSliderValueChanged: newValue => SettingsData.set("workspaceAppIconSizeOffset", newValue)
                 }
 
                 SettingsToggleRow {
@@ -196,6 +208,48 @@ Item {
                     height: 1
                     color: Theme.outline
                     opacity: 0.15
+                }
+
+                SettingsButtonGroupRow {
+                    text: I18n.tr("Occupied Color")
+                    model: ["none", "sec", "s", "sc", "sch", "schh"]
+                    visible: CompositorService.isNiri || CompositorService.isHyprland || CompositorService.isDwl
+                    buttonHeight: 22
+                    minButtonWidth: 36
+                    buttonPadding: Theme.spacingS
+                    checkIconSize: Theme.iconSizeSmall - 2
+                    textSize: Theme.fontSizeSmall - 1
+                    spacing: 1
+                    currentIndex: {
+                        switch (SettingsData.workspaceOccupiedColorMode) {
+                        case "sec":
+                            return 1;
+                        case "s":
+                            return 2;
+                        case "sc":
+                            return 3;
+                        case "sch":
+                            return 4;
+                        case "schh":
+                            return 5;
+                        default:
+                            return 0;
+                        }
+                    }
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        const modes = ["none", "sec", "s", "sc", "sch", "schh"];
+                        SettingsData.set("workspaceOccupiedColorMode", modes[index]);
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: Theme.outline
+                    opacity: 0.15
+                    visible: CompositorService.isNiri || CompositorService.isHyprland || CompositorService.isDwl
                 }
 
                 SettingsButtonGroupRow {

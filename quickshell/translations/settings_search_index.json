@@ -488,6 +488,27 @@
     ]
   },
   {
+    "section": "padHours12Hour",
+    "label": "Pad Hours",
+    "tabIndex": 1,
+    "category": "Time & Weather",
+    "keywords": [
+      "12hour",
+      "clock",
+      "date",
+      "forecast",
+      "format",
+      "hours",
+      "leading",
+      "pad",
+      "padding",
+      "time",
+      "weather",
+      "zero"
+    ],
+    "description": "02:31 PM vs 2:31 PM"
+  },
+  {
     "section": "showSeconds",
     "label": "Show Seconds",
     "tabIndex": 1,
@@ -605,6 +626,26 @@
     ],
     "icon": "cloud",
     "description": "Show weather information in top bar and control center"
+  },
+  {
+    "section": "windSpeedUnit",
+    "label": "Wind Speed in m/s",
+    "tabIndex": 1,
+    "category": "Time & Weather",
+    "keywords": [
+      "clock",
+      "date",
+      "forecast",
+      "meters",
+      "metric",
+      "second",
+      "speed",
+      "time",
+      "units",
+      "weather",
+      "wind"
+    ],
+    "description": "Use meters per second instead of km/h for wind speed"
   },
   {
     "section": "_tab_2",
@@ -1109,6 +1150,7 @@
     "tabIndex": 5,
     "category": "Dock",
     "keywords": [
+      "always",
       "area",
       "auto",
       "autohide",
@@ -1122,7 +1164,7 @@
       "reveal",
       "taskbar"
     ],
-    "description": "Hide the dock when not in use and reveal it when hovering near the dock area"
+    "description": "Always hide the dock and reveal it when hovering near the dock area"
   },
   {
     "section": "dockBehavior",
@@ -1162,6 +1204,39 @@
     "description": "Add a border around the dock"
   },
   {
+    "section": "dockLauncherLogoBrightness",
+    "label": "Brightness",
+    "tabIndex": 5,
+    "category": "Dock",
+    "keywords": [
+      "backlight",
+      "bright",
+      "brightness",
+      "color",
+      "dim",
+      "dock",
+      "launcher",
+      "launcher bar",
+      "logo",
+      "taskbar"
+    ]
+  },
+  {
+    "section": "dockLauncherLogoContrast",
+    "label": "Contrast",
+    "tabIndex": 5,
+    "category": "Dock",
+    "keywords": [
+      "color",
+      "contrast",
+      "dock",
+      "launcher",
+      "launcher bar",
+      "logo",
+      "taskbar"
+    ]
+  },
+  {
     "section": "_tab_5",
     "label": "Dock & Launcher",
     "tabIndex": 5,
@@ -1178,20 +1253,6 @@
       "taskbar"
     ],
     "icon": "apps"
-  },
-  {
-    "section": "dockPosition",
-    "label": "Dock Position",
-    "tabIndex": 5,
-    "category": "Dock",
-    "keywords": [
-      "dock",
-      "launcher bar",
-      "panel",
-      "position",
-      "taskbar"
-    ],
-    "icon": "swap_vert"
   },
   {
     "section": "dockVisibility",
@@ -1277,6 +1338,29 @@
     ]
   },
   {
+    "section": "dockSmartAutoHide",
+    "label": "Intelligent Auto-hide",
+    "tabIndex": 5,
+    "category": "Dock",
+    "keywords": [
+      "auto",
+      "autohide",
+      "dock",
+      "floating",
+      "hide",
+      "intelligent",
+      "launcher bar",
+      "overlap",
+      "panel",
+      "show",
+      "smart",
+      "taskbar",
+      "windows"
+    ],
+    "description": "Show dock when floating windows don",
+    "conditionKey": "isNiri"
+  },
+  {
     "section": "dockIsolateDisplays",
     "label": "Isolate Displays",
     "tabIndex": 5,
@@ -1300,6 +1384,75 @@
       "windows"
     ],
     "description": "Only show windows from the current monitor on each dock"
+  },
+  {
+    "section": "dockLauncher",
+    "label": "Launcher Button",
+    "tabIndex": 5,
+    "category": "Dock",
+    "keywords": [
+      "app drawer",
+      "app menu",
+      "applications",
+      "apps",
+      "button",
+      "dock",
+      "launcher",
+      "launcher bar",
+      "start menu",
+      "taskbar"
+    ],
+    "icon": "apps"
+  },
+  {
+    "section": "dockMaxVisibleApps",
+    "label": "Max Pinned Apps (0 = Unlimited)",
+    "tabIndex": 5,
+    "category": "Dock",
+    "keywords": [
+      "apps",
+      "dock",
+      "launcher bar",
+      "limit",
+      "max",
+      "overflow",
+      "pinned",
+      "taskbar",
+      "unlimited)"
+    ]
+  },
+  {
+    "section": "dockMaxVisibleRunningApps",
+    "label": "Max Running Apps (0 = Unlimited)",
+    "tabIndex": 5,
+    "category": "Dock",
+    "keywords": [
+      "active",
+      "apps",
+      "dock",
+      "launcher bar",
+      "limit",
+      "max",
+      "open",
+      "overflow",
+      "running",
+      "taskbar",
+      "unlimited)",
+      "windows"
+    ]
+  },
+  {
+    "section": "dockPosition",
+    "label": "Position",
+    "tabIndex": 5,
+    "category": "Dock",
+    "keywords": [
+      "dock",
+      "launcher bar",
+      "position",
+      "taskbar"
+    ],
+    "icon": "swap_vert"
   },
   {
     "section": "showDock",
@@ -1328,6 +1481,50 @@
     "description": "Display a dock with pinned and running applications"
   },
   {
+    "section": "dockLauncherEnabled",
+    "label": "Show Launcher Button",
+    "tabIndex": 5,
+    "category": "Dock",
+    "keywords": [
+      "app drawer",
+      "app menu",
+      "applications",
+      "apps",
+      "button",
+      "dock",
+      "launcher",
+      "launcher bar",
+      "show",
+      "start menu",
+      "taskbar"
+    ]
+  },
+  {
+    "section": "dockShowOverflowBadge",
+    "label": "Show Overflow Badge Count",
+    "tabIndex": 5,
+    "category": "Dock",
+    "keywords": [
+      "active",
+      "badge",
+      "count",
+      "displays",
+      "dock",
+      "indicator",
+      "launcher bar",
+      "monitor",
+      "monitors",
+      "output",
+      "outputs",
+      "overflow",
+      "screen",
+      "screens",
+      "show",
+      "taskbar"
+    ],
+    "description": "Displays count when overflow is active"
+  },
+  {
     "section": "dockOpenOnOverview",
     "label": "Show on Overview",
     "tabIndex": 5,
@@ -1344,6 +1541,22 @@
     ],
     "description": "Always show the dock when niri",
     "conditionKey": "isNiri"
+  },
+  {
+    "section": "dockLauncherLogoSizeOffset",
+    "label": "Size Offset",
+    "tabIndex": 5,
+    "category": "Dock",
+    "keywords": [
+      "dock",
+      "launcher",
+      "launcher bar",
+      "logo",
+      "offset",
+      "scale",
+      "size",
+      "taskbar"
+    ]
   },
   {
     "section": "dockSizing",
@@ -1427,6 +1640,58 @@
     ],
     "icon": "computer",
     "conditionKey": "cupsAvailable"
+  },
+  {
+    "section": "appOverrides",
+    "label": "App Customizations",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "app",
+      "customizations",
+      "drawer",
+      "launcher",
+      "menu",
+      "start"
+    ],
+    "icon": "edit"
+  },
+  {
+    "section": "dankLauncherV2Appearance",
+    "label": "Appearance",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "appearance",
+      "bottom",
+      "drawer",
+      "footer",
+      "hints",
+      "keyboard",
+      "launcher",
+      "menu",
+      "mode",
+      "shortcuts",
+      "show",
+      "start",
+      "tabs"
+    ],
+    "icon": "tune",
+    "description": "Show mode tabs and keyboard hints at the bottom."
+  },
+  {
+    "section": "dankLauncherV2BorderEnabled",
+    "label": "Border",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "border",
+      "drawer",
+      "launcher",
+      "menu",
+      "outline",
+      "start"
+    ]
   },
   {
     "section": "launcherLogoBrightness",
@@ -1519,6 +1784,21 @@
       "view"
     ],
     "description": "Adjust the number of columns in grid view mode."
+  },
+  {
+    "section": "hiddenApps",
+    "label": "Hidden Apps",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "apps",
+      "drawer",
+      "hidden",
+      "launcher",
+      "menu",
+      "start"
+    ],
+    "icon": "visibility_off"
   },
   {
     "section": "launcherLogoColorInvertOnMode",
@@ -1615,6 +1895,27 @@
     "conditionKey": "isNiri"
   },
   {
+    "section": "pluginVisibility",
+    "label": "Plugin Visibility",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "auto-hide",
+      "autohide",
+      "drawer",
+      "hidden",
+      "hide",
+      "launcher",
+      "menu",
+      "plugin",
+      "show",
+      "start",
+      "visibility",
+      "visible"
+    ],
+    "icon": "filter_list"
+  },
+  {
     "section": "recentApps",
     "label": "Recently Used Apps",
     "tabIndex": 9,
@@ -1628,6 +1929,68 @@
       "start"
     ],
     "icon": "history"
+  },
+  {
+    "section": "searchAppActions",
+    "label": "Search App Actions",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "actions",
+      "app",
+      "desktop",
+      "drawer",
+      "include",
+      "launcher",
+      "menu",
+      "results",
+      "search",
+      "shortcuts",
+      "start"
+    ],
+    "description": "Include desktop actions (shortcuts) in search results."
+  },
+  {
+    "section": "searchOptions",
+    "label": "Search Options",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "actions",
+      "desktop",
+      "drawer",
+      "include",
+      "launcher",
+      "menu",
+      "options",
+      "results",
+      "search",
+      "shortcuts",
+      "start"
+    ],
+    "icon": "search",
+    "description": "Include desktop actions (shortcuts) in search results."
+  },
+  {
+    "section": "dankLauncherV2ShowFooter",
+    "label": "Show Footer",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "bottom",
+      "drawer",
+      "footer",
+      "hints",
+      "keyboard",
+      "launcher",
+      "menu",
+      "mode",
+      "shortcuts",
+      "show",
+      "start",
+      "tabs"
+    ],
+    "description": "Show mode tabs and keyboard hints at the bottom."
   },
   {
     "section": "launcherLogoSizeOffset",
@@ -1691,6 +2054,20 @@
     ],
     "icon": "sort_by_alpha",
     "description": "When enabled, apps are sorted alphabetically. When disabled, apps are sorted by usage frequency."
+  },
+  {
+    "section": "dankLauncherV2BorderThickness",
+    "label": "Thickness",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "border",
+      "drawer",
+      "launcher",
+      "menu",
+      "start",
+      "thickness"
+    ]
   },
   {
     "section": "matugenTemplateAlacritty",
@@ -1765,6 +2142,30 @@
       "timeout"
     ],
     "description": "Hide cursor after inactivity (0 = disabled)"
+  },
+  {
+    "section": "automaticColorMode",
+    "label": "Automatic Color Mode",
+    "tabIndex": 10,
+    "category": "Theme & Colors",
+    "keywords": [
+      "appearance",
+      "automatic",
+      "color",
+      "colors",
+      "colour",
+      "hue",
+      "look",
+      "mode",
+      "schedule",
+      "scheme",
+      "style",
+      "sunrise",
+      "sunset",
+      "theme",
+      "tint"
+    ],
+    "icon": "schedule"
   },
   {
     "section": "niriLayoutBorderSize",
@@ -1860,6 +2261,32 @@
     "description": "Use light theme instead of dark theme"
   },
   {
+    "section": "controlCenterTileColorMode",
+    "label": "Control Center Tile Color",
+    "tabIndex": 10,
+    "category": "Theme & Colors",
+    "keywords": [
+      "active",
+      "appearance",
+      "background",
+      "button",
+      "center",
+      "color",
+      "colors",
+      "colour",
+      "control",
+      "hue",
+      "icon",
+      "look",
+      "scheme",
+      "style",
+      "theme",
+      "tile",
+      "tint"
+    ],
+    "description": "Active tile background and icon color"
+  },
+  {
     "section": "cornerRadius",
     "label": "Corner Radius",
     "tabIndex": 10,
@@ -1946,6 +2373,23 @@
       "theme"
     ],
     "description": "Show darkened overlay behind modal dialogs"
+  },
+  {
+    "section": "matugenTemplateEmacs",
+    "label": "Emacs",
+    "tabIndex": 10,
+    "category": "Theme & Colors",
+    "keywords": [
+      "appearance",
+      "colors",
+      "emacs",
+      "look",
+      "matugen",
+      "scheme",
+      "style",
+      "template",
+      "theme"
+    ]
   },
   {
     "section": "matugenTemplateFirefox",
@@ -3368,6 +3812,60 @@
       "suspend"
     ],
     "icon": "security"
+  },
+  {
+    "section": "lockScreenPowerOffMonitorsOnLock",
+    "label": "Power off monitors on lock",
+    "tabIndex": 11,
+    "category": "Lock Screen",
+    "keywords": [
+      "activates",
+      "display",
+      "displays",
+      "dpms",
+      "hibernate",
+      "immediately",
+      "lock",
+      "lockscreen",
+      "login",
+      "monitor",
+      "monitors",
+      "off",
+      "output",
+      "outputs",
+      "password",
+      "power",
+      "reboot",
+      "restart",
+      "screen",
+      "screens",
+      "security",
+      "shutdown",
+      "sleep",
+      "suspend",
+      "turn"
+    ],
+    "description": "Turn off all displays immediately when the lock screen activates"
+  },
+  {
+    "section": "lockScreenShowMediaPlayer",
+    "label": "Show Media Player",
+    "tabIndex": 11,
+    "category": "Lock Screen",
+    "keywords": [
+      "audio",
+      "lock",
+      "login",
+      "media",
+      "mpris",
+      "music",
+      "password",
+      "playback",
+      "player",
+      "screen",
+      "security",
+      "show"
+    ]
   },
   {
     "section": "lockScreenShowPasswordField",
@@ -5051,6 +5549,26 @@
     "description": "Maximum size per clipboard entry"
   },
   {
+    "section": "maxPinned",
+    "label": "Maximum Pinned Entries",
+    "tabIndex": 23,
+    "category": "System",
+    "keywords": [
+      "clipboard",
+      "entries",
+      "limit",
+      "linux",
+      "max",
+      "maximum",
+      "number",
+      "os",
+      "pinned",
+      "saved",
+      "system"
+    ],
+    "description": "Maximum number of entries that can be saved"
+  },
+  {
     "section": "_tab_24",
     "label": "Displays",
     "tabIndex": 24,
@@ -5168,5 +5686,17 @@
       "widgets"
     ],
     "icon": "widgets"
+  },
+  {
+    "section": "_tab_28",
+    "label": "Window Rules",
+    "tabIndex": 28,
+    "category": "Settings",
+    "keywords": [
+      "rules",
+      "settings",
+      "window"
+    ],
+    "icon": "select_window"
   }
 ]

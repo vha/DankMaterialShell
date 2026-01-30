@@ -20,12 +20,9 @@ Requires:       accountsservice
 Requires:       dgop
 
 Recommends:     cava
-Recommends:     cliphist
 Recommends:     danksearch
 Recommends:     matugen
 Recommends:     quickshell-git
-Recommends:     wl-clipboard
-
 Recommends:     NetworkManager
 Recommends:     qt6-qtmultimedia
 Suggests:       qt6ct
@@ -102,8 +99,6 @@ rm -f %{buildroot}%{_datadir}/quickshell/dms/.gitignore
 rm -rf %{buildroot}%{_datadir}/quickshell/dms/.github
 rm -rf %{buildroot}%{_datadir}/quickshell/dms/distro
 rm -rf %{buildroot}%{_datadir}/quickshell/dms/core
-
-echo "%{version}" > %{buildroot}%{_datadir}/quickshell/dms/VERSION
 
 %posttrans
 if [ -d "%{_sysconfdir}/xdg/quickshell/dms" ]; then

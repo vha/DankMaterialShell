@@ -33,7 +33,6 @@ Recommends:     cava
 Recommends:     danksearch
 Recommends:     matugen
 Recommends:     quickshell-git
-Recommends:     wl-clipboard
 
 # Recommended system packages
 Recommends:     NetworkManager
@@ -109,8 +108,6 @@ rm -rf %{buildroot}%{_datadir}/quickshell/dms/.git*
 rm -f %{buildroot}%{_datadir}/quickshell/dms/.gitignore
 rm -rf %{buildroot}%{_datadir}/quickshell/dms/.github
 rm -rf %{buildroot}%{_datadir}/quickshell/dms/distro
-
-echo "%{version}" > %{buildroot}%{_datadir}/quickshell/dms/VERSION
 
 %posttrans
 # Signal running DMS instances to reload

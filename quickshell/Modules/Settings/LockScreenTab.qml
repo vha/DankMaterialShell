@@ -76,6 +76,14 @@ Item {
                     onToggled: checked => SettingsData.set("lockScreenShowPasswordField", checked)
                 }
 
+                SettingsToggleRow {
+                    settingKey: "lockScreenShowMediaPlayer"
+                    tags: ["lock", "screen", "media", "player", "music", "mpris"]
+                    text: I18n.tr("Show Media Player", "Enable media player controls on the lock screen window")
+                    checked: SettingsData.lockScreenShowMediaPlayer
+                    onToggled: checked => SettingsData.set("lockScreenShowMediaPlayer", checked)
+                }
+
                 SettingsDropdownRow {
                     settingKey: "lockScreenNotificationMode"
                     tags: ["lock", "screen", "notification", "notifications", "privacy"]
@@ -129,6 +137,15 @@ Item {
                     checked: SettingsData.lockBeforeSuspend
                     visible: SessionService.loginctlAvailable && SettingsData.loginctlLockIntegration
                     onToggled: checked => SettingsData.set("lockBeforeSuspend", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "lockScreenPowerOffMonitorsOnLock"
+                    tags: ["lock", "screen", "monitor", "display", "dpms", "power"]
+                    text: I18n.tr("Power off monitors on lock")
+                    description: I18n.tr("Turn off all displays immediately when the lock screen activates")
+                    checked: SettingsData.lockScreenPowerOffMonitorsOnLock
+                    onToggled: checked => SettingsData.set("lockScreenPowerOffMonitorsOnLock", checked)
                 }
 
                 SettingsToggleRow {

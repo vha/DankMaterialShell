@@ -8,10 +8,13 @@ Item {
 
     property int totalCount: 0
     property bool showKeyboardHints: false
+    property string activeTab: "recents"
+    property int pinnedCount: 0
 
     signal keyboardHintsToggled
     signal clearAllClicked
     signal closeClicked
+    signal tabChanged(string tabName)
 
     height: ClipboardConstants.headerHeight
 
@@ -42,9 +45,27 @@ Item {
         spacing: Theme.spacingS
 
         DankActionButton {
+            iconName: "push_pin"
+            iconSize: Theme.iconSize - 4
+            iconColor: header.activeTab === "saved" ? Theme.primary : Theme.surfaceText
+            visible: header.pinnedCount > 0
+            tooltipText: I18n.tr("Saved")
+            onClicked: tabChanged("saved")
+        }
+
+        DankActionButton {
+            iconName: "history"
+            iconSize: Theme.iconSize - 4
+            iconColor: header.activeTab === "recents" ? Theme.primary : Theme.surfaceText
+            tooltipText: I18n.tr("History")
+            onClicked: tabChanged("recents")
+        }
+
+        DankActionButton {
             iconName: "info"
             iconSize: Theme.iconSize - 4
             iconColor: showKeyboardHints ? Theme.primary : Theme.surfaceText
+            tooltipText: I18n.tr("Keyboard Shortcuts")
             onClicked: keyboardHintsToggled()
         }
 
@@ -52,6 +73,7 @@ Item {
             iconName: "delete_sweep"
             iconSize: Theme.iconSize
             iconColor: Theme.surfaceText
+            tooltipText: I18n.tr("Clear All")
             onClicked: clearAllClicked()
         }
 

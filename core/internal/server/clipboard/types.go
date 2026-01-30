@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/godbus/dbus/v5"
 	bolt "go.etcd.io/bbolt"
 
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wlcontext"
@@ -19,6 +20,7 @@ type Config struct {
 	AutoClearDays  int   `json:"autoClearDays"`
 	ClearAtStartup bool  `json:"clearAtStartup"`
 	Disabled       bool  `json:"disabled"`
+	MaxPinned      int   `json:"maxPinned"`
 }
 
 func DefaultConfig() Config {
@@ -27,6 +29,7 @@ func DefaultConfig() Config {
 		MaxEntrySize:   5 * 1024 * 1024,
 		AutoClearDays:  0,
 		ClearAtStartup: false,
+		MaxPinned:      25,
 	}
 }
 
@@ -63,7 +66,7 @@ func SaveConfig(cfg Config) error {
 		return err
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
 
@@ -72,7 +75,7 @@ func SaveConfig(cfg Config) error {
 		return err
 	}
 
-	return os.WriteFile(path, data, 0644)
+	return os.WriteFile(path, data, 0o644)
 }
 
 type SearchParams struct {
@@ -100,6 +103,7 @@ type Entry struct {
 	Timestamp time.Time `json:"timestamp"`
 	IsImage   bool      `json:"isImage"`
 	Hash      uint64    `json:"hash,omitempty"`
+	Pinned    bool      `json:"pinned"`
 }
 
 type State struct {
@@ -154,6 +158,8 @@ type Manager struct {
 	dirty       chan struct{}
 	notifierWg  sync.WaitGroup
 	lastState   *State
+
+	dbusConn *dbus.Conn
 }
 
 func (m *Manager) GetState() State {

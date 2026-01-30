@@ -1,8 +1,10 @@
 import QtQuick
 import Quickshell.Io
 import Quickshell.Hyprland
+import Quickshell.Wayland
 import qs.Common
 import qs.Services
+import qs.Modules.Settings.DisplayConfig
 
 Item {
     id: root
@@ -15,6 +17,8 @@ Item {
     required property var hyprKeybindsModalLoader
     required property var dankBarRepeater
     required property var hyprlandOverviewLoader
+    required property var workspaceRenameModalLoader
+    required property var windowRuleModalLoader
 
     function getFirstBar() {
         if (!root.dankBarRepeater || root.dankBarRepeater.count === 0)
@@ -966,6 +970,17 @@ Item {
             return success ? `PLUGIN_DISABLE_SUCCESS: ${pluginId}` : `PLUGIN_DISABLE_FAILED: ${pluginId}`;
         }
 
+        function toggle(pluginId: string): string {
+            if (!pluginId)
+                return "ERROR: No plugin ID specified";
+
+            if (!PluginService.availablePlugins[pluginId])
+                return `PLUGIN_NOT_FOUND: ${pluginId}`;
+
+            const success = PluginService.togglePlugin(pluginId);
+            return success ? `PLUGIN_TOGGLE_SUCCESS: ${pluginId}` : `PLUGIN_TOGGLE_FAILED: ${pluginId}`;
+        }
+
         function list(): string {
             const plugins = PluginService.getAvailablePlugins();
             if (plugins.length === 0)
@@ -1012,6 +1027,167 @@ Item {
         }
 
         target: "clipboard"
+    }
+
+    // ! spotlight and launcher should be synonymous for backwards compat
+    IpcHandler {
+        function open(): string {
+            PopoutService.openDankLauncherV2();
+            return "LAUNCHER_OPEN_SUCCESS";
+        }
+
+        function close(): string {
+            PopoutService.closeDankLauncherV2();
+            return "LAUNCHER_CLOSE_SUCCESS";
+        }
+
+        function toggle(): string {
+            PopoutService.toggleDankLauncherV2();
+            return "LAUNCHER_TOGGLE_SUCCESS";
+        }
+
+        function openWith(mode: string): string {
+            if (!mode)
+                return "LAUNCHER_OPEN_FAILED: No mode specified";
+            PopoutService.openDankLauncherV2WithMode(mode);
+            return `LAUNCHER_OPEN_SUCCESS: ${mode}`;
+        }
+
+        function toggleWith(mode: string): string {
+            if (!mode)
+                return "LAUNCHER_TOGGLE_FAILED: No mode specified";
+            PopoutService.toggleDankLauncherV2WithMode(mode);
+            return `LAUNCHER_TOGGLE_SUCCESS: ${mode}`;
+        }
+
+        function openQuery(query: string): string {
+            PopoutService.openDankLauncherV2WithQuery(query);
+            return "LAUNCHER_OPEN_QUERY_SUCCESS";
+        }
+
+        function toggleQuery(query: string): string {
+            PopoutService.toggleDankLauncherV2WithQuery(query);
+            return "LAUNCHER_TOGGLE_QUERY_SUCCESS";
+        }
+
+        target: "launcher"
+    }
+
+    // ! spotlight and launcher should be synonymous for backwards compat
+    IpcHandler {
+        function open(): string {
+            PopoutService.openDankLauncherV2();
+            return "SPOTLIGHT_OPEN_SUCCESS";
+        }
+
+        function close(): string {
+            PopoutService.closeDankLauncherV2();
+            return "SPOTLIGHT_CLOSE_SUCCESS";
+        }
+
+        function toggle(): string {
+            PopoutService.toggleDankLauncherV2();
+            return "SPOTLIGHT_TOGGLE_SUCCESS";
+        }
+
+        function openWith(mode: string): string {
+            if (!mode)
+                return "SPOTLIGHT_OPEN_FAILED: No mode specified";
+            PopoutService.openDankLauncherV2WithMode(mode);
+            return `SPOTLIGHT_OPEN_SUCCESS: ${mode}`;
+        }
+
+        function toggleWith(mode: string): string {
+            if (!mode)
+                return "SPOTLIGHT_TOGGLE_FAILED: No mode specified";
+            PopoutService.toggleDankLauncherV2WithMode(mode);
+            return `SPOTLIGHT_TOGGLE_SUCCESS: ${mode}`;
+        }
+
+        function openQuery(query: string): string {
+            PopoutService.openDankLauncherV2WithQuery(query);
+            return "SPOTLIGHT_OPEN_QUERY_SUCCESS";
+        }
+
+        function toggleQuery(query: string): string {
+            PopoutService.toggleDankLauncherV2WithQuery(query);
+            return "SPOTLIGHT_TOGGLE_QUERY_SUCCESS";
+        }
+
+        target: "spotlight"
+    }
+
+    IpcHandler {
+        function info(message: string): string {
+            if (!message)
+                return "ERROR: No message specified";
+
+            ToastService.showInfo(message);
+            return "TOAST_INFO_SUCCESS";
+        }
+
+        function infoWith(message: string, details: string, command: string, category: string): string {
+            if (!message)
+                return "ERROR: No message specified";
+
+            ToastService.showInfo(message, details, command, category);
+            return "TOAST_INFO_SUCCESS";
+        }
+
+        function warn(message: string): string {
+            if (!message)
+                return "ERROR: No message specified";
+
+            ToastService.showWarning(message);
+            return "TOAST_WARN_SUCCESS";
+        }
+
+        function warnWith(message: string, details: string, command: string, category: string): string {
+            if (!message)
+                return "ERROR: No message specified";
+
+            ToastService.showWarning(message, details, command, category);
+            return "TOAST_WARN_SUCCESS";
+        }
+
+        function error(message: string): string {
+            if (!message)
+                return "ERROR: No message specified";
+
+            ToastService.showError(message);
+            return "TOAST_ERROR_SUCCESS";
+        }
+
+        function errorWith(message: string, details: string, command: string, category: string): string {
+            if (!message)
+                return "ERROR: No message specified";
+
+            ToastService.showError(message, details, command, category);
+            return "TOAST_ERROR_SUCCESS";
+        }
+
+        function hide(): string {
+            ToastService.hideToast();
+            return "TOAST_HIDE_SUCCESS";
+        }
+
+        function dismiss(category: string): string {
+            if (!category)
+                return "ERROR: No category specified";
+
+            ToastService.dismissCategory(category);
+            return "TOAST_DISMISS_SUCCESS";
+        }
+
+        function status(): string {
+            if (!ToastService.toastVisible)
+                return "hidden";
+
+            const levels = ["info", "warn", "error"];
+            return `visible:${levels[ToastService.currentLevel]}:${ToastService.currentMessage}`;
+        }
+
+        target: "toast"
     }
 
     IpcHandler {
@@ -1192,5 +1368,166 @@ Item {
         }
 
         target: "desktopWidget"
+    }
+
+    IpcHandler {
+        function open(): string {
+            root.workspaceRenameModalLoader.active = true;
+            if (root.workspaceRenameModalLoader.item) {
+                const ws = NiriService.workspaces[NiriService.focusedWorkspaceId];
+                root.workspaceRenameModalLoader.item.show(ws?.name || "");
+                return "WORKSPACE_RENAME_MODAL_OPENED";
+            }
+            return "WORKSPACE_RENAME_MODAL_NOT_FOUND";
+        }
+
+        function close(): string {
+            if (root.workspaceRenameModalLoader.item) {
+                root.workspaceRenameModalLoader.item.hide();
+                return "WORKSPACE_RENAME_MODAL_CLOSED";
+            }
+            return "WORKSPACE_RENAME_MODAL_NOT_FOUND";
+        }
+
+        function toggle(): string {
+            root.workspaceRenameModalLoader.active = true;
+            if (root.workspaceRenameModalLoader.item) {
+                if (root.workspaceRenameModalLoader.item.visible) {
+                    root.workspaceRenameModalLoader.item.hide();
+                    return "WORKSPACE_RENAME_MODAL_CLOSED";
+                }
+                const ws = NiriService.workspaces[NiriService.focusedWorkspaceId];
+                root.workspaceRenameModalLoader.item.show(ws?.name || "");
+                return "WORKSPACE_RENAME_MODAL_OPENED";
+            }
+            return "WORKSPACE_RENAME_MODAL_NOT_FOUND";
+        }
+
+        target: "workspace-rename"
+    }
+
+    IpcHandler {
+        function getFocusedWindow() {
+            const active = ToplevelManager.activeToplevel;
+            if (!active)
+                return null;
+            return {
+                appId: active.appId || "",
+                title: active.title || ""
+            };
+        }
+
+        function open(): string {
+            if (!CompositorService.isNiri)
+                return "WINDOW_RULES_NIRI_ONLY";
+            root.windowRuleModalLoader.active = true;
+            if (root.windowRuleModalLoader.item) {
+                root.windowRuleModalLoader.item.show(getFocusedWindow());
+                return "WINDOW_RULE_MODAL_OPENED";
+            }
+            return "WINDOW_RULE_MODAL_NOT_FOUND";
+        }
+
+        function close(): string {
+            if (root.windowRuleModalLoader.item) {
+                root.windowRuleModalLoader.item.hide();
+                return "WINDOW_RULE_MODAL_CLOSED";
+            }
+            return "WINDOW_RULE_MODAL_NOT_FOUND";
+        }
+
+        function toggle(): string {
+            if (!CompositorService.isNiri)
+                return "WINDOW_RULES_NIRI_ONLY";
+            root.windowRuleModalLoader.active = true;
+            if (root.windowRuleModalLoader.item) {
+                if (root.windowRuleModalLoader.item.visible) {
+                    root.windowRuleModalLoader.item.hide();
+                    return "WINDOW_RULE_MODAL_CLOSED";
+                }
+                root.windowRuleModalLoader.item.show(getFocusedWindow());
+                return "WINDOW_RULE_MODAL_OPENED";
+            }
+            return "WINDOW_RULE_MODAL_NOT_FOUND";
+        }
+
+        target: "window-rules"
+    }
+
+    IpcHandler {
+        function listProfiles(): string {
+            const profiles = DisplayConfigState.validatedProfiles;
+            const activeId = SettingsData.getActiveDisplayProfile(CompositorService.compositor);
+            const matchedId = DisplayConfigState.matchedProfile;
+            const lines = [];
+
+            for (const id in profiles) {
+                const p = profiles[id];
+                const flags = [];
+                if (id === activeId)
+                    flags.push("active");
+                if (id === matchedId)
+                    flags.push("matched");
+                const flagStr = flags.length > 0 ? " [" + flags.join(",") + "]" : "";
+                lines.push(p.name + flagStr + " -> " + JSON.stringify(p.outputSet));
+            }
+
+            if (lines.length === 0)
+                return "No profiles configured";
+            return lines.join("\n");
+        }
+
+        function setProfile(profileName: string): string {
+            if (!profileName)
+                return "ERROR: No profile name specified";
+
+            if (SettingsData.displayProfileAutoSelect)
+                return "ERROR: Auto profile selection is enabled. Use toggleAuto first";
+
+            const profiles = DisplayConfigState.validatedProfiles;
+            let profileId = null;
+
+            for (const id in profiles) {
+                if (profiles[id].name === profileName) {
+                    profileId = id;
+                    break;
+                }
+            }
+
+            if (!profileId)
+                return `ERROR: Profile not found: ${profileName}`;
+
+            DisplayConfigState.activateProfile(profileId);
+            return `PROFILE_SET_SUCCESS: ${profileName}`;
+        }
+
+        // ! TODO - auto profile switching is buggy on niri and other compositors
+        function toggleAuto(): string {
+            return "ERROR: Auto profile selection is temporarily disabled due to compositor bugs";
+        }
+
+        function status(): string {
+            const auto = "off"; // disabled for now
+            const activeId = SettingsData.getActiveDisplayProfile(CompositorService.compositor);
+            const matchedId = DisplayConfigState.matchedProfile;
+            const profiles = DisplayConfigState.validatedProfiles;
+            const activeName = profiles[activeId]?.name || "none";
+            const matchedName = profiles[matchedId]?.name || "none";
+            const currentOutputs = JSON.stringify(DisplayConfigState.currentOutputSet);
+
+            return `auto: ${auto}\nactive: ${activeName}\nmatched: ${matchedName}\noutputs: ${currentOutputs}`;
+        }
+
+        function current(): string {
+            return JSON.stringify(DisplayConfigState.currentOutputSet);
+        }
+
+        function refresh(): string {
+            DisplayConfigState.currentOutputSet = DisplayConfigState.buildCurrentOutputSet();
+            DisplayConfigState.validateProfiles();
+            return "Refreshed output state";
+        }
+
+        target: "outputs"
     }
 }

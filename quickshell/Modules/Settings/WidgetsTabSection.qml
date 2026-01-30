@@ -30,6 +30,20 @@ Column {
     signal privacySettingChanged(string sectionId, int widgetIndex, string settingName, bool value)
     signal minimumWidthChanged(string sectionId, int widgetIndex, bool enabled)
     signal showSwapChanged(string sectionId, int widgetIndex, bool enabled)
+    signal overflowSettingChanged(string sectionId, int widgetIndex, string settingName, var value)
+
+    function cloneWidgetData(widget) {
+        var result = {
+            "id": widget.id,
+            "enabled": widget.enabled
+        };
+        var keys = ["size", "selectedGpuIndex", "pciId", "mountPath", "minimumWidth", "showSwap", "mediaSize", "clockCompactMode", "focusedWindowCompactMode", "runningAppsCompactMode", "keyboardLayoutNameCompactMode", "showNetworkIcon", "showBluetoothIcon", "showAudioIcon", "showAudioPercent", "showVpnIcon", "showBrightnessIcon", "showBrightnessPercent", "showMicIcon", "showMicPercent", "showBatteryIcon", "showPrinterIcon", "showScreenSharingIcon", "barMaxVisibleApps", "barMaxVisibleRunningApps", "barShowOverflowBadge"];
+        for (var i = 0; i < keys.length; i++) {
+            if (widget[keys[i]] !== undefined)
+                result[keys[i]] = widget[keys[i]];
+        }
+        return result;
+    }
 
     width: parent.width
     height: implicitHeight
@@ -360,81 +374,42 @@ Column {
                             }
                         }
 
+                        DankActionButton {
+                            id: musicMenuButton
+                            visible: modelData.id === "music"
+                            buttonSize: 32
+                            iconName: "more_vert"
+                            iconSize: 18
+                            iconColor: Theme.outline
+                            onClicked: {
+                                musicContextMenu.widgetData = modelData;
+                                musicContextMenu.sectionId = root.sectionId;
+                                musicContextMenu.widgetIndex = index;
+
+                                var buttonPos = musicMenuButton.mapToItem(root, 0, 0);
+                                var popupWidth = musicContextMenu.width;
+                                var popupHeight = musicContextMenu.height;
+
+                                var xPos = buttonPos.x - popupWidth - Theme.spacingS;
+                                if (xPos < 0)
+                                    xPos = buttonPos.x + musicMenuButton.width + Theme.spacingS;
+
+                                var yPos = buttonPos.y - popupHeight / 2 + musicMenuButton.height / 2;
+                                if (yPos < 0) {
+                                    yPos = Theme.spacingS;
+                                } else if (yPos + popupHeight > root.height) {
+                                    yPos = root.height - popupHeight - Theme.spacingS;
+                                }
+
+                                musicContextMenu.x = xPos;
+                                musicContextMenu.y = yPos;
+                                musicContextMenu.open();
+                            }
+                        }
+
                         Row {
                             spacing: Theme.spacingXS
-                            visible: modelData.id === "clock" || modelData.id === "music" || modelData.id === "focusedWindow" || modelData.id === "runningApps" || modelData.id === "keyboard_layout_name"
-
-                            DankActionButton {
-                                id: smallSizeButton
-                                buttonSize: 28
-                                visible: modelData.id === "music"
-                                iconName: "photo_size_select_small"
-                                iconSize: 16
-                                iconColor: (modelData.mediaSize !== undefined ? modelData.mediaSize : SettingsData.mediaSize) === 0 ? Theme.primary : Theme.outline
-                                onClicked: {
-                                    root.compactModeChanged("music", 0);
-                                }
-                                onEntered: {
-                                    sharedTooltip.show("Small", smallSizeButton, 0, 0, "bottom");
-                                }
-                                onExited: {
-                                    sharedTooltip.hide();
-                                }
-                            }
-
-                            DankActionButton {
-                                id: mediumSizeButton
-                                buttonSize: 28
-                                visible: modelData.id === "music"
-                                iconName: "photo_size_select_actual"
-                                iconSize: 16
-                                iconColor: (modelData.mediaSize !== undefined ? modelData.mediaSize : SettingsData.mediaSize) === 1 ? Theme.primary : Theme.outline
-                                onClicked: {
-                                    root.compactModeChanged("music", 1);
-                                }
-                                onEntered: {
-                                    sharedTooltip.show("Medium", mediumSizeButton, 0, 0, "bottom");
-                                }
-                                onExited: {
-                                    sharedTooltip.hide();
-                                }
-                            }
-
-                            DankActionButton {
-                                id: largeSizeButton
-                                buttonSize: 28
-                                visible: modelData.id === "music"
-                                iconName: "photo_size_select_large"
-                                iconSize: 16
-                                iconColor: (modelData.mediaSize !== undefined ? modelData.mediaSize : SettingsData.mediaSize) === 2 ? Theme.primary : Theme.outline
-                                onClicked: {
-                                    root.compactModeChanged("music", 2);
-                                }
-                                onEntered: {
-                                    sharedTooltip.show("Large", largeSizeButton, 0, 0, "bottom");
-                                }
-                                onExited: {
-                                    sharedTooltip.hide();
-                                }
-                            }
-
-                            DankActionButton {
-                                id: largerSizeButton
-                                buttonSize: 28
-                                visible: modelData.id === "music"
-                                iconName: "fit_screen"
-                                iconSize: 16
-                                iconColor: (modelData.mediaSize !== undefined ? modelData.mediaSize : SettingsData.mediaSize) === 3 ? Theme.primary : Theme.outline
-                                onClicked: {
-                                    root.compactModeChanged("music", 3);
-                                }
-                                onEntered: {
-                                    sharedTooltip.show("Largest", largerSizeButton, 0, 0, "bottom");
-                                }
-                                onExited: {
-                                    sharedTooltip.hide();
-                                }
-                            }
+                            visible: modelData.id === "clock" || modelData.id === "focusedWindow" || modelData.id === "runningApps" || modelData.id === "keyboard_layout_name" || modelData.id === "appsDock"
 
                             DankActionButton {
                                 id: compactModeButton
@@ -528,6 +503,49 @@ Column {
                                 onEntered: {
                                     const tooltipText = SettingsData.runningAppsGroupByApp ? "Ungroup" : "Group by App";
                                     sharedTooltip.show(tooltipText, groupByAppButton, 0, 0, "bottom");
+                                }
+                                onExited: {
+                                    sharedTooltip.hide();
+                                }
+                            }
+
+                            DankActionButton {
+                                id: overflowMenuButton
+                                buttonSize: 28
+                                visible: modelData.id === "appsDock"
+                                iconName: "unfold_more"
+                                iconSize: 16
+                                iconColor: {
+                                    const maxApps = modelData.barMaxVisibleApps !== undefined ? modelData.barMaxVisibleApps : SettingsData.barMaxVisibleApps;
+                                    const maxRunning = modelData.barMaxVisibleRunningApps !== undefined ? modelData.barMaxVisibleRunningApps : SettingsData.barMaxVisibleRunningApps;
+                                    return (maxApps > 0 || maxRunning > 0) ? Theme.primary : Theme.outline;
+                                }
+                                onClicked: {
+                                    overflowContextMenu.widgetData = modelData;
+                                    overflowContextMenu.sectionId = root.sectionId;
+                                    overflowContextMenu.widgetIndex = index;
+
+                                    var buttonPos = overflowMenuButton.mapToItem(root, 0, 0);
+                                    var popupWidth = overflowContextMenu.width;
+                                    var popupHeight = overflowContextMenu.height;
+
+                                    var xPos = buttonPos.x - popupWidth - Theme.spacingS;
+                                    if (xPos < 0)
+                                        xPos = buttonPos.x + overflowMenuButton.width + Theme.spacingS;
+
+                                    var yPos = buttonPos.y - popupHeight / 2 + overflowMenuButton.height / 2;
+                                    if (yPos < 0) {
+                                        yPos = Theme.spacingS;
+                                    } else if (yPos + popupHeight > root.height) {
+                                        yPos = root.height - popupHeight - Theme.spacingS;
+                                    }
+
+                                    overflowContextMenu.x = xPos;
+                                    overflowContextMenu.y = yPos;
+                                    overflowContextMenu.open();
+                                }
+                                onEntered: {
+                                    sharedTooltip.show(I18n.tr("Overflow"), overflowMenuButton, 0, 0, "bottom");
                                 }
                                 onExited: {
                                     sharedTooltip.hide();
@@ -727,13 +745,7 @@ Column {
                                     var newItems = root.items.slice();
                                     var draggedItem = newItems.splice(index, 1)[0];
                                     newItems.splice(newIndex, 0, draggedItem);
-                                    root.itemOrderChanged(newItems.map(item => {
-                                        return ({
-                                                "id": item.id,
-                                                "enabled": item.enabled,
-                                                "size": item.size
-                                            });
-                                    }));
+                                    root.itemOrderChanged(newItems.map(item => root.cloneWidgetData(item)));
                                 }
                             }
                             delegateItem.x = 0;
@@ -1294,6 +1306,336 @@ Column {
                             onClicked: {
                                 root.gpuSelectionChanged(gpuContextMenu.sectionId, gpuContextMenu.widgetIndex, index);
                                 gpuContextMenu.close();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Popup {
+        id: musicContextMenu
+
+        property var widgetData: null
+        property string sectionId: ""
+        property int widgetIndex: -1
+
+        width: 180
+        height: musicMenuColumn.implicitHeight + Theme.spacingS * 2
+        padding: 0
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        background: Rectangle {
+            color: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
+            radius: Theme.cornerRadius
+            border.color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.08)
+            border.width: 0
+        }
+
+        contentItem: Item {
+            Column {
+                id: musicMenuColumn
+                anchors.fill: parent
+                anchors.margins: Theme.spacingS
+                spacing: 2
+
+                Repeater {
+                    model: [
+                        {
+                            icon: "photo_size_select_small",
+                            label: I18n.tr("Small"),
+                            sizeValue: 0
+                        },
+                        {
+                            icon: "photo_size_select_actual",
+                            label: I18n.tr("Medium"),
+                            sizeValue: 1
+                        },
+                        {
+                            icon: "photo_size_select_large",
+                            label: I18n.tr("Large"),
+                            sizeValue: 2
+                        },
+                        {
+                            icon: "fit_screen",
+                            label: I18n.tr("Largest"),
+                            sizeValue: 3
+                        }
+                    ]
+
+                    delegate: Rectangle {
+                        required property var modelData
+                        required property int index
+
+                        function isSelected() {
+                            var wd = musicContextMenu.widgetData;
+                            var currentSize = wd?.mediaSize ?? SettingsData.mediaSize;
+                            return currentSize === modelData.sizeValue;
+                        }
+
+                        width: musicMenuColumn.width
+                        height: Math.max(18, Theme.fontSizeSmall) + Theme.spacingM * 2
+                        radius: Theme.cornerRadius
+                        color: musicOptionArea.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : "transparent"
+
+                        Row {
+                            anchors.left: parent.left
+                            anchors.leftMargin: Theme.spacingS
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: Theme.spacingS
+
+                            DankIcon {
+                                name: modelData.icon
+                                size: 18
+                                color: isSelected() ? Theme.primary : Theme.surfaceText
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            StyledText {
+                                text: modelData.label
+                                font.pixelSize: Theme.fontSizeSmall
+                                font.weight: isSelected() ? Font.Medium : Font.Normal
+                                color: isSelected() ? Theme.primary : Theme.surfaceText
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        DankIcon {
+                            anchors.right: parent.right
+                            anchors.rightMargin: Theme.spacingS
+                            anchors.verticalCenter: parent.verticalCenter
+                            name: "check"
+                            size: 16
+                            color: Theme.primary
+                            visible: isSelected()
+                        }
+
+                        MouseArea {
+                            id: musicOptionArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                root.compactModeChanged("music", modelData.sizeValue);
+                                musicContextMenu.close();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Popup {
+        id: overflowContextMenu
+
+        property var widgetData: null
+        property string sectionId: ""
+        property int widgetIndex: -1
+
+        // Dynamically get current widget data from the items list
+        readonly property var currentWidgetData: (widgetIndex >= 0 && widgetIndex < root.items.length) ? root.items[widgetIndex] : widgetData
+
+        width: 280
+        height: overflowMenuColumn.implicitHeight + Theme.spacingS * 2
+        padding: 0
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        background: Rectangle {
+            color: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
+            radius: Theme.cornerRadius
+            border.color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.08)
+            border.width: 0
+        }
+
+        contentItem: Item {
+            Column {
+                id: overflowMenuColumn
+                anchors.fill: parent
+                anchors.margins: Theme.spacingS
+                spacing: Theme.spacingS
+
+                StyledText {
+                    text: I18n.tr("Overflow")
+                    font.pixelSize: Theme.fontSizeSmall
+                    font.weight: Font.Medium
+                    color: Theme.surfaceText
+                    leftPadding: Theme.spacingS
+                }
+
+                Column {
+                    width: parent.width
+                    spacing: Theme.spacingXS
+
+                    Row {
+                        width: parent.width
+                        spacing: Theme.spacingS
+
+                        StyledText {
+                            text: I18n.tr("Max Pinned Apps")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceText
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 120
+                        }
+
+                        Row {
+                            spacing: Theme.spacingXS
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            DankActionButton {
+                                buttonSize: 24
+                                iconName: "remove"
+                                iconSize: 14
+                                iconColor: Theme.outline
+                                onClicked: {
+                                    var current = overflowContextMenu.currentWidgetData?.barMaxVisibleApps ?? SettingsData.barMaxVisibleApps;
+                                    var newVal = Math.max(0, current - 1);
+                                    root.overflowSettingChanged(overflowContextMenu.sectionId, overflowContextMenu.widgetIndex, "barMaxVisibleApps", newVal);
+                                }
+                            }
+
+                            StyledText {
+                                text: {
+                                    var val = overflowContextMenu.currentWidgetData?.barMaxVisibleApps ?? SettingsData.barMaxVisibleApps;
+                                    return val === 0 ? I18n.tr("All") : val;
+                                }
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceText
+                                anchors.verticalCenter: parent.verticalCenter
+                                horizontalAlignment: Text.AlignHCenter
+                                width: 30
+                            }
+
+                            DankActionButton {
+                                buttonSize: 24
+                                iconName: "add"
+                                iconSize: 14
+                                iconColor: Theme.outline
+                                onClicked: {
+                                    var current = overflowContextMenu.currentWidgetData?.barMaxVisibleApps ?? SettingsData.barMaxVisibleApps;
+                                    var newVal = current + 1;
+                                    root.overflowSettingChanged(overflowContextMenu.sectionId, overflowContextMenu.widgetIndex, "barMaxVisibleApps", newVal);
+                                }
+                            }
+                        }
+                    }
+
+                    Row {
+                        width: parent.width
+                        spacing: Theme.spacingS
+
+                        StyledText {
+                            text: I18n.tr("Max Running Apps")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceText
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 120
+                        }
+
+                        Row {
+                            spacing: Theme.spacingXS
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            DankActionButton {
+                                buttonSize: 24
+                                iconName: "remove"
+                                iconSize: 14
+                                iconColor: Theme.outline
+                                onClicked: {
+                                    var current = overflowContextMenu.currentWidgetData?.barMaxVisibleRunningApps ?? SettingsData.barMaxVisibleRunningApps;
+                                    var newVal = Math.max(0, current - 1);
+                                    root.overflowSettingChanged(overflowContextMenu.sectionId, overflowContextMenu.widgetIndex, "barMaxVisibleRunningApps", newVal);
+                                }
+                            }
+
+                            StyledText {
+                                text: {
+                                    var val = overflowContextMenu.currentWidgetData?.barMaxVisibleRunningApps ?? SettingsData.barMaxVisibleRunningApps;
+                                    return val === 0 ? I18n.tr("All") : val;
+                                }
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceText
+                                anchors.verticalCenter: parent.verticalCenter
+                                horizontalAlignment: Text.AlignHCenter
+                                width: 30
+                            }
+
+                            DankActionButton {
+                                buttonSize: 24
+                                iconName: "add"
+                                iconSize: 14
+                                iconColor: Theme.outline
+                                onClicked: {
+                                    var current = overflowContextMenu.currentWidgetData?.barMaxVisibleRunningApps ?? SettingsData.barMaxVisibleRunningApps;
+                                    var newVal = current + 1;
+                                    root.overflowSettingChanged(overflowContextMenu.sectionId, overflowContextMenu.widgetIndex, "barMaxVisibleRunningApps", newVal);
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: parent.width
+                        height: 1
+                        color: Theme.outline
+                        opacity: 0.15
+                    }
+
+                    Rectangle {
+                        width: parent.width
+                        height: 32
+                        radius: Theme.cornerRadius
+                        color: badgeToggleArea.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : "transparent"
+
+                        Row {
+                            anchors.left: parent.left
+                            anchors.leftMargin: Theme.spacingS
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: Theme.spacingS
+
+                            DankIcon {
+                                name: "notifications"
+                                size: 16
+                                color: Theme.surfaceText
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            StyledText {
+                                text: I18n.tr("Show Badge")
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceText
+                                font.weight: Font.Normal
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        DankToggle {
+                            id: badgeToggle
+                            anchors.right: parent.right
+                            anchors.rightMargin: Theme.spacingS
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 40
+                            height: 20
+                            checked: overflowContextMenu.currentWidgetData?.barShowOverflowBadge ?? SettingsData.barShowOverflowBadge
+                            onToggled: {
+                                root.overflowSettingChanged(overflowContextMenu.sectionId, overflowContextMenu.widgetIndex, "barShowOverflowBadge", toggled);
+                            }
+                        }
+
+                        MouseArea {
+                            id: badgeToggleArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onPressed: {
+                                badgeToggle.checked = !badgeToggle.checked;
+                                root.overflowSettingChanged(overflowContextMenu.sectionId, overflowContextMenu.widgetIndex, "barShowOverflowBadge", badgeToggle.checked);
                             }
                         }
                     }

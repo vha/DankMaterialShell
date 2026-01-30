@@ -252,6 +252,13 @@ Rectangle {
                     "icon": "content_paste",
                     "tabIndex": 23,
                     "clipboardOnly": true
+                },
+                {
+                    "id": "window_rules",
+                    "text": I18n.tr("Window Rules"),
+                    "icon": "select_window",
+                    "tabIndex": 28,
+                    "niriOnly": true
                 }
             ]
         },
@@ -303,6 +310,8 @@ Rectangle {
         if (item.soundsOnly && !AudioService.soundsAvailable)
             return false;
         if (item.hyprlandNiriOnly && !CompositorService.isNiri && !CompositorService.isHyprland)
+            return false;
+        if (item.niriOnly && !CompositorService.isNiri)
             return false;
         if (item.clipboardOnly && (!DMSService.isConnected || DMSService.apiVersion < 23))
             return false;
@@ -483,10 +492,51 @@ Rectangle {
         return -1;
     }
 
-    width: 270
+    property real __maxTextWidth: Math.max(__m1.advanceWidth, __m2.advanceWidth, __m3.advanceWidth, __m4.advanceWidth, __m5.advanceWidth, __m6.advanceWidth)
+    property real __calculatedWidth: Math.max(270, __maxTextWidth + Theme.iconSize * 2 + Theme.spacingM * 4 + Theme.spacingS * 2)
+
+    implicitWidth: __calculatedWidth
+    width: __calculatedWidth
     height: parent.height
     color: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
     radius: Theme.cornerRadius
+
+    StyledTextMetrics {
+        id: __m1
+        font.pixelSize: Theme.fontSizeMedium
+        font.weight: Font.Medium
+        text: I18n.tr("Workspaces & Widgets")
+    }
+    StyledTextMetrics {
+        id: __m2
+        font.pixelSize: Theme.fontSizeMedium
+        font.weight: Font.Medium
+        text: I18n.tr("Typography & Motion")
+    }
+    StyledTextMetrics {
+        id: __m3
+        font.pixelSize: Theme.fontSizeMedium
+        font.weight: Font.Medium
+        text: I18n.tr("Keyboard Shortcuts")
+    }
+    StyledTextMetrics {
+        id: __m4
+        font.pixelSize: Theme.fontSizeMedium
+        font.weight: Font.Medium
+        text: I18n.tr("Power & Security")
+    }
+    StyledTextMetrics {
+        id: __m5
+        font.pixelSize: Theme.fontSizeMedium
+        font.weight: Font.Medium
+        text: I18n.tr("Dock & Launcher")
+    }
+    StyledTextMetrics {
+        id: __m6
+        font.pixelSize: Theme.fontSizeMedium
+        font.weight: Font.Medium
+        text: I18n.tr("Personalization")
+    }
 
     function selectSearchResult(result) {
         if (!result)
@@ -539,7 +589,7 @@ Rectangle {
 
             Item {
                 width: parent.width - parent.leftPadding - parent.rightPadding
-                height: Theme.spacingS
+                height: Theme.spacingXS
             }
 
             DankTextField {
@@ -717,7 +767,7 @@ Rectangle {
 
             Item {
                 width: parent.width - parent.leftPadding - parent.rightPadding
-                height: Theme.spacingS
+                height: Theme.spacingXS
                 visible: !root.searchActive
             }
 
@@ -750,7 +800,7 @@ Rectangle {
                     Rectangle {
                         id: categoryRow
                         width: parent.width
-                        height: 40
+                        height: Math.max(Theme.iconSize, Theme.fontSizeMedium) + Theme.spacingS * 2
                         radius: Theme.cornerRadius
                         visible: categoryDelegate.modelData.separator !== true
 
@@ -769,10 +819,9 @@ Rectangle {
                         }
 
                         Row {
+                            id: categoryRowContent
                             anchors.left: parent.left
                             anchors.leftMargin: Theme.spacingM
-                            anchors.right: parent.right
-                            anchors.rightMargin: Theme.spacingM
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: Theme.spacingM
 
@@ -789,19 +838,18 @@ Rectangle {
                                 font.weight: (categoryRow.isActive || root.isChildActive(categoryDelegate.modelData)) ? Font.Medium : Font.Normal
                                 color: categoryRow.isActive ? Theme.primaryText : Theme.surfaceText
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: parent.width - Theme.iconSize - Theme.spacingM - (categoryDelegate.modelData.children ? expandIcon.width + Theme.spacingS : 0)
-                                elide: Text.ElideRight
-                                horizontalAlignment: Text.AlignLeft
                             }
+                        }
 
-                            DankIcon {
-                                id: expandIcon
-                                name: root.isCategoryExpanded(categoryDelegate.modelData.id) ? "expand_less" : "expand_more"
-                                size: Theme.iconSize - 4
-                                color: Theme.surfaceVariantText
-                                anchors.verticalCenter: parent.verticalCenter
-                                visible: categoryDelegate.modelData.children !== undefined && categoryDelegate.modelData.children.length > 0
-                            }
+                        DankIcon {
+                            id: expandIcon
+                            name: root.isCategoryExpanded(categoryDelegate.modelData.id) ? "expand_less" : "expand_more"
+                            size: Theme.iconSize - 4
+                            color: Theme.surfaceVariantText
+                            anchors.right: parent.right
+                            anchors.rightMargin: Theme.spacingM
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: categoryDelegate.modelData.children !== undefined && categoryDelegate.modelData.children.length > 0
                         }
 
                         MouseArea {
@@ -847,7 +895,7 @@ Rectangle {
                                 readonly property bool isHighlighted: root.keyboardHighlightIndex === modelData.tabIndex
 
                                 width: childrenColumn.width
-                                height: 36
+                                height: Math.max(Theme.iconSize - 4, Theme.fontSizeSmall + 1) + Theme.spacingS * 2
                                 radius: Theme.cornerRadius
                                 visible: root.isItemVisible(modelData)
                                 color: {
@@ -861,6 +909,7 @@ Rectangle {
                                 }
 
                                 Row {
+                                    id: childRowContent
                                     anchors.left: parent.left
                                     anchors.leftMargin: Theme.spacingL + Theme.spacingM
                                     anchors.verticalCenter: parent.verticalCenter

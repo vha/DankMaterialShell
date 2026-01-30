@@ -10,6 +10,7 @@ import (
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/brightness"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/clipboard"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/cups"
+	serverDbus "github.com/AvengeMedia/DankMaterialShell/core/internal/server/dbus"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/dwl"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/evdev"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/extworkspace"
@@ -18,6 +19,7 @@ import (
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/network"
 	serverPlugins "github.com/AvengeMedia/DankMaterialShell/core/internal/server/plugins"
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/thememode"
 	serverThemes "github.com/AvengeMedia/DankMaterialShell/core/internal/server/themes"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wayland"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wlroutput"
@@ -40,6 +42,15 @@ func RouteRequest(conn net.Conn, req models.Request) {
 
 	if strings.HasPrefix(req.Method, "themes.") {
 		serverThemes.HandleRequest(conn, req)
+		return
+	}
+
+	if strings.HasPrefix(req.Method, "theme.auto.") {
+		if themeModeManager == nil {
+			models.RespondError(conn, req.ID, "theme mode manager not initialized")
+			return
+		}
+		thememode.HandleRequest(conn, req, themeModeManager)
 		return
 	}
 
@@ -151,6 +162,15 @@ func RouteRequest(conn net.Conn, req models.Request) {
 			return
 		}
 		evdev.HandleRequest(conn, req, evdevManager)
+		return
+	}
+
+	if strings.HasPrefix(req.Method, "dbus.") {
+		if dbusManager == nil {
+			models.RespondError(conn, req.ID, "dbus manager not initialized")
+			return
+		}
+		serverDbus.HandleRequest(conn, req, dbusManager, dbusClientID)
 		return
 	}
 

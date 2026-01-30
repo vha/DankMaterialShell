@@ -19,6 +19,8 @@ DankModal {
 
     property int totalCount: 0
     property var clipboardEntries: []
+    property var pinnedEntries: []
+    property int pinnedCount: 0
     property string searchText: ""
     property int selectedIndex: 0
     property bool keyboardNavigationActive: false
@@ -27,16 +29,7 @@ DankModal {
     property int activeImageLoads: 0
     readonly property int maxConcurrentLoads: 3
     readonly property bool clipboardAvailable: DMSService.isConnected && (DMSService.capabilities.length === 0 || DMSService.capabilities.includes("clipboard"))
-    property bool wtypeAvailable: false
-
-    Process {
-        id: wtypeCheck
-        command: ["which", "wtype"]
-        running: true
-        onExited: exitCode => {
-            clipboardHistoryModal.wtypeAvailable = (exitCode === 0);
-        }
-    }
+    readonly property bool wtypeAvailable: SessionService.wtypeAvailable
 
     Process {
         id: wtypeProcess
@@ -74,22 +67,36 @@ DankModal {
 
     function updateFilteredModel() {
         const query = searchText.trim();
+        let filtered = [];
+
         if (query.length === 0) {
-            clipboardEntries = internalEntries;
+            filtered = internalEntries;
         } else {
             const lowerQuery = query.toLowerCase();
-            clipboardEntries = internalEntries.filter(entry => entry.preview.toLowerCase().includes(lowerQuery));
+            filtered = internalEntries.filter(entry => entry.preview.toLowerCase().includes(lowerQuery));
         }
+
+        // Sort: pinned first, then by ID descending
+        filtered.sort((a, b) => {
+            if (a.pinned !== b.pinned)
+                return b.pinned ? 1 : -1;
+            return b.id - a.id;
+        });
+
+        clipboardEntries = filtered;
+        unpinnedEntries = filtered.filter(e => !e.pinned);
         totalCount = clipboardEntries.length;
-        if (clipboardEntries.length === 0) {
+        if (unpinnedEntries.length === 0) {
             keyboardNavigationActive = false;
             selectedIndex = 0;
-        } else if (selectedIndex >= clipboardEntries.length) {
-            selectedIndex = clipboardEntries.length - 1;
+        } else if (selectedIndex >= unpinnedEntries.length) {
+            selectedIndex = unpinnedEntries.length - 1;
         }
     }
 
     property var internalEntries: []
+    property var unpinnedEntries: []
+    property string activeTab: "recents"
 
     function toggle() {
         if (shouldBeVisible) {
@@ -135,6 +142,10 @@ DankModal {
                 return;
             }
             internalEntries = response.result || [];
+
+            pinnedEntries = internalEntries.filter(e => e.pinned);
+            pinnedCount = pinnedEntries.length;
+
             updateFilteredModel();
         });
     }
@@ -171,15 +182,72 @@ DankModal {
         });
     }
 
+    function deletePinnedEntry(entry) {
+        clearConfirmDialog.show(I18n.tr("Delete Saved Item?"), I18n.tr("This will permanently remove this saved clipboard item. This action cannot be undone."), function () {
+            DMSService.sendRequest("clipboard.deleteEntry", {
+                "id": entry.id
+            }, function (response) {
+                if (response.error) {
+                    console.warn("ClipboardHistoryModal: Failed to delete entry:", response.error);
+                    return;
+                }
+                internalEntries = internalEntries.filter(e => e.id !== entry.id);
+                updateFilteredModel();
+                ToastService.showInfo(I18n.tr("Saved item deleted"));
+            });
+        }, function () {});
+    }
+
+    function pinEntry(entry) {
+        DMSService.sendRequest("clipboard.getPinnedCount", null, function (countResponse) {
+            if (countResponse.error) {
+                ToastService.showError(I18n.tr("Failed to check pin limit"));
+                return;
+            }
+
+            const maxPinned = 25; // TODO: Get from config
+            if (countResponse.result.count >= maxPinned) {
+                ToastService.showError(I18n.tr("Maximum pinned entries reached") + " (" + maxPinned + ")");
+                return;
+            }
+
+            DMSService.sendRequest("clipboard.pinEntry", {
+                "id": entry.id
+            }, function (response) {
+                if (response.error) {
+                    ToastService.showError(I18n.tr("Failed to pin entry"));
+                    return;
+                }
+                ToastService.showInfo(I18n.tr("Entry pinned"));
+                refreshClipboard();
+            });
+        });
+    }
+
+    function unpinEntry(entry) {
+        DMSService.sendRequest("clipboard.unpinEntry", {
+            "id": entry.id
+        }, function (response) {
+            if (response.error) {
+                ToastService.showError(I18n.tr("Failed to unpin entry"));
+                return;
+            }
+            ToastService.showInfo(I18n.tr("Entry unpinned"));
+            refreshClipboard();
+        });
+    }
+
     function clearAll() {
+        const hasPinned = pinnedCount > 0;
         DMSService.sendRequest("clipboard.clearHistory", null, function (response) {
             if (response.error) {
                 console.warn("ClipboardHistoryModal: Failed to clear history:", response.error);
                 return;
             }
-            internalEntries = [];
-            clipboardEntries = [];
-            totalCount = 0;
+            refreshClipboard();
+            if (hasPinned) {
+                ToastService.showInfo(I18n.tr("History cleared. %1 pinned entries kept.").arg(pinnedCount));
+            }
         });
     }
 
@@ -216,6 +284,20 @@ DankModal {
         modal: clipboardHistoryModal
     }
 
+    Connections {
+        target: DMSService
+        function onClipboardStateUpdate(data) {
+            if (!clipboardHistoryModal.shouldBeVisible) {
+                return;
+            }
+            const newHistory = data.history || [];
+            internalEntries = newHistory;
+            pinnedEntries = newHistory.filter(e => e.pinned);
+            pinnedCount = pinnedEntries.length;
+            updateFilteredModel();
+        }
+    }
+
     ConfirmModal {
         id: clearConfirmDialog
         confirmButtonText: I18n.tr("Clear All")
@@ -223,13 +305,18 @@ DankModal {
         onVisibleChanged: {
             if (visible) {
                 clipboardHistoryModal.shouldHaveFocus = false;
-            } else if (clipboardHistoryModal.shouldBeVisible) {
+                return;
+            }
+            Qt.callLater(function () {
+                if (!clipboardHistoryModal.shouldBeVisible) {
+                    return;
+                }
                 clipboardHistoryModal.shouldHaveFocus = true;
                 clipboardHistoryModal.modalFocusScope.forceActiveFocus();
                 if (clipboardHistoryModal.contentLoader.item?.searchField) {
                     clipboardHistoryModal.contentLoader.item.searchField.forceActiveFocus();
                 }
-            }
+            });
         }
     }
 

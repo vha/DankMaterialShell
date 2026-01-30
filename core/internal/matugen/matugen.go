@@ -62,6 +62,7 @@ var templateRegistry = []TemplateDef{
 	{ID: "dgop", Commands: []string{"dgop"}, ConfigFile: "dgop.toml"},
 	{ID: "kcolorscheme", ConfigFile: "kcolorscheme.toml", RunUnconditionally: true},
 	{ID: "vscode", Kind: TemplateKindVSCode},
+	{ID: "emacs", Commands: []string{"emacs"}, ConfigFile: "emacs.toml"},
 }
 
 func (c *ColorMode) GTKTheme() string {
@@ -147,7 +148,7 @@ func Run(opts Options) error {
 		opts.AppChecker = utils.DefaultAppChecker{}
 	}
 
-	if err := os.MkdirAll(opts.StateDir, 0755); err != nil {
+	if err := os.MkdirAll(opts.StateDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create state dir: %w", err)
 	}
 
@@ -413,7 +414,7 @@ func appendTerminalConfig(opts *Options, cfgFile *os.File, tmpDir string, checkC
 
 		modified := strings.ReplaceAll(string(origData), ".default.", ".dark.")
 		tmpPath := filepath.Join(tmpDir, templateName)
-		if err := os.WriteFile(tmpPath, []byte(modified), 0644); err != nil {
+		if err := os.WriteFile(tmpPath, []byte(modified), 0o644); err != nil {
 			continue
 		}
 

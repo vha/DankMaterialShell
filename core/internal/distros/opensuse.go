@@ -108,7 +108,6 @@ func (o *OpenSUSEDistribution) GetPackageMappingWithVariants(wm deps.WindowManag
 	packages := map[string]PackageMapping{
 		// Standard zypper packages
 		"git":                    {Name: "git", Repository: RepoTypeSystem},
-		"ghostty":                {Name: "ghostty", Repository: RepoTypeSystem},
 		"kitty":                  {Name: "kitty", Repository: RepoTypeSystem},
 		"alacritty":              {Name: "alacritty", Repository: RepoTypeSystem},
 		"xdg-desktop-portal-gtk": {Name: "xdg-desktop-portal-gtk", Repository: RepoTypeSystem},
@@ -117,6 +116,7 @@ func (o *OpenSUSEDistribution) GetPackageMappingWithVariants(wm deps.WindowManag
 		// DMS packages from OBS
 		"dms (DankMaterialShell)": o.getDmsMapping(variants["dms (DankMaterialShell)"]),
 		"quickshell":              o.getQuickshellMapping(variants["quickshell"]),
+		"ghostty":                 {Name: "ghostty", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
 		"matugen":                 {Name: "matugen", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
 		"dgop":                    {Name: "dgop", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
 	}
@@ -540,12 +540,12 @@ func (o *OpenSUSEDistribution) installQuickshell(ctx context.Context, variant de
 	}
 
 	cacheDir := filepath.Join(homeDir, ".cache", "dankinstall")
-	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create cache directory: %w", err)
 	}
 
 	tmpDir := filepath.Join(cacheDir, "quickshell-build")
-	if err := os.MkdirAll(tmpDir, 0755); err != nil {
+	if err := os.MkdirAll(tmpDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
 	defer os.RemoveAll(tmpDir)
@@ -576,7 +576,7 @@ func (o *OpenSUSEDistribution) installQuickshell(ctx context.Context, variant de
 	}
 
 	buildDir := tmpDir + "/build"
-	if err := os.MkdirAll(buildDir, 0755); err != nil {
+	if err := os.MkdirAll(buildDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create build directory: %w", err)
 	}
 

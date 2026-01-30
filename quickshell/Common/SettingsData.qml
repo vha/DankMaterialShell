@@ -79,6 +79,45 @@ Singleton {
         saveSettings();
     }
 
+    property var launcherPluginVisibility: ({})
+
+    function getPluginAllowWithoutTrigger(pluginId) {
+        if (!launcherPluginVisibility[pluginId])
+            return true;
+        return launcherPluginVisibility[pluginId].allowWithoutTrigger !== false;
+    }
+
+    function setPluginAllowWithoutTrigger(pluginId, allow) {
+        const updated = JSON.parse(JSON.stringify(launcherPluginVisibility));
+        if (!updated[pluginId])
+            updated[pluginId] = {};
+        updated[pluginId].allowWithoutTrigger = allow;
+        launcherPluginVisibility = updated;
+        saveSettings();
+    }
+
+    property var launcherPluginOrder: []
+    onLauncherPluginOrderChanged: saveSettings()
+
+    function setLauncherPluginOrder(order) {
+        launcherPluginOrder = order;
+    }
+
+    function getOrderedLauncherPlugins(allPlugins) {
+        if (!launcherPluginOrder || launcherPluginOrder.length === 0)
+            return allPlugins;
+        const orderMap = {};
+        for (let i = 0; i < launcherPluginOrder.length; i++)
+            orderMap[launcherPluginOrder[i]] = i;
+        return allPlugins.slice().sort((a, b) => {
+            const aOrder = orderMap[a.id] ?? 9999;
+            const bOrder = orderMap[b.id] ?? 9999;
+            if (aOrder !== bOrder)
+                return aOrder - bOrder;
+            return a.name.localeCompare(b.name);
+        });
+    }
+
     property alias dankBarLeftWidgetsModel: leftWidgetsModel
     property alias dankBarCenterWidgetsModel: centerWidgetsModel
     property alias dankBarRightWidgetsModel: rightWidgetsModel
@@ -94,6 +133,7 @@ Singleton {
     property real dockTransparency: 1
     property string widgetBackgroundColor: "sch"
     property string widgetColorMode: "default"
+    property string controlCenterTileColorMode: "primary"
     property real cornerRadius: 12
     property int niriLayoutGapsOverride: -1
     property int niriLayoutRadiusOverride: -1
@@ -107,7 +147,9 @@ Singleton {
 
     property bool use24HourClock: true
     property bool showSeconds: false
+    property bool padHours12Hour: false
     property bool useFahrenheit: false
+    property string windSpeedUnit: "kmh"
     property bool nightModeEnabled: false
     property int animationSpeed: SettingsData.AnimationSpeed.Short
     property int customAnimationDuration: 500
@@ -201,11 +243,13 @@ Singleton {
     property bool showWorkspaceApps: false
     property bool groupWorkspaceApps: true
     property int maxWorkspaceIcons: 3
+    property int workspaceAppIconSizeOffset: 0
     property bool workspaceFollowFocus: false
     property bool showOccupiedWorkspacesOnly: false
     property bool reverseScrolling: false
     property bool dwlShowAllTags: false
     property string workspaceColorMode: "default"
+    property string workspaceOccupiedColorMode: "none"
     property string workspaceUnfocusedColorMode: "default"
     property string workspaceUrgentColorMode: "default"
     property bool workspaceFocusedBorderEnabled: false
@@ -219,6 +263,9 @@ Singleton {
     property bool clockCompactMode: false
     property bool focusedWindowCompactMode: false
     property bool runningAppsCompactMode: true
+    property int barMaxVisibleApps: 0
+    property int barMaxVisibleRunningApps: 0
+    property bool barShowOverflowBadge: true
     property bool keyboardLayoutNameCompactMode: false
     property bool runningAppsCurrentWorkspace: false
     property bool runningAppsGroupByApp: false
@@ -232,20 +279,31 @@ Singleton {
     property string spotlightModalViewMode: "list"
     property string browserPickerViewMode: "grid"
     property var browserUsageHistory: ({})
+    property string appPickerViewMode: "grid"
+    property var filePickerUsageHistory: ({})
     property bool sortAppsAlphabetically: false
     property int appLauncherGridColumns: 4
     property bool spotlightCloseNiriOverview: true
+    property var spotlightSectionViewModes: ({})
+    onSpotlightSectionViewModesChanged: saveSettings()
+    property var appDrawerSectionViewModes: ({})
+    onAppDrawerSectionViewModesChanged: saveSettings()
     property bool niriOverviewOverlayEnabled: true
+    property string dankLauncherV2Size: "compact"
+    property bool dankLauncherV2BorderEnabled: false
+    property int dankLauncherV2BorderThickness: 2
+    property string dankLauncherV2BorderColor: "primary"
+    property bool dankLauncherV2ShowFooter: true
 
     property string _legacyWeatherLocation: "New York, NY"
     property string _legacyWeatherCoordinates: "40.7128,-74.0060"
+    property string _legacyVpnLastConnected: ""
     readonly property string weatherLocation: SessionData.weatherLocation
     readonly property string weatherCoordinates: SessionData.weatherCoordinates
     property bool useAutoLocation: false
     property bool weatherEnabled: true
 
     property string networkPreference: "auto"
-    property string vpnLastConnected: ""
 
     property string iconTheme: "System Default"
     property var availableIconThemes: ["System Default"]
@@ -363,9 +421,11 @@ Singleton {
     property bool matugenTemplateDgop: true
     property bool matugenTemplateKcolorscheme: true
     property bool matugenTemplateVscode: true
+    property bool matugenTemplateEmacs: true
 
     property bool showDock: false
     property bool dockAutoHide: false
+    property bool dockSmartAutoHide: false
     property bool dockGroupByApp: false
     property bool dockOpenOnOverview: false
     property int dockPosition: SettingsData.Position.Bottom
@@ -379,6 +439,16 @@ Singleton {
     property real dockBorderOpacity: 1.0
     property int dockBorderThickness: 1
     property bool dockIsolateDisplays: false
+    property bool dockLauncherEnabled: false
+    property string dockLauncherLogoMode: "apps"
+    property string dockLauncherLogoCustomPath: ""
+    property string dockLauncherLogoColorOverride: ""
+    property int dockLauncherLogoSizeOffset: 0
+    property real dockLauncherLogoBrightness: 0.5
+    property real dockLauncherLogoContrast: 1
+    property int dockMaxVisibleApps: 0
+    property int dockMaxVisibleRunningApps: 0
+    property bool dockShowOverflowBadge: true
 
     property bool notificationOverlayEnabled: false
     property int overviewRows: 2
@@ -393,6 +463,8 @@ Singleton {
     property bool lockScreenShowDate: true
     property bool lockScreenShowProfileImage: true
     property bool lockScreenShowPasswordField: true
+    property bool lockScreenShowMediaPlayer: true
+    property bool lockScreenPowerOffMonitorsOnLock: false
 
     property bool enableFprint: false
     property int maxFprintTries: 15
@@ -450,6 +522,11 @@ Singleton {
     property var showOnLastDisplay: ({})
     property var niriOutputSettings: ({})
     property var hyprlandOutputSettings: ({})
+    property var displayProfiles: ({})
+    property var activeDisplayProfile: ({})
+    property bool displayProfileAutoSelect: false
+    property bool displayShowDisconnected: false
+    property bool displaySnapToEdge: true
 
     property var barConfigs: [
         {
@@ -495,7 +572,8 @@ Singleton {
             "shadowIntensity": 0,
             "shadowOpacity": 60,
             "shadowColorMode": "text",
-            "shadowCustomColor": "#000000"
+            "shadowCustomColor": "#000000",
+            "clickThrough": false
         }
     ]
 
@@ -940,7 +1018,6 @@ Singleton {
         fi
         done
 
-        rm -rf ~/.cache/icon-cache ~/.cache/thumbnails 2>/dev/null || true
         pkill -HUP -f 'gtk' 2>/dev/null || true`;
 
         Quickshell.execDetached(["sh", "-lc", configScript]);
@@ -972,8 +1049,7 @@ Singleton {
         fi
         }
         update_qt_icon_theme ${_configDir}/qt5ct/qt5ct.conf '${qtThemeNameEscaped}'
-        update_qt_icon_theme ${_configDir}/qt6ct/qt6ct.conf '${qtThemeNameEscaped}'
-        rm -rf '${home}'/.cache/icon-cache '${home}'/.cache/thumbnails 2>/dev/null || true`;
+        update_qt_icon_theme ${_configDir}/qt6ct/qt6ct.conf '${qtThemeNameEscaped}'`;
 
         Quickshell.execDetached(["sh", "-lc", script]);
     }
@@ -1016,11 +1092,15 @@ Singleton {
                 _legacyWeatherLocation = obj.weatherLocation;
             if (obj?.weatherCoordinates !== undefined)
                 _legacyWeatherCoordinates = obj.weatherCoordinates;
+            if (obj?.vpnLastConnected !== undefined && obj.vpnLastConnected !== "") {
+                _legacyVpnLastConnected = obj.vpnLastConnected;
+                SessionData.vpnLastConnected = _legacyVpnLastConnected;
+                SessionData.saveSettings();
+            }
 
             _loadedSettingsSnapshot = JSON.stringify(Store.toJson(root));
             _hasLoaded = true;
             applyStoredTheme();
-            applyStoredIconTheme();
             updateCompositorCursor();
             Processes.detectQtTools();
 
@@ -1031,7 +1111,6 @@ Singleton {
             console.error("SettingsData: Failed to parse settings.json - file will not be overwritten. Error:", msg);
             Qt.callLater(() => ToastService.showError(I18n.tr("Failed to parse settings.json"), msg));
             applyStoredTheme();
-            applyStoredIconTheme();
         } finally {
             _loading = false;
         }
@@ -1193,11 +1272,11 @@ Singleton {
     }
 
     function getEffectiveTimeFormat() {
-        if (use24HourClock) {
+        if (use24HourClock)
             return showSeconds ? "hh:mm:ss" : "hh:mm";
-        } else {
-            return showSeconds ? "h:mm:ss AP" : "h:mm AP";
-        }
+        if (padHours12Hour)
+            return showSeconds ? "hh:mm:ss AP" : "hh:mm AP";
+        return showSeconds ? "h:mm:ss AP" : "h:mm AP";
     }
 
     function getEffectiveClockDateFormat() {
@@ -2185,6 +2264,39 @@ Singleton {
         saveSettings();
     }
 
+    function getDisplayProfiles(compositor) {
+        return displayProfiles[compositor] || {};
+    }
+
+    function setDisplayProfile(compositor, profileId, data) {
+        const updated = JSON.parse(JSON.stringify(displayProfiles));
+        if (!updated[compositor])
+            updated[compositor] = {};
+        updated[compositor][profileId] = data;
+        displayProfiles = updated;
+        saveSettings();
+    }
+
+    function removeDisplayProfile(compositor, profileId) {
+        if (!displayProfiles[compositor] || !displayProfiles[compositor][profileId])
+            return;
+        const updated = JSON.parse(JSON.stringify(displayProfiles));
+        delete updated[compositor][profileId];
+        displayProfiles = updated;
+        saveSettings();
+    }
+
+    function getActiveDisplayProfile(compositor) {
+        return activeDisplayProfile[compositor] || "";
+    }
+
+    function setActiveDisplayProfile(compositor, profileId) {
+        const updated = JSON.parse(JSON.stringify(activeDisplayProfile));
+        updated[compositor] = profileId;
+        activeDisplayProfile = updated;
+        saveSettings();
+    }
+
     ListModel {
         id: leftWidgetsModel
     }
@@ -2249,11 +2361,15 @@ Singleton {
                     _legacyWeatherLocation = obj.weatherLocation;
                 if (obj.weatherCoordinates !== undefined)
                     _legacyWeatherCoordinates = obj.weatherCoordinates;
+                if (obj.vpnLastConnected !== undefined && obj.vpnLastConnected !== "") {
+                    _legacyVpnLastConnected = obj.vpnLastConnected;
+                    SessionData.vpnLastConnected = _legacyVpnLastConnected;
+                    SessionData.saveSettings();
+                }
 
                 _loadedSettingsSnapshot = JSON.stringify(Store.toJson(root));
                 _hasLoaded = true;
                 applyStoredTheme();
-                applyStoredIconTheme();
                 updateCompositorCursor();
             } catch (e) {
                 _parseError = true;

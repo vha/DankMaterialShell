@@ -20,6 +20,7 @@ import (
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/brightness"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/clipboard"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/cups"
+	serverDbus "github.com/AvengeMedia/DankMaterialShell/core/internal/server/dbus"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/dwl"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/evdev"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/extworkspace"
@@ -27,6 +28,7 @@ import (
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/loginctl"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/network"
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/thememode"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wayland"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wlcontext"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wlroutput"
@@ -65,7 +67,11 @@ var brightnessManager *brightness.Manager
 var wlrOutputManager *wlroutput.Manager
 var evdevManager *evdev.Manager
 var clipboardManager *clipboard.Manager
+var dbusManager *serverDbus.Manager
 var wlContext *wlcontext.SharedContext
+var themeModeManager *thememode.Manager
+
+const dbusClientID = "dms-dbus-client"
 
 var capabilitySubscribers syncmap.Map[string, chan ServerInfo]
 var cupsSubscribers syncmap.Map[string, bool]
@@ -363,6 +369,27 @@ func InitializeClipboardManager() error {
 	return nil
 }
 
+func InitializeDbusManager() error {
+	manager, err := serverDbus.NewManager()
+	if err != nil {
+		log.Warnf("Failed to initialize dbus manager: %v", err)
+		return err
+	}
+
+	dbusManager = manager
+
+	log.Info("DBus manager initialized")
+	return nil
+}
+
+func InitializeThemeModeManager() error {
+	manager := thememode.NewManager()
+	themeModeManager = manager
+
+	log.Info("Theme mode automation manager initialized")
+	return nil
+}
+
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
@@ -440,6 +467,14 @@ func getCapabilities() Capabilities {
 		caps = append(caps, "clipboard")
 	}
 
+	if themeModeManager != nil {
+		caps = append(caps, "theme.auto")
+	}
+
+	if dbusManager != nil {
+		caps = append(caps, "dbus")
+	}
+
 	return Capabilities{Capabilities: caps}
 }
 
@@ -496,6 +531,14 @@ func getServerInfo() ServerInfo {
 
 	if clipboardManager != nil {
 		caps = append(caps, "clipboard")
+	}
+
+	if themeModeManager != nil {
+		caps = append(caps, "theme.auto")
+	}
+
+	if dbusManager != nil {
+		caps = append(caps, "dbus")
 	}
 
 	return ServerInfo{
@@ -756,6 +799,38 @@ func handleSubscribe(conn net.Conn, req models.Request) {
 					}
 					select {
 					case eventChan <- ServiceEvent{Service: "gamma", Data: state}:
+					case <-stopChan:
+						return
+					}
+				case <-stopChan:
+					return
+				}
+			}
+		}()
+	}
+
+	if shouldSubscribe("theme.auto") && themeModeManager != nil {
+		wg.Add(1)
+		themeAutoChan := themeModeManager.Subscribe(clientID + "-theme-auto")
+		go func() {
+			defer wg.Done()
+			defer themeModeManager.Unsubscribe(clientID + "-theme-auto")
+
+			initialState := themeModeManager.GetState()
+			select {
+			case eventChan <- ServiceEvent{Service: "theme.auto", Data: initialState}:
+			case <-stopChan:
+				return
+			}
+
+			for {
+				select {
+				case state, ok := <-themeAutoChan:
+					if !ok {
+						return
+					}
+					select {
+					case eventChan <- ServiceEvent{Service: "theme.auto", Data: state}:
 					case <-stopChan:
 						return
 					}
@@ -1133,6 +1208,31 @@ func handleSubscribe(conn net.Conn, req models.Request) {
 		}()
 	}
 
+	if shouldSubscribe("dbus") && dbusManager != nil {
+		wg.Add(1)
+		dbusChan := dbusManager.SubscribeSignals(dbusClientID)
+		go func() {
+			defer wg.Done()
+			defer dbusManager.UnsubscribeSignals(dbusClientID)
+
+			for {
+				select {
+				case event, ok := <-dbusChan:
+					if !ok {
+						return
+					}
+					select {
+					case eventChan <- ServiceEvent{Service: "dbus", Data: event}:
+					case <-stopChan:
+						return
+					}
+				case <-stopChan:
+					return
+				}
+			}
+		}()
+	}
+
 	go func() {
 		wg.Wait()
 		close(eventChan)
@@ -1197,6 +1297,12 @@ func cleanupManagers() {
 	}
 	if clipboardManager != nil {
 		clipboardManager.Close()
+	}
+	if dbusManager != nil {
+		dbusManager.Close()
+	}
+	if themeModeManager != nil {
+		themeModeManager.Close()
 	}
 	if wlContext != nil {
 		wlContext.Close()
@@ -1293,6 +1399,15 @@ func Start(printDocs bool) error {
 		log.Info(" wayland.gamma.setGamma                - Set gamma value (params: gamma)")
 		log.Info(" wayland.gamma.setEnabled              - Enable/disable gamma control (params: enabled)")
 		log.Info(" wayland.gamma.subscribe               - Subscribe to gamma state changes (streaming)")
+		log.Info("Theme automation:")
+		log.Info(" theme.auto.getState                   - Get current theme automation state")
+		log.Info(" theme.auto.setEnabled                 - Enable/disable theme automation (params: enabled)")
+		log.Info(" theme.auto.setMode                    - Set automation mode (params: mode [time|location])")
+		log.Info(" theme.auto.setSchedule                - Set time schedule (params: startHour, startMinute, endHour, endMinute)")
+		log.Info(" theme.auto.setLocation                - Set location (params: latitude, longitude)")
+		log.Info(" theme.auto.setUseIPLocation           - Use IP location (params: use)")
+		log.Info(" theme.auto.trigger                    - Trigger immediate re-evaluation")
+		log.Info(" theme.auto.subscribe                  - Subscribe to theme automation state changes (streaming)")
 		log.Info("Bluetooth:")
 		log.Info(" bluetooth.getState                    - Get current bluetooth state")
 		log.Info(" bluetooth.startDiscovery              - Start device discovery")
@@ -1450,6 +1565,12 @@ func Start(printDocs bool) error {
 		log.Debugf("WlrOutput manager unavailable: %v", err)
 	}
 
+	if err := InitializeThemeModeManager(); err != nil {
+		log.Warnf("Theme mode manager unavailable: %v", err)
+	} else {
+		notifyCapabilityChange()
+	}
+
 	fatalErrChan := make(chan error, 1)
 	if wlrOutputManager != nil {
 		go func() {
@@ -1487,6 +1608,14 @@ func Start(printDocs bool) error {
 		if wlContext != nil {
 			wlContext.Start()
 			log.Info("Wayland event dispatcher started")
+		}
+	}()
+
+	go func() {
+		if err := InitializeDbusManager(); err != nil {
+			log.Warnf("DBus manager unavailable: %v", err)
+		} else {
+			notifyCapabilityChange()
 		}
 	}()
 

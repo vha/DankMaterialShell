@@ -42,6 +42,20 @@
     "comment": ""
   },
   {
+    "term": "%1 disconnected",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "%1 disconnected (hidden)",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "%1 display(s)",
     "translation": "",
     "context": "",
@@ -50,6 +64,13 @@
   },
   {
     "term": "%1 exists but is not included in config. Custom keybinds will not work until this is fixed.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "%1 exists but is not included. Window rules won't apply.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -136,6 +157,13 @@
     "term": "1 day",
     "translation": "",
     "context": "notification history retention option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "1 device connected",
+    "translation": "",
+    "context": "KDE Connect status single device",
     "reference": "",
     "comment": ""
   },
@@ -357,6 +385,13 @@
     "comment": ""
   },
   {
+    "term": "Accept",
+    "translation": "",
+    "context": "KDE Connect accept pairing button",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Accept Jobs",
     "translation": "",
     "context": "",
@@ -434,6 +469,13 @@
     "comment": ""
   },
   {
+    "term": "Active tile background and icon color",
+    "translation": "",
+    "context": "control center tile color setting description",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Active: %1",
     "translation": "",
     "context": "",
@@ -484,6 +526,13 @@
   },
   {
     "term": "Add Printer",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Add Title",
     "translation": "",
     "context": "",
     "reference": "",
@@ -609,6 +658,13 @@
     "comment": ""
   },
   {
+    "term": "Always hide the dock and reveal it when hovering near the dock area",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Always on icons",
     "translation": "",
     "context": "",
@@ -686,7 +742,21 @@
     "comment": ""
   },
   {
+    "term": "App Customizations",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "App ID Substitutions",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "App ID regex (e.g. ^firefox$)",
     "translation": "",
     "context": "",
     "reference": "",
@@ -710,6 +780,13 @@
     "term": "App Theming",
     "translation": "",
     "context": "greeter feature card title",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Appearance",
+    "translation": "",
+    "context": "launcher appearance settings",
     "reference": "",
     "comment": ""
   },
@@ -756,6 +833,20 @@
     "comment": ""
   },
   {
+    "term": "Apps",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Apps Dock",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Apps Icon",
     "translation": "",
     "context": "",
@@ -766,6 +857,20 @@
     "term": "Apps are ordered by usage frequency, then last used, then alphabetically.",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Apps with custom display name, icon, or launch options. Right-click an app and select 'Edit App' to customize.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Architecture",
+    "translation": "",
+    "context": "system info label",
     "reference": "",
     "comment": ""
   },
@@ -912,7 +1017,7 @@
   {
     "term": "Auto",
     "translation": "",
-    "context": "",
+    "context": "theme category option",
     "reference": "",
     "comment": ""
   },
@@ -1008,6 +1113,13 @@
     "comment": ""
   },
   {
+    "term": "Automatic Color Mode",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Automatic Control",
     "translation": "",
     "context": "",
@@ -1058,6 +1170,13 @@
   },
   {
     "term": "Automatically lock the screen when the system prepares to suspend",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Automation",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1148,6 +1267,20 @@
     "comment": ""
   },
   {
+    "term": "Balance power and performance",
+    "translation": "",
+    "context": "power profile description",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Balanced",
+    "translation": "",
+    "context": "power profile option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Balanced palette with focused accents (default).",
     "translation": "",
     "context": "",
@@ -1232,6 +1365,20 @@
     "comment": ""
   },
   {
+    "term": "Block Out",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Block Out From",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Block notifications",
     "translation": "",
     "context": "",
@@ -1255,7 +1402,7 @@
   {
     "term": "Bluetooth",
     "translation": "",
-    "context": "",
+    "context": "bluetooth status",
     "reference": "",
     "comment": ""
   },
@@ -1297,7 +1444,7 @@
   {
     "term": "Border",
     "translation": "",
-    "context": "",
+    "context": "launcher border option",
     "reference": "",
     "comment": ""
   },
@@ -1330,6 +1477,13 @@
     "comment": ""
   },
   {
+    "term": "Border with BG",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Bottom",
     "translation": "",
     "context": "",
@@ -1337,16 +1491,23 @@
     "comment": ""
   },
   {
+    "term": "Bottom Center",
+    "translation": "",
+    "context": "screen position option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Bottom Left",
     "translation": "",
-    "context": "",
+    "context": "screen position option",
     "reference": "",
     "comment": ""
   },
   {
     "term": "Bottom Right",
     "translation": "",
-    "context": "",
+    "context": "screen position option",
     "reference": "",
     "comment": ""
   },
@@ -1395,7 +1556,14 @@
   {
     "term": "Browse",
     "translation": "",
-    "context": "",
+    "context": "theme category option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Browse Files",
+    "translation": "",
+    "context": "KDE Connect browse tooltip",
     "reference": "",
     "comment": ""
   },
@@ -1410,6 +1578,13 @@
     "term": "Browse Themes",
     "translation": "",
     "context": "browse themes button | theme browser header | theme browser window title",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Browse or search plugins",
+    "translation": "",
+    "context": "",
     "reference": "",
     "comment": ""
   },
@@ -1485,6 +1660,20 @@
   },
   {
     "term": "CUPS not available",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Calc",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Calculator",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1575,6 +1764,20 @@
     "comment": ""
   },
   {
+    "term": "Change Song",
+    "translation": "",
+    "context": "media scroll wheel option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Change Volume",
+    "translation": "",
+    "context": "media scroll wheel option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Change bar appearance",
     "translation": "",
     "context": "",
@@ -1591,7 +1794,7 @@
   {
     "term": "Charging",
     "translation": "",
-    "context": "",
+    "context": "battery status",
     "reference": "",
     "comment": ""
   },
@@ -1604,6 +1807,13 @@
   },
   {
     "term": "Choose Color",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Choose Dock Launcher Logo Color",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1694,7 +1904,28 @@
     "comment": ""
   },
   {
+    "term": "Chroma Style",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Cipher",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Circle",
+    "translation": "",
+    "context": "dock indicator style option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Class regex (e.g. ^firefox$)",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1715,14 +1946,14 @@
     "comment": ""
   },
   {
-    "term": "Clear All History?",
+    "term": "Clear All Jobs",
     "translation": "",
     "context": "",
     "reference": "",
     "comment": ""
   },
   {
-    "term": "Clear All Jobs",
+    "term": "Clear History?",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1750,6 +1981,13 @@
     "comment": ""
   },
   {
+    "term": "Click 'Setup' to create %1 and add include to your compositor config.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Click 'Setup' to create cursor config and add include to your compositor config.",
     "translation": "",
     "context": "",
@@ -1758,6 +1996,13 @@
   },
   {
     "term": "Click 'Setup' to create the outputs config and add include to your compositor config.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Click + to add a rule for the focused window",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1799,6 +2044,20 @@
     "comment": ""
   },
   {
+    "term": "Clip",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Clip to Geometry",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Clipboard",
     "translation": "",
     "context": "",
@@ -1816,6 +2075,13 @@
     "term": "Clipboard Manager",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Clipboard sent",
+    "translation": "",
+    "context": "KDE Connect clipboard action | Phone Connect clipboard action",
     "reference": "",
     "comment": ""
   },
@@ -1855,7 +2121,21 @@
     "comment": ""
   },
   {
+    "term": "Close All Windows",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Close Overview on Launch",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Close Window",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1864,7 +2144,7 @@
   {
     "term": "Color",
     "translation": "",
-    "context": "",
+    "context": "border color",
     "reference": "",
     "comment": ""
   },
@@ -1932,9 +2212,30 @@
     "comment": ""
   },
   {
+    "term": "Color theme for syntax highlighting.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Color theme for syntax highlighting. %1 themes available.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Color theme from DMS registry",
     "translation": "",
     "context": "registry theme description",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Colorful",
+    "translation": "",
+    "context": "widget style option",
     "reference": "",
     "comment": ""
   },
@@ -1960,7 +2261,28 @@
     "comment": ""
   },
   {
+    "term": "Column Display",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Column Width",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Command",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Commands",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2010,6 +2332,13 @@
   },
   {
     "term": "Compositor Settings",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Compositor not supported",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2080,6 +2409,13 @@
   },
   {
     "term": "Configure icons for named workspaces. Icons take priority over numbers when both are enabled.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Configure match criteria and actions",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2158,7 +2494,14 @@
   {
     "term": "Connected",
     "translation": "",
-    "context": "",
+    "context": "KDE Connect connected status | network status",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Connected Device",
+    "translation": "",
+    "context": "bluetooth status",
     "reference": "",
     "comment": ""
   },
@@ -2184,6 +2527,20 @@
     "comment": ""
   },
   {
+    "term": "Content",
+    "translation": "",
+    "context": "matugen color scheme option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Content copied",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Contrast",
     "translation": "",
     "context": "",
@@ -2198,6 +2555,13 @@
     "comment": ""
   },
   {
+    "term": "Control Center Tile Color",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Control currently playing media",
     "translation": "",
     "context": "",
@@ -2208,6 +2572,13 @@
     "term": "Control what notification information is shown on the lock screen",
     "translation": "",
     "context": "lock screen notification privacy setting",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Control which plugins appear in 'All' mode without requiring a trigger prefix. Drag to reorder.",
+    "translation": "",
+    "context": "",
     "reference": "",
     "comment": ""
   },
@@ -2227,6 +2598,27 @@
   },
   {
     "term": "Cooldown",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Copied GIF",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Copied MP4",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Copied WebP",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2254,6 +2646,34 @@
     "comment": ""
   },
   {
+    "term": "Copy Content",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Copy Full Command",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Copy HTML",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Copy Name",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Copy PID",
     "translation": "",
     "context": "",
@@ -2261,7 +2681,14 @@
     "comment": ""
   },
   {
-    "term": "Copy Process Name",
+    "term": "Copy Text",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Copy path",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2303,6 +2730,13 @@
     "comment": ""
   },
   {
+    "term": "Create",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Create Dir",
     "translation": "",
     "context": "",
@@ -2311,6 +2745,20 @@
   },
   {
     "term": "Create Printer",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Create Window Rule",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Create rule for:",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2431,7 +2879,7 @@
   {
     "term": "Custom",
     "translation": "",
-    "context": "",
+    "context": "theme category option",
     "reference": "",
     "comment": ""
   },
@@ -2513,6 +2961,13 @@
     "comment": ""
   },
   {
+    "term": "Custom power profile",
+    "translation": "",
+    "context": "power profile description",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Custom theme loaded from JSON file",
     "translation": "",
     "context": "custom theme description",
@@ -2522,7 +2977,7 @@
   {
     "term": "Custom...",
     "translation": "",
-    "context": "",
+    "context": "date format option",
     "reference": "",
     "comment": ""
   },
@@ -2653,13 +3108,6 @@
     "comment": ""
   },
   {
-    "term": "DankSearch not available",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "DankShell & System Icons (requires restart)",
     "translation": "",
     "context": "",
@@ -2709,6 +3157,20 @@
     "comment": ""
   },
   {
+    "term": "Day Date",
+    "translation": "",
+    "context": "date format option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Day Month Date",
+    "translation": "",
+    "context": "date format option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Day Temperature",
     "translation": "",
     "context": "",
@@ -2732,7 +3194,7 @@
   {
     "term": "Default",
     "translation": "",
-    "context": "",
+    "context": "widget style option",
     "reference": "",
     "comment": ""
   },
@@ -2752,6 +3214,13 @@
   },
   {
     "term": "Defaults",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Define rules for window behavior. Saves to %1",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2780,6 +3249,13 @@
   },
   {
     "term": "Delete Printer",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Delete Saved Item?",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2865,7 +3341,14 @@
   {
     "term": "Device paired",
     "translation": "",
-    "context": "",
+    "context": "Phone Connect pairing action",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Device unpaired",
+    "translation": "",
+    "context": "KDE Connect unpair action | Phone Connect unpair action",
     "reference": "",
     "comment": ""
   },
@@ -2907,14 +3390,21 @@
   {
     "term": "Disabled",
     "translation": "",
-    "context": "lock screen notification mode option",
+    "context": "bluetooth status | lock screen notification mode option",
     "reference": "",
     "comment": ""
   },
   {
     "term": "Disabling WiFi...",
     "translation": "",
-    "context": "",
+    "context": "network status",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Disc",
+    "translation": "",
+    "context": "wallpaper transition option",
     "reference": "",
     "comment": ""
   },
@@ -2922,6 +3412,13 @@
     "term": "Discard",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Discharging",
+    "translation": "",
+    "context": "battery status",
     "reference": "",
     "comment": ""
   },
@@ -2954,6 +3451,13 @@
     "comment": ""
   },
   {
+    "term": "Disk I/O",
+    "translation": "",
+    "context": "disk io header in system monitor",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Disk Usage",
     "translation": "",
     "context": "",
@@ -2961,7 +3465,21 @@
     "comment": ""
   },
   {
+    "term": "Disks",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Dismiss",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Display",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2983,6 +3501,13 @@
   },
   {
     "term": "Display Name Format",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Display Profiles",
     "translation": "",
     "context": "",
     "reference": "",
@@ -3094,9 +3619,23 @@
     "comment": ""
   },
   {
+    "term": "Displays count when overflow is active",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Displays the active keyboard layout and allows switching",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Distribution",
+    "translation": "",
+    "context": "system info label",
     "reference": "",
     "comment": ""
   },
@@ -3123,13 +3662,6 @@
   },
   {
     "term": "Dock & Launcher",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Dock Position",
     "translation": "",
     "context": "",
     "reference": "",
@@ -3241,6 +3773,13 @@
     "comment": ""
   },
   {
+    "term": "Dynamic Properties",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Dynamic Theming",
     "translation": "",
     "context": "greeter feature card title",
@@ -3269,6 +3808,20 @@
     "comment": ""
   },
   {
+    "term": "Edit App",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Edit Window Rule",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Education",
     "translation": "",
     "context": "",
@@ -3278,7 +3831,7 @@
   {
     "term": "Empty",
     "translation": "",
-    "context": "",
+    "context": "battery status",
     "reference": "",
     "comment": ""
   },
@@ -3305,13 +3858,6 @@
   },
   {
     "term": "Enable Do Not Disturb",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Enable GPU Temperature",
     "translation": "",
     "context": "",
     "reference": "",
@@ -3376,14 +3922,14 @@
   {
     "term": "Enabled",
     "translation": "",
-    "context": "",
+    "context": "bluetooth status",
     "reference": "",
     "comment": ""
   },
   {
     "term": "Enabling WiFi...",
     "translation": "",
-    "context": "",
+    "context": "network status",
     "reference": "",
     "comment": ""
   },
@@ -3416,7 +3962,14 @@
     "comment": ""
   },
   {
-    "term": "Enter a search query",
+    "term": "Enter URL or text to share",
+    "translation": "",
+    "context": "KDE Connect share input placeholder",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Enter a new name for this workspace",
     "translation": "",
     "context": "",
     "reference": "",
@@ -3493,6 +4046,27 @@
     "comment": ""
   },
   {
+    "term": "Entry pinned",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Entry unpinned",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Environment Variables",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Error",
     "translation": "",
     "context": "",
@@ -3509,7 +4083,7 @@
   {
     "term": "Ethernet",
     "translation": "",
-    "context": "",
+    "context": "network status",
     "reference": "",
     "comment": ""
   },
@@ -3542,6 +4116,20 @@
     "comment": ""
   },
   {
+    "term": "Expressive",
+    "translation": "",
+    "context": "matugen color scheme option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Extend battery life",
+    "translation": "",
+    "context": "power profile description",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Extensible architecture",
     "translation": "",
     "context": "greeter feature card description",
@@ -3556,9 +4144,23 @@
     "comment": ""
   },
   {
+    "term": "Extra Arguments",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "F1/I: Toggle • F10: Help",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Fade",
+    "translation": "",
+    "context": "wallpaper transition option",
     "reference": "",
     "comment": ""
   },
@@ -3577,7 +4179,21 @@
     "comment": ""
   },
   {
+    "term": "Failed to accept pairing",
+    "translation": "",
+    "context": "Phone Connect error",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Failed to activate configuration",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Failed to activate profile - file not found",
     "translation": "",
     "context": "",
     "reference": "",
@@ -3598,6 +4214,13 @@
     "comment": ""
   },
   {
+    "term": "Failed to browse device",
+    "translation": "",
+    "context": "Phone Connect error",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Failed to cancel all jobs",
     "translation": "",
     "context": "",
@@ -3606,6 +4229,13 @@
   },
   {
     "term": "Failed to cancel selected job",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Failed to check pin limit",
     "translation": "",
     "context": "",
     "reference": "",
@@ -3634,6 +4264,13 @@
   },
   {
     "term": "Failed to create printer",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Failed to create profiles directory",
     "translation": "",
     "context": "",
     "reference": "",
@@ -3738,6 +4375,13 @@
     "comment": ""
   },
   {
+    "term": "Failed to launch SMS app",
+    "translation": "",
+    "context": "Phone Connect error",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Failed to load VPN config",
     "translation": "",
     "context": "",
@@ -3787,9 +4431,23 @@
     "comment": ""
   },
   {
+    "term": "Failed to pin entry",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Failed to print test page",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Failed to reject pairing",
+    "translation": "",
+    "context": "Phone Connect error",
     "reference": "",
     "comment": ""
   },
@@ -3829,6 +4487,13 @@
     "comment": ""
   },
   {
+    "term": "Failed to ring device",
+    "translation": "",
+    "context": "Phone Connect error",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Failed to save clipboard setting",
     "translation": "",
     "context": "",
@@ -3839,6 +4504,34 @@
     "term": "Failed to save keybind",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Failed to save profile file",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Failed to send clipboard",
+    "translation": "",
+    "context": "Phone Connect error",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Failed to send file",
+    "translation": "",
+    "context": "Phone Connect error",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Failed to send ping",
+    "translation": "",
+    "context": "Phone Connect error",
     "reference": "",
     "comment": ""
   },
@@ -3885,7 +4578,21 @@
     "comment": ""
   },
   {
+    "term": "Failed to share",
+    "translation": "",
+    "context": "Phone Connect error",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Failed to start connection to %1",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Failed to unpin entry",
     "translation": "",
     "context": "",
     "reference": "",
@@ -3955,6 +4662,20 @@
     "comment": ""
   },
   {
+    "term": "Feels Like %1°",
+    "translation": "",
+    "context": "weather feels like temperature",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Fidelity",
+    "translation": "",
+    "context": "matugen color scheme option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "File",
     "translation": "",
     "context": "",
@@ -3976,6 +4697,20 @@
     "comment": ""
   },
   {
+    "term": "File received from",
+    "translation": "",
+    "context": "Phone Connect file share notification",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "File search requires dsearch\\nInstall from github.com/morelazers/dsearch",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Files",
     "translation": "",
     "context": "",
@@ -3986,6 +4721,13 @@
     "term": "Filesystem usage monitoring",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Fill",
+    "translation": "",
+    "context": "wallpaper fill mode",
     "reference": "",
     "comment": ""
   },
@@ -4021,6 +4763,13 @@
     "term": "First Time Setup",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Fit",
+    "translation": "",
+    "context": "wallpaper fill mode",
     "reference": "",
     "comment": ""
   },
@@ -4068,6 +4817,20 @@
   },
   {
     "term": "Flipped 90°",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Float",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Focus",
     "translation": "",
     "context": "",
     "reference": "",
@@ -4151,7 +4914,7 @@
     "comment": ""
   },
   {
-    "term": "Force Kill Process",
+    "term": "Force Kill (SIGKILL)",
     "translation": "",
     "context": "",
     "reference": "",
@@ -4242,9 +5005,51 @@
     "comment": ""
   },
   {
+    "term": "Fruit Salad",
+    "translation": "",
+    "context": "matugen color scheme option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Full Command:",
+    "translation": "",
+    "context": "process detail label",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Full Content",
     "translation": "",
     "context": "lock screen notification mode option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Full Day & Month",
+    "translation": "",
+    "context": "date format option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Full with Year",
+    "translation": "",
+    "context": "date format option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Fullscreen",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Fully Charged",
+    "translation": "",
+    "context": "battery status",
     "reference": "",
     "comment": ""
   },
@@ -4266,6 +5071,13 @@
     "term": "GPU",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "GPU Monitoring",
+    "translation": "",
+    "context": "gpu section header in system monitor",
     "reference": "",
     "comment": ""
   },
@@ -4301,6 +5113,13 @@
     "term": "Gamma control not available. Requires DMS API v6+.",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Generic",
+    "translation": "",
+    "context": "theme category option",
     "reference": "",
     "comment": ""
   },
@@ -4480,7 +5299,21 @@
     "comment": ""
   },
   {
+    "term": "HTML copied to clipboard",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Health",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Height",
     "translation": "",
     "context": "",
     "reference": "",
@@ -4522,7 +5355,35 @@
     "comment": ""
   },
   {
+    "term": "Hidden Apps",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Hidden Network",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Hidden apps won't appear in the launcher. Right-click an app and select 'Hide App' to hide it.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Hide",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Hide App",
     "translation": "",
     "context": "",
     "reference": "",
@@ -4585,13 +5446,6 @@
     "comment": ""
   },
   {
-    "term": "Hide the dock when not in use and reveal it when hovering near the dock area",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "High-fidelity palette that preserves source hues.",
     "translation": "",
     "context": "",
@@ -4614,6 +5468,13 @@
   },
   {
     "term": "History Settings",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "History cleared. %1 pinned entries kept.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -4651,6 +5512,13 @@
     "term": "Hold to confirm (%1s)",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Hostname",
+    "translation": "",
+    "context": "system info label",
     "reference": "",
     "comment": ""
   },
@@ -4711,6 +5579,13 @@
     "comment": ""
   },
   {
+    "term": "Hyprland Options",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "I Understand",
     "translation": "",
     "context": "",
@@ -4726,6 +5601,20 @@
   },
   {
     "term": "IP Address:",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "ISO Date",
+    "translation": "",
+    "context": "date format option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Icon",
     "translation": "",
     "context": "",
     "reference": "",
@@ -4817,6 +5706,13 @@
   },
   {
     "term": "Include Transitions",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Include desktop actions (shortcuts) in search results.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -4970,6 +5866,13 @@
     "comment": ""
   },
   {
+    "term": "Intelligent Auto-hide",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Intensity",
     "translation": "",
     "context": "shadow intensity slider",
@@ -5019,6 +5922,13 @@
     "comment": ""
   },
   {
+    "term": "Iris Bloom",
+    "translation": "",
+    "context": "wallpaper transition option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Isolate Displays",
     "translation": "",
     "context": "",
@@ -5057,6 +5967,13 @@
     "term": "Keeping Awake",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Kernel",
+    "translation": "",
+    "context": "system info label",
     "reference": "",
     "comment": ""
   },
@@ -5132,6 +6049,20 @@
   },
   {
     "term": "LED device",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Large",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Largest",
     "translation": "",
     "context": "",
     "reference": "",
@@ -5215,6 +6146,13 @@
     "comment": ""
   },
   {
+    "term": "Launcher Button",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Launcher Button Logo",
     "translation": "",
     "context": "",
@@ -5243,6 +6181,13 @@
     "comment": ""
   },
   {
+    "term": "Left Center",
+    "translation": "",
+    "context": "screen position option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Left Section",
     "translation": "",
     "context": "",
@@ -5253,6 +6198,13 @@
     "term": "Light Mode",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Line",
+    "translation": "",
+    "context": "dock indicator style option",
     "reference": "",
     "comment": ""
   },
@@ -5285,6 +6237,13 @@
     "comment": ""
   },
   {
+    "term": "Load Average",
+    "translation": "",
+    "context": "system info label",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Loading codecs...",
     "translation": "",
     "context": "",
@@ -5293,6 +6252,13 @@
   },
   {
     "term": "Loading keybinds...",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Loading trending...",
     "translation": "",
     "context": "",
     "reference": "",
@@ -5446,6 +6412,13 @@
     "comment": ""
   },
   {
+    "term": "Make sure KDE Connect or Valent is running on your other devices",
+    "translation": "",
+    "context": "Phone Connect hint message",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Manage and configure plugins for extending DMS functionality",
     "translation": "",
     "context": "",
@@ -5537,6 +6510,20 @@
     "comment": ""
   },
   {
+    "term": "Match Criteria",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Matches profile: %1",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Material Colors",
     "translation": "",
     "context": "",
@@ -5586,7 +6573,70 @@
     "comment": ""
   },
   {
+    "term": "Max Edges",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Max H",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Max Pinned Apps",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Max Pinned Apps (0 = Unlimited)",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Max Running Apps",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Max Running Apps (0 = Unlimited)",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Max W",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Max apps to show",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Max to Edges",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Maximize",
     "translation": "",
     "context": "",
     "reference": "",
@@ -5614,7 +6664,21 @@
     "comment": ""
   },
   {
+    "term": "Maximum Pinned Entries",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Maximum number of clipboard entries to keep",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Maximum number of entries that can be saved",
     "translation": "",
     "context": "",
     "reference": "",
@@ -5624,6 +6688,13 @@
     "term": "Maximum number of notifications to keep",
     "translation": "",
     "context": "notification history limit",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Maximum pinned entries reached",
+    "translation": "",
+    "context": "",
     "reference": "",
     "comment": ""
   },
@@ -5740,6 +6811,13 @@
     "comment": ""
   },
   {
+    "term": "Message",
+    "translation": "",
+    "context": "KDE Connect SMS message input placeholder",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Microphone",
     "translation": "",
     "context": "",
@@ -5776,6 +6854,20 @@
   },
   {
     "term": "Middle Section",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Min H",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Min W",
     "translation": "",
     "context": "",
     "reference": "",
@@ -5845,6 +6937,13 @@
     "comment": ""
   },
   {
+    "term": "Monitor",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Monitor Configuration",
     "translation": "",
     "context": "",
@@ -5866,6 +6965,13 @@
     "comment": ""
   },
   {
+    "term": "Monochrome",
+    "translation": "",
+    "context": "matugen color scheme option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Monocle",
     "translation": "",
     "context": "",
@@ -5880,6 +6986,13 @@
     "comment": ""
   },
   {
+    "term": "Month Date",
+    "translation": "",
+    "context": "date format option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Morning",
     "translation": "",
     "context": "",
@@ -5887,9 +7000,9 @@
     "comment": ""
   },
   {
-    "term": "Mount",
+    "term": "Mount Points",
     "translation": "",
-    "context": "",
+    "context": "mount points header in system monitor",
     "reference": "",
     "comment": ""
   },
@@ -5902,6 +7015,13 @@
   },
   {
     "term": "Mouse pointer size in pixels",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Move",
     "translation": "",
     "context": "",
     "reference": "",
@@ -5925,6 +7045,13 @@
     "term": "Multi-Monitor",
     "translation": "",
     "context": "greeter feature card title",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Muted",
+    "translation": "",
+    "context": "audio status",
     "reference": "",
     "comment": ""
   },
@@ -6020,6 +7147,13 @@
     "comment": ""
   },
   {
+    "term": "Neutral",
+    "translation": "",
+    "context": "matugen color scheme option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Never",
     "translation": "",
     "context": "",
@@ -6049,6 +7183,13 @@
   },
   {
     "term": "New Notification",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "New Window Rule",
     "translation": "",
     "context": "",
     "reference": "",
@@ -6146,6 +7287,13 @@
     "comment": ""
   },
   {
+    "term": "No Anim",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No Background",
     "translation": "",
     "context": "",
@@ -6153,7 +7301,28 @@
     "comment": ""
   },
   {
+    "term": "No Battery",
+    "translation": "",
+    "context": "battery status",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No Bluetooth adapter found",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No Blur",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No Border",
     "translation": "",
     "context": "",
     "reference": "",
@@ -6167,6 +7336,20 @@
     "comment": ""
   },
   {
+    "term": "No Dim",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No Focus",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No GPU detected",
     "translation": "",
     "context": "",
@@ -6174,7 +7357,35 @@
     "comment": ""
   },
   {
+    "term": "No GPUs detected",
+    "translation": "",
+    "context": "empty state in gpu list",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No Media",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No Round",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No Rounding",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No Shadow",
     "translation": "",
     "context": "",
     "reference": "",
@@ -6209,7 +7420,28 @@
     "comment": ""
   },
   {
+    "term": "No adapter",
+    "translation": "",
+    "context": "bluetooth status",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No adapters",
+    "translation": "",
+    "context": "bluetooth status",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No app customizations.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No apps found",
     "translation": "",
     "context": "",
     "reference": "",
@@ -6244,13 +7476,6 @@
     "comment": ""
   },
   {
-    "term": "No clipboard entries found",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "No custom theme file",
     "translation": "",
     "context": "no custom theme file status",
@@ -6258,9 +7483,23 @@
     "comment": ""
   },
   {
+    "term": "No devices",
+    "translation": "",
+    "context": "Phone Connect no devices status | bluetooth status",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No devices connected",
+    "translation": "",
+    "context": "KDE Connect status",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No devices found",
     "translation": "",
-    "context": "",
+    "context": "KDE Connect no devices message",
     "reference": "",
     "comment": ""
   },
@@ -6307,9 +7546,23 @@
     "comment": ""
   },
   {
+    "term": "No hidden apps.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No info items",
     "translation": "",
     "context": "greeter doctor page empty state",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No input device",
+    "translation": "",
+    "context": "audio status",
     "reference": "",
     "comment": ""
   },
@@ -6328,7 +7581,49 @@
     "comment": ""
   },
   {
+    "term": "No launcher plugins installed.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No match criteria",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No matches",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No matching processes",
+    "translation": "",
+    "context": "empty state in process list",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No mount points found",
+    "translation": "",
+    "context": "empty state in disk mounts list",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No output device",
+    "translation": "",
+    "context": "audio status",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No plugin results",
     "translation": "",
     "context": "",
     "reference": "",
@@ -6370,6 +7665,34 @@
     "comment": ""
   },
   {
+    "term": "No profiles",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No recent clipboard entries found",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No results found",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No saved clipboard entries",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No themes found",
     "translation": "",
     "context": "empty theme list",
@@ -6380,6 +7703,13 @@
     "term": "No themes installed. Browse themes to install from the registry.",
     "translation": "",
     "context": "no registry themes installed hint",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No trigger",
+    "translation": "",
+    "context": "",
     "reference": "",
     "comment": ""
   },
@@ -6412,9 +7742,16 @@
     "comment": ""
   },
   {
-    "term": "None",
+    "term": "No window rules configured",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "None",
+    "translation": "",
+    "context": "wallpaper transition option",
     "reference": "",
     "comment": ""
   },
@@ -6449,7 +7786,7 @@
   {
     "term": "Not connected",
     "translation": "",
-    "context": "",
+    "context": "network status",
     "reference": "",
     "comment": ""
   },
@@ -6457,6 +7794,13 @@
     "term": "Not detected",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Not paired",
+    "translation": "",
+    "context": "KDE Connect not paired status",
     "reference": "",
     "comment": ""
   },
@@ -6485,6 +7829,13 @@
     "term": "Notepad Slideout",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Nothing",
+    "translation": "",
+    "context": "media scroll wheel option",
     "reference": "",
     "comment": ""
   },
@@ -6559,6 +7910,20 @@
     "comment": ""
   },
   {
+    "term": "Numeric (D/M)",
+    "translation": "",
+    "context": "date format option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Numeric (M/D)",
+    "translation": "",
+    "context": "date format option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "OK",
     "translation": "",
     "context": "greeter doctor page status card",
@@ -6580,9 +7945,16 @@
     "comment": ""
   },
   {
-    "term": "Off",
+    "term": "Occupied Color",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Off",
+    "translation": "",
+    "context": "bluetooth status",
     "reference": "",
     "comment": ""
   },
@@ -6590,6 +7962,13 @@
     "term": "Office",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Offline",
+    "translation": "",
+    "context": "KDE Connect offline status | Phone Connect offline status",
     "reference": "",
     "comment": ""
   },
@@ -6650,6 +8029,13 @@
     "comment": ""
   },
   {
+    "term": "Opaque",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Open",
     "translation": "",
     "context": "",
@@ -6657,7 +8043,35 @@
     "comment": ""
   },
   {
+    "term": "Open App",
+    "translation": "",
+    "context": "KDE Connect open SMS app button",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Open KDE Connect on your phone",
+    "translation": "",
+    "context": "KDE Connect open app hint",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Open Notepad File",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Open folder",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Open in Browser",
     "translation": "",
     "context": "",
     "reference": "",
@@ -6674,6 +8088,34 @@
     "term": "Open with...",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Opening SMS",
+    "translation": "",
+    "context": "KDE Connect SMS action",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Opening SMS app",
+    "translation": "",
+    "context": "Phone Connect SMS action",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Opening file browser",
+    "translation": "",
+    "context": "Phone Connect browse action",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Opening files",
+    "translation": "",
+    "context": "KDE Connect browse action",
     "reference": "",
     "comment": ""
   },
@@ -6713,6 +8155,20 @@
     "comment": ""
   },
   {
+    "term": "Outline",
+    "translation": "",
+    "context": "outline color",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Output",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Output Area Almost Full",
     "translation": "",
     "context": "",
@@ -6735,6 +8191,13 @@
   },
   {
     "term": "Outputs Include Missing",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Overflow",
     "translation": "",
     "context": "",
     "reference": "",
@@ -6818,6 +8281,20 @@
     "comment": ""
   },
   {
+    "term": "Pad",
+    "translation": "",
+    "context": "wallpaper fill mode",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Pad Hours",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Padding",
     "translation": "",
     "context": "",
@@ -6827,7 +8304,7 @@
   {
     "term": "Pair",
     "translation": "",
-    "context": "",
+    "context": "KDE Connect pair button",
     "reference": "",
     "comment": ""
   },
@@ -6846,9 +8323,37 @@
     "comment": ""
   },
   {
+    "term": "Pairing",
+    "translation": "",
+    "context": "KDE Connect pairing in progress status",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Pairing failed",
     "translation": "",
-    "context": "",
+    "context": "Phone Connect error",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Pairing request from",
+    "translation": "",
+    "context": "Phone Connect pairing request notification",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Pairing request sent",
+    "translation": "",
+    "context": "Phone Connect pairing action",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Pairing requested",
+    "translation": "",
+    "context": "KDE Connect pairing requested status",
     "reference": "",
     "comment": ""
   },
@@ -6868,6 +8373,13 @@
   },
   {
     "term": "Password",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Paste",
     "translation": "",
     "context": "",
     "reference": "",
@@ -6902,6 +8414,20 @@
     "comment": ""
   },
   {
+    "term": "Pending Charge",
+    "translation": "",
+    "context": "battery status",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Pending Discharge",
+    "translation": "",
+    "context": "battery status",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Per-Mode Wallpapers",
     "translation": "",
     "context": "",
@@ -6930,6 +8456,13 @@
     "comment": ""
   },
   {
+    "term": "Performance",
+    "translation": "",
+    "context": "power profile option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Permission denied to set profile image.",
     "translation": "",
     "context": "",
@@ -6940,6 +8473,27 @@
     "term": "Personalization",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Phone Connect Not Available",
+    "translation": "",
+    "context": "Phone Connect unavailable error title",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Phone Connect unavailable",
+    "translation": "",
+    "context": "Phone Connect service unavailable message",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Phone number",
+    "translation": "",
+    "context": "KDE Connect SMS phone input placeholder",
     "reference": "",
     "comment": ""
   },
@@ -6958,9 +8512,44 @@
     "comment": ""
   },
   {
+    "term": "Ping",
+    "translation": "",
+    "context": "KDE Connect ping tooltip",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Ping sent",
+    "translation": "",
+    "context": "KDE Connect ping action",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Ping sent to",
+    "translation": "",
+    "context": "Phone Connect ping action",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Pinned",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Pinned and running apps with drag-and-drop",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Pixelate",
+    "translation": "",
+    "context": "wallpaper transition option",
     "reference": "",
     "comment": ""
   },
@@ -7014,9 +8603,16 @@
     "comment": ""
   },
   {
+    "term": "Please wait...",
+    "translation": "",
+    "context": "network status",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Plugged In",
     "translation": "",
-    "context": "",
+    "context": "battery status",
     "reference": "",
     "comment": ""
   },
@@ -7043,6 +8639,13 @@
   },
   {
     "term": "Plugin Management",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Plugin Visibility",
     "translation": "",
     "context": "",
     "reference": "",
@@ -7087,6 +8690,13 @@
     "term": "Popup behavior, position",
     "translation": "",
     "context": "greeter notifications description",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Portal",
+    "translation": "",
+    "context": "wallpaper transition option",
     "reference": "",
     "comment": ""
   },
@@ -7175,6 +8785,20 @@
     "comment": ""
   },
   {
+    "term": "Power Saver",
+    "translation": "",
+    "context": "power profile option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Power off monitors on lock",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Power profile management available",
     "translation": "",
     "context": "",
@@ -7238,9 +8862,23 @@
     "comment": ""
   },
   {
-    "term": "Primary",
+    "term": "Preview",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Primary",
+    "translation": "",
+    "context": "color option | primary color | tile color option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Primary Container",
+    "translation": "",
+    "context": "tile color option",
     "reference": "",
     "comment": ""
   },
@@ -7308,6 +8946,13 @@
     "comment": ""
   },
   {
+    "term": "Prioritize performance",
+    "translation": "",
+    "context": "power profile description",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Privacy Indicator",
     "translation": "",
     "context": "",
@@ -7322,16 +8967,23 @@
     "comment": ""
   },
   {
-    "term": "Process",
+    "term": "Process Count",
     "translation": "",
     "context": "",
     "reference": "",
     "comment": ""
   },
   {
-    "term": "Process Count",
+    "term": "Processes",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Processes:",
+    "translation": "",
+    "context": "process count label in footer",
     "reference": "",
     "comment": ""
   },
@@ -7350,7 +9002,49 @@
     "comment": ""
   },
   {
+    "term": "Profile activated: %1",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Profile deleted",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Profile error",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Profile image is too large. Please use a smaller image.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Profile name",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Profile not found",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Profile saved: %1",
     "translation": "",
     "context": "",
     "reference": "",
@@ -7406,6 +9100,13 @@
     "comment": ""
   },
   {
+    "term": "Radius",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Rain Chance",
     "translation": "",
     "context": "",
@@ -7413,9 +9114,30 @@
     "comment": ""
   },
   {
+    "term": "Rainbow",
+    "translation": "",
+    "context": "matugen color scheme option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Random",
+    "translation": "",
+    "context": "wallpaper transition option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Rate",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Read:",
+    "translation": "",
+    "context": "disk read label",
     "reference": "",
     "comment": ""
   },
@@ -7457,7 +9179,7 @@
   {
     "term": "Refresh",
     "translation": "",
-    "context": "",
+    "context": "KDE Connect refresh button | Phone Connect refresh tooltip",
     "reference": "",
     "comment": ""
   },
@@ -7465,6 +9187,13 @@
     "term": "Refresh Weather",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Reject",
+    "translation": "",
+    "context": "KDE Connect reject pairing button",
     "reference": "",
     "comment": ""
   },
@@ -7504,6 +9233,20 @@
     "comment": ""
   },
   {
+    "term": "Rename",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Rename Workspace",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Repeat",
     "translation": "",
     "context": "",
@@ -7521,6 +9264,13 @@
     "term": "Report",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Request Pairing",
+    "translation": "",
+    "context": "KDE Connect request pairing button",
     "reference": "",
     "comment": ""
   },
@@ -7658,6 +9408,13 @@
     "comment": ""
   },
   {
+    "term": "Right Center",
+    "translation": "",
+    "context": "screen position option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Right Section",
     "translation": "",
     "context": "",
@@ -7693,6 +9450,20 @@
     "comment": ""
   },
   {
+    "term": "Ring",
+    "translation": "",
+    "context": "KDE Connect ring tooltip",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Ringing",
+    "translation": "",
+    "context": "KDE Connect ring action | Phone Connect ring action",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Root Filesystem",
     "translation": "",
     "context": "",
@@ -7715,6 +9486,27 @@
   },
   {
     "term": "Rounded corners for windows (decoration.rounding)",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Rule",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Rule Name",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Rules (%1)",
     "translation": "",
     "context": "",
     "reference": "",
@@ -7791,6 +9583,13 @@
     "comment": ""
   },
   {
+    "term": "SMS",
+    "translation": "",
+    "context": "KDE Connect SMS tooltip",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Save",
     "translation": "",
     "context": "",
@@ -7799,6 +9598,13 @@
   },
   {
     "term": "Save Notepad File",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Save and switch between display configurations",
     "translation": "",
     "context": "",
     "reference": "",
@@ -7854,6 +9660,20 @@
     "comment": ""
   },
   {
+    "term": "Saved item deleted",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Saving...",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Scale",
     "translation": "",
     "context": "",
@@ -7903,7 +9723,28 @@
     "comment": ""
   },
   {
+    "term": "Screen Sharing",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Screen sharing",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Scroll",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Scroll Factor",
     "translation": "",
     "context": "",
     "reference": "",
@@ -7945,21 +9786,21 @@
     "comment": ""
   },
   {
+    "term": "Search App Actions",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Search Options",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Search by key combo, description, or action name.\\n\\nDefault action copies the keybind to clipboard.\\nRight-click or press Right Arrow to pin frequently used keybinds - they'll appear at the top when not searching.",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Search file contents",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Search filenames",
     "translation": "",
     "context": "",
     "reference": "",
@@ -7994,6 +9835,13 @@
     "comment": ""
   },
   {
+    "term": "Search processes...",
+    "translation": "",
+    "context": "process search placeholder",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Search themes...",
     "translation": "",
     "context": "theme search placeholder",
@@ -8024,7 +9872,7 @@
   {
     "term": "Secondary",
     "translation": "",
-    "context": "",
+    "context": "color option | secondary color | tile color option",
     "reference": "",
     "comment": ""
   },
@@ -8050,6 +9898,13 @@
     "comment": ""
   },
   {
+    "term": "Select",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Select Application",
     "translation": "",
     "context": "",
@@ -8067,6 +9922,13 @@
     "term": "Select Custom Theme",
     "translation": "",
     "context": "custom theme file browser title",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Select File to Send",
+    "translation": "",
+    "context": "KDE Connect file browser title",
     "reference": "",
     "comment": ""
   },
@@ -8120,6 +9982,13 @@
     "comment": ""
   },
   {
+    "term": "Select a window...",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Select an image file...",
     "translation": "",
     "context": "",
@@ -8130,6 +9999,13 @@
     "term": "Select at least one provider",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Select device",
+    "translation": "",
+    "context": "audio status",
     "reference": "",
     "comment": ""
   },
@@ -8165,6 +10041,13 @@
     "term": "Select monospace font for process list and technical displays",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Select network",
+    "translation": "",
+    "context": "network status",
     "reference": "",
     "comment": ""
   },
@@ -8214,6 +10097,41 @@
     "term": "Selected image file not found.",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Send",
+    "translation": "",
+    "context": "KDE Connect SMS send button",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Send Clipboard",
+    "translation": "",
+    "context": "KDE Connect clipboard tooltip",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Send File",
+    "translation": "",
+    "context": "KDE Connect send file button",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Send SMS",
+    "translation": "",
+    "context": "KDE Connect SMS dialog title",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Sending",
+    "translation": "",
+    "context": "Phone Connect file send",
     "reference": "",
     "comment": ""
   },
@@ -8281,6 +10199,41 @@
     "comment": ""
   },
   {
+    "term": "Share",
+    "translation": "",
+    "context": "KDE Connect share dialog title | KDE Connect share tooltip",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Share Gamma Control Settings",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Share Text",
+    "translation": "",
+    "context": "KDE Connect share button",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Share URL",
+    "translation": "",
+    "context": "KDE Connect share URL button",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Shared",
+    "translation": "",
+    "context": "Phone Connect share success",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Shell",
     "translation": "",
     "context": "",
@@ -8289,6 +10242,13 @@
   },
   {
     "term": "Shift+Del: Clear All • Esc: Close",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Shift+Enter to paste",
     "translation": "",
     "context": "",
     "reference": "",
@@ -8323,7 +10283,21 @@
     "comment": ""
   },
   {
+    "term": "Show",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Show All Tags",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Show Badge",
     "translation": "",
     "context": "",
     "reference": "",
@@ -8379,6 +10353,13 @@
     "comment": ""
   },
   {
+    "term": "Show Footer",
+    "translation": "",
+    "context": "launcher footer visibility",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Show Forecast",
     "translation": "",
     "context": "",
@@ -8428,6 +10409,13 @@
     "comment": ""
   },
   {
+    "term": "Show Launcher Button",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Show Line Numbers",
     "translation": "",
     "context": "",
@@ -8452,6 +10440,13 @@
     "term": "Show Log Out",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Show Media Player",
+    "translation": "",
+    "context": "Enable media player controls on the lock screen window",
     "reference": "",
     "comment": ""
   },
@@ -8485,6 +10480,13 @@
   },
   {
     "term": "Show Occupied Workspaces Only",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Show Overflow Badge Count",
     "translation": "",
     "context": "",
     "reference": "",
@@ -8652,9 +10654,23 @@
     "comment": ""
   },
   {
+    "term": "Show dock when floating windows don't overlap its area",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Show launcher overlay when typing in Niri overview. Disable to use another launcher.",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Show mode tabs and keyboard hints at the bottom.",
+    "translation": "",
+    "context": "launcher footer description",
     "reference": "",
     "comment": ""
   },
@@ -8843,6 +10859,13 @@
   {
     "term": "Size",
     "translation": "",
+    "context": "launcher size option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Size Constraints",
+    "translation": "",
     "context": "",
     "reference": "",
     "comment": ""
@@ -8876,6 +10899,13 @@
     "comment": ""
   },
   {
+    "term": "Small",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Smartcard Authentication",
     "translation": "",
     "context": "",
@@ -8884,6 +10914,13 @@
   },
   {
     "term": "Smartcard PIN",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Snap",
     "translation": "",
     "context": "",
     "reference": "",
@@ -9016,6 +11053,20 @@
     "comment": ""
   },
   {
+    "term": "Start KDE Connect or Valent",
+    "translation": "",
+    "context": "Phone Connect start daemon hint",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Start KDE Connect or Valent to use this plugin",
+    "translation": "",
+    "context": "Phone Connect daemon hint",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Start typing your notes here...",
     "translation": "",
     "context": "",
@@ -9058,9 +11109,16 @@
     "comment": ""
   },
   {
-    "term": "Storage & Disks",
+    "term": "Stretch",
     "translation": "",
-    "context": "",
+    "context": "wallpaper fill mode",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Stripes",
+    "translation": "",
+    "context": "wallpaper transition option",
     "reference": "",
     "comment": ""
   },
@@ -9088,7 +11146,14 @@
   {
     "term": "Surface",
     "translation": "",
-    "context": "shadow color option",
+    "context": "color option | shadow color option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Surface Variant",
+    "translation": "",
+    "context": "tile color option",
     "reference": "",
     "comment": ""
   },
@@ -9108,13 +11173,6 @@
   },
   {
     "term": "Suspend system after",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Swap",
     "translation": "",
     "context": "",
     "reference": "",
@@ -9177,6 +11235,20 @@
     "comment": ""
   },
   {
+    "term": "System Default",
+    "translation": "",
+    "context": "date format option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "System Information",
+    "translation": "",
+    "context": "system info header in system monitor",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "System Monitor",
     "translation": "",
     "context": "System monitor widget name | sysmon window title",
@@ -9233,7 +11305,7 @@
     "comment": ""
   },
   {
-    "term": "System sounds are not available. Install canberra-gtk-play for sound support.",
+    "term": "System sounds are not available. Install %1 for sound support.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -9305,14 +11377,14 @@
   {
     "term": "Text",
     "translation": "",
-    "context": "shadow color option",
+    "context": "shadow color option | text color",
     "reference": "",
     "comment": ""
   },
   {
     "term": "The 'dgop' tool is required for system monitoring.\\nPlease install dgop to use this feature.",
     "translation": "",
-    "context": "",
+    "context": "dgop unavailable error message",
     "reference": "",
     "comment": ""
   },
@@ -9368,7 +11440,7 @@
   {
     "term": "Thickness",
     "translation": "",
-    "context": "",
+    "context": "border thickness",
     "reference": "",
     "comment": ""
   },
@@ -9401,7 +11473,56 @@
     "comment": ""
   },
   {
+    "term": "This will delete all unpinned entries. %1 pinned entries will be kept.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "This will permanently delete all clipboard history.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "This will permanently remove this saved clipboard item. This action cannot be undone.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Tile",
+    "translation": "",
+    "context": "wallpaper fill mode",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Tile H",
+    "translation": "",
+    "context": "wallpaper fill mode",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Tile V",
+    "translation": "",
+    "context": "wallpaper fill mode",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Tiled",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Tiled State",
     "translation": "",
     "context": "",
     "reference": "",
@@ -9478,6 +11599,13 @@
     "comment": ""
   },
   {
+    "term": "Title regex (optional)",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "To Full",
     "translation": "",
     "context": "",
@@ -9534,6 +11662,13 @@
     "comment": ""
   },
   {
+    "term": "Tonal Spot",
+    "translation": "",
+    "context": "matugen color scheme option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Toner Empty",
     "translation": "",
     "context": "",
@@ -9569,9 +11704,16 @@
     "comment": ""
   },
   {
+    "term": "Top Center",
+    "translation": "",
+    "context": "screen position option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Top Left",
     "translation": "",
-    "context": "",
+    "context": "screen position option",
     "reference": "",
     "comment": ""
   },
@@ -9585,7 +11727,7 @@
   {
     "term": "Top Right",
     "translation": "",
-    "context": "",
+    "context": "screen position option",
     "reference": "",
     "comment": ""
   },
@@ -9625,6 +11767,20 @@
     "comment": ""
   },
   {
+    "term": "Trending GIFs",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Trending Stickers",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Trigger",
     "translation": "",
     "context": "",
@@ -9633,6 +11789,27 @@
   },
   {
     "term": "Trigger Prefix",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Trigger: %1",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Try a different search",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Turn off all displays immediately when the lock screen activates",
     "translation": "",
     "context": "",
     "reference": "",
@@ -9653,7 +11830,35 @@
     "comment": ""
   },
   {
+    "term": "Type at least 2 characters",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Type this prefix to search keybinds",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Type to search",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Type to search apps",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Type to search files",
     "translation": "",
     "context": "",
     "reference": "",
@@ -9676,7 +11881,7 @@
   {
     "term": "Unavailable",
     "translation": "",
-    "context": "",
+    "context": "Phone Connect unavailable status",
     "reference": "",
     "comment": ""
   },
@@ -9732,7 +11937,7 @@
   {
     "term": "Unknown",
     "translation": "",
-    "context": "unknown author",
+    "context": "KDE Connect unknown device status | battery status | power profile option | unknown author | widget status",
     "reference": "",
     "comment": ""
   },
@@ -9751,6 +11956,13 @@
     "comment": ""
   },
   {
+    "term": "Unknown GPU",
+    "translation": "",
+    "context": "fallback gpu name",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Unknown Monitor",
     "translation": "",
     "context": "",
@@ -9761,6 +11973,27 @@
     "term": "Unknown Network",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Unnamed Rule",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Unpair",
+    "translation": "",
+    "context": "KDE Connect unpair tooltip",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Unpair failed",
+    "translation": "",
+    "context": "Phone Connect error",
     "reference": "",
     "comment": ""
   },
@@ -9807,6 +12040,13 @@
     "comment": ""
   },
   {
+    "term": "Update",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Update All",
     "translation": "",
     "context": "",
@@ -9817,6 +12057,20 @@
     "term": "Update Plugin",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Uptime",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Uptime:",
+    "translation": "",
+    "context": "uptime label in footer",
     "reference": "",
     "comment": ""
   },
@@ -9961,6 +12215,13 @@
     "comment": ""
   },
   {
+    "term": "Use meters per second instead of km/h for wind speed",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Use smaller notification cards",
     "translation": "",
     "context": "",
@@ -9989,20 +12250,6 @@
     "comment": ""
   },
   {
-    "term": "Use%",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Used",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Used when accent color is set to Custom",
     "translation": "",
     "context": "",
@@ -10024,7 +12271,21 @@
     "comment": ""
   },
   {
+    "term": "Uses sunrise/sunset times based on your location.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Uses sunrise/sunset times to automatically adjust night mode based on your location.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Using shared settings from Gamma Control",
     "translation": "",
     "context": "",
     "reference": "",
@@ -10129,6 +12390,13 @@
     "comment": ""
   },
   {
+    "term": "Verification",
+    "translation": "",
+    "context": "Phone Connect pairing verification key label",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Version",
     "translation": "",
     "context": "",
@@ -10160,6 +12428,13 @@
     "term": "Vertical Tiling",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Vibrant",
+    "translation": "",
+    "context": "matugen color scheme option",
     "reference": "",
     "comment": ""
   },
@@ -10402,6 +12677,13 @@
     "comment": ""
   },
   {
+    "term": "WiFi off",
+    "translation": "",
+    "context": "network status",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Wide (BT2020)",
     "translation": "",
     "context": "",
@@ -10479,6 +12761,13 @@
     "comment": ""
   },
   {
+    "term": "Width",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Width of window border (borderpx)",
     "translation": "",
     "context": "",
@@ -10514,6 +12803,13 @@
     "comment": ""
   },
   {
+    "term": "Wind Speed in m/s",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Window Corner Radius",
     "translation": "",
     "context": "",
@@ -10535,9 +12831,51 @@
     "comment": ""
   },
   {
+    "term": "Window Height",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Window Opening",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Window Rounding",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Window Rules",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Window Rules Include Missing",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Window Rules Not Configured",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Wipe",
+    "translation": "",
+    "context": "wallpaper transition option",
     "reference": "",
     "comment": ""
   },
@@ -10591,6 +12929,13 @@
     "comment": ""
   },
   {
+    "term": "Workspace name",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Workspaces",
     "translation": "",
     "context": "",
@@ -10601,6 +12946,13 @@
     "term": "Workspaces & Widgets",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Write:",
+    "translation": "",
+    "context": "disk write label",
     "reference": "",
     "comment": ""
   },
@@ -10668,7 +13020,7 @@
     "comment": ""
   },
   {
-    "term": "apps",
+    "term": "actions",
     "translation": "",
     "context": "",
     "reference": "",
@@ -10685,6 +13037,20 @@
     "term": "days",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "device",
+    "translation": "",
+    "context": "Generic device name | Generic device name fallback",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "devices connected",
+    "translation": "",
+    "context": "KDE Connect status multiple devices",
     "reference": "",
     "comment": ""
   },
@@ -10738,13 +13104,6 @@
     "comment": ""
   },
   {
-    "term": "files",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "leave empty for default",
     "translation": "",
     "context": "",
@@ -10780,6 +13139,13 @@
     "comment": ""
   },
   {
+    "term": "nav",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "niri shortcuts config",
     "translation": "",
     "context": "greeter keybinds niri description",
@@ -10797,6 +13163,20 @@
     "term": "official",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "open",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "procs",
+    "translation": "",
+    "context": "short for processes",
     "reference": "",
     "comment": ""
   },

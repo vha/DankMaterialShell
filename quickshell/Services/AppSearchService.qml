@@ -10,6 +10,14 @@ Singleton {
 
     property var applications: []
     property var _cachedCategories: null
+    property var _cachedVisibleApps: null
+    property var _hiddenAppsSet: new Set()
+
+    property var _transformCache: ({})
+    property var _cachedDefaultSections: []
+    property var _cachedDefaultFlatModel: []
+    property bool _defaultCacheValid: false
+    property int cacheVersion: 0
 
     readonly property int maxResults: 10
     readonly property int frecencySampleSize: 10
@@ -40,6 +48,106 @@ Singleton {
     function refreshApplications() {
         applications = DesktopEntries.applications.values;
         _cachedCategories = null;
+        _cachedVisibleApps = null;
+        invalidateLauncherCache();
+    }
+
+    function invalidateLauncherCache() {
+        _transformCache = {};
+        _defaultCacheValid = false;
+        _cachedDefaultSections = [];
+        _cachedDefaultFlatModel = [];
+        cacheVersion++;
+    }
+
+    function getOrTransformApp(app, transformFn) {
+        const id = app.id || app.execString || app.exec || "";
+        if (!id)
+            return transformFn(app);
+        const cached = _transformCache[id];
+        if (cached) {
+            const currentIcon = app.icon || "";
+            const cachedSourceIcon = cached._sourceIcon || "";
+            if (currentIcon === cachedSourceIcon)
+                return cached;
+        }
+        const transformed = transformFn(app);
+        transformed._sourceIcon = app.icon || "";
+        _transformCache[id] = transformed;
+        return transformed;
+    }
+
+    function getCachedDefaultSections() {
+        if (!_defaultCacheValid)
+            return null;
+        return _cachedDefaultSections;
+    }
+
+    function setCachedDefaultSections(sections, flatModel) {
+        _cachedDefaultSections = sections.map(function (s) {
+            return Object.assign({}, s, {
+                items: s.items ? s.items.slice() : []
+            });
+        });
+        _cachedDefaultFlatModel = flatModel.slice();
+        _defaultCacheValid = true;
+    }
+
+    function isCacheValid() {
+        return _defaultCacheValid;
+    }
+
+    function _rebuildHiddenSet() {
+        _hiddenAppsSet = new Set(SessionData.hiddenApps || []);
+        _cachedVisibleApps = null;
+    }
+
+    function isAppHidden(app) {
+        if (!app)
+            return false;
+        const appId = app.id || app.execString || app.exec || "";
+        return _hiddenAppsSet.has(appId);
+    }
+
+    function getVisibleApplications() {
+        if (_cachedVisibleApps === null) {
+            _cachedVisibleApps = applications.filter(app => !isAppHidden(app));
+        }
+        return _cachedVisibleApps.map(app => applyAppOverride(app));
+    }
+
+    Connections {
+        target: SessionData
+        function onHiddenAppsChanged() {
+            root._rebuildHiddenSet();
+            root.invalidateLauncherCache();
+        }
+        function onAppOverridesChanged() {
+            root._cachedVisibleApps = null;
+            root.invalidateLauncherCache();
+        }
+    }
+
+    Connections {
+        target: AppUsageHistoryData
+        function onAppUsageRankingChanged() {
+            root.invalidateLauncherCache();
+        }
+    }
+
+    function applyAppOverride(app) {
+        if (!app)
+            return app;
+        const appId = app.id || app.execString || app.exec || "";
+        const override = SessionData.getAppOverride(appId);
+        if (!override)
+            return app;
+        return Object.assign({}, app, {
+            name: override.name || app.name,
+            icon: override.icon || app.icon,
+            comment: override.comment || app.comment,
+            _override: override
+        });
     }
 
     readonly property string dmsLogoPath: Qt.resolvedUrl("../assets/danklogo2.svg")
@@ -111,7 +219,8 @@ Singleton {
                 action: plugin.action,
                 categories: plugin.categories,
                 isCore: true,
-                builtInPluginId: pluginId
+                builtInPluginId: pluginId,
+                cornerIcon: plugin.cornerIcon
             });
         }
         return apps;
@@ -210,10 +319,10 @@ Singleton {
             PopoutService.focusOrToggleSettings();
             return true;
         case "notepad":
-            PopoutService.openNotepad();
+            PopoutService.toggleNotepad();
             return true;
         case "processlist":
-            PopoutService.showProcessListModal();
+            PopoutService.toggleProcessList();
             return true;
         }
         return false;
@@ -226,7 +335,10 @@ Singleton {
         }
     }
 
-    Component.onCompleted: refreshApplications()
+    Component.onCompleted: {
+        _rebuildHiddenSet();
+        refreshApplications();
+    }
 
     function tokenize(text) {
         return text.toLowerCase().trim().split(/[\s\-_]+/).filter(w => w.length > 0);
@@ -345,17 +457,17 @@ Singleton {
     }
 
     function searchApplications(query) {
-        if (!query || query.length === 0) {
-            return applications;
-        }
+        if (!query || query.length === 0)
+            return getVisibleApplications();
         if (applications.length === 0)
             return [];
 
         const queryLower = query.toLowerCase().trim();
         const scoredApps = [];
         const results = [];
+        const visibleApps = getVisibleApplications();
 
-        for (const app of applications) {
+        for (const app of visibleApps) {
             const name = (app.name || "").toLowerCase();
             const genericName = (app.genericName || "").toLowerCase();
             const comment = (app.comment || "").toLowerCase();
@@ -440,8 +552,56 @@ Singleton {
             });
         }
 
+        if (SessionData.searchAppActions) {
+            const actionResults = searchAppActions(queryLower, visibleApps);
+            for (const actionResult of actionResults) {
+                scoredApps.push({
+                    app: actionResult.app,
+                    score: actionResult.score
+                });
+            }
+        }
+
         scoredApps.sort((a, b) => b.score - a.score);
         return scoredApps.slice(0, maxResults).map(item => item.app);
+    }
+
+    function searchAppActions(query, apps) {
+        const results = [];
+        for (const app of apps) {
+            if (!app.actions || app.actions.length === 0)
+                continue;
+            for (const action of app.actions) {
+                const actionName = (action.name || "").toLowerCase();
+                if (!actionName)
+                    continue;
+
+                let score = 0;
+                if (actionName === query) {
+                    score = 8000;
+                } else if (actionName.startsWith(query)) {
+                    score = 4000;
+                } else if (actionName.includes(query)) {
+                    score = 400;
+                }
+
+                if (score > 0) {
+                    results.push({
+                        app: {
+                            name: action.name,
+                            icon: action.icon || app.icon,
+                            comment: app.name,
+                            categories: app.categories || [],
+                            isAction: true,
+                            parentApp: app,
+                            actionData: action
+                        },
+                        score: score
+                    });
+                }
+            }
+        }
+        return results;
     }
 
     function getCategoriesForApp(app) {
@@ -525,17 +685,15 @@ Singleton {
     }
 
     function getAppsInCategory(category) {
-        if (category === I18n.tr("All")) {
-            return applications;
-        }
+        const visibleApps = getVisibleApplications();
+        if (category === I18n.tr("All"))
+            return visibleApps;
 
-        // Check if it's a plugin category
         const pluginItems = getPluginItems(category, "");
-        if (pluginItems.length > 0) {
+        if (pluginItems.length > 0)
             return pluginItems;
-        }
 
-        return applications.filter(app => {
+        return visibleApps.filter(app => {
             const appCategories = getCategoriesForApp(app);
             return appCategories.includes(category);
         });
@@ -697,6 +855,41 @@ Singleton {
         return false;
     }
 
+    function getPluginPasteText(pluginId, item) {
+        if (typeof PluginService === "undefined")
+            return null;
+
+        const instance = PluginService.pluginInstances[pluginId];
+        if (!instance)
+            return null;
+
+        if (typeof instance.getPasteText === "function") {
+            return instance.getPasteText(item);
+        }
+
+        return null;
+    }
+
+    function getPluginPasteArgs(pluginId, item) {
+        if (typeof PluginService === "undefined")
+            return null;
+
+        const instance = PluginService.pluginInstances[pluginId];
+        if (!instance)
+            return null;
+
+        if (typeof instance.getPasteArgs === "function")
+            return instance.getPasteArgs(item);
+
+        if (typeof instance.getPasteText === "function") {
+            const text = instance.getPasteText(item);
+            if (text)
+                return ["dms", "cl", "copy", text];
+        }
+
+        return null;
+    }
+
     function searchPluginItems(query) {
         if (typeof PluginService === "undefined")
             return [];
@@ -710,5 +903,53 @@ Singleton {
         }
 
         return allItems;
+    }
+
+    function getPluginLauncherCategories(pluginId) {
+        if (typeof PluginService === "undefined")
+            return [];
+
+        const instance = PluginService.pluginInstances[pluginId];
+        if (!instance)
+            return [];
+
+        if (typeof instance.getCategories !== "function")
+            return [];
+
+        try {
+            return instance.getCategories() || [];
+        } catch (e) {
+            console.warn("AppSearchService: Error getting categories from plugin", pluginId, ":", e);
+            return [];
+        }
+    }
+
+    function setPluginLauncherCategory(pluginId, categoryId) {
+        if (typeof PluginService === "undefined")
+            return;
+
+        const instance = PluginService.pluginInstances[pluginId];
+        if (!instance)
+            return;
+
+        if (typeof instance.setCategory !== "function")
+            return;
+
+        try {
+            instance.setCategory(categoryId);
+        } catch (e) {
+            console.warn("AppSearchService: Error setting category on plugin", pluginId, ":", e);
+        }
+    }
+
+    function pluginHasCategories(pluginId) {
+        if (typeof PluginService === "undefined")
+            return false;
+
+        const instance = PluginService.pluginInstances[pluginId];
+        if (!instance)
+            return false;
+
+        return typeof instance.getCategories === "function";
     }
 }

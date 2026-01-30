@@ -14,12 +14,22 @@ Singleton {
     readonly property string outputsPath: hyprDmsDir + "/outputs.conf"
     readonly property string layoutPath: hyprDmsDir + "/layout.conf"
     readonly property string cursorPath: hyprDmsDir + "/cursor.conf"
+    readonly property string windowrulesPath: hyprDmsDir + "/windowrules.conf"
 
     property int _lastGapValue: -1
 
     Component.onCompleted: {
-        if (CompositorService.isHyprland)
+        if (CompositorService.isHyprland) {
             Qt.callLater(generateLayoutConfig);
+            ensureWindowrulesConfig();
+        }
+    }
+
+    function ensureWindowrulesConfig() {
+        Proc.runCommand("hypr-ensure-windowrules", ["sh", "-c", `mkdir -p "${hyprDmsDir}" && [ ! -f "${windowrulesPath}" ] && touch "${windowrulesPath}" || true`], (output, exitCode) => {
+            if (exitCode !== 0)
+                console.warn("HyprlandService: Failed to ensure windowrules.conf:", output);
+        });
     }
 
     Connections {
@@ -88,8 +98,8 @@ Singleton {
             if (transform !== 0)
                 monitorLine += ", transform, " + transform;
 
-            if (output.vrr_supported && output.vrr_enabled)
-                monitorLine += ", vrr, 1";
+            if (output.vrr_supported)
+                monitorLine += ", vrr, " + (output.vrr_enabled ? "1" : "0");
 
             if (output.mirror && output.mirror.length > 0)
                 monitorLine += ", mirror, " + output.mirror;
@@ -306,6 +316,20 @@ decoration {
             if (hasTheme)
                 Proc.runCommand("hyprctl-setcursor", ["hyprctl", "setcursor", themeName, String(size)], () => {});
             reloadConfig();
+        });
+    }
+
+    function renameWorkspace(newName) {
+        if (!Hyprland.focusedWorkspace)
+            return;
+        const wsId = Hyprland.focusedWorkspace.id;
+        if (!wsId)
+            return;
+        const fullName = wsId + " " + newName;
+        Proc.runCommand("hyprland-rename-ws", ["hyprctl", "dispatch", "renameworkspace", String(wsId), fullName], (output, exitCode) => {
+            if (exitCode !== 0) {
+                console.warn("HyprlandService: Failed to rename workspace:", output);
+            }
         });
     }
 }

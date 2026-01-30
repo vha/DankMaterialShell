@@ -24,7 +24,9 @@ LANGUAGES = {
     "es": "es.json",
     "he": "he.json",
     "hu": "hu.json",
-    "fa": "fa.json"
+    "fa": "fa.json",
+    "fr": "fr.json",
+    "nl": "nl.json"
 }
 
 def error(msg):

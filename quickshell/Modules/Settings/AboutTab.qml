@@ -7,6 +7,9 @@ import qs.Widgets
 Item {
     id: aboutTab
 
+    LayoutMirroring.enabled: I18n.isRtl
+    LayoutMirroring.childrenInherit: true
+
     property bool isHyprland: CompositorService.isHyprland
     property bool isNiri: CompositorService.isNiri
     property bool isSway: CompositorService.isSway
@@ -177,10 +180,11 @@ Item {
 
                     StyledText {
                         text: {
-                            if (!SystemUpdateService.shellVersion)
+                            if (!SystemUpdateService.shellVersion && !DMSService.cliVersion)
                                 return "dms";
 
-                            let version = SystemUpdateService.shellVersion;
+                            let version = SystemUpdateService.shellVersion || "";
+                            let cliVersion = DMSService.cliVersion || "";
 
                             // Debian/Ubuntu/OpenSUSE git format: 1.0.3+git2264.c5c5ce84
                             let match = version.match(/^([\d.]+)\+git(\d+)\./);
@@ -191,13 +195,43 @@ Item {
                             // Fedora COPR git format: 0.0.git.2267.d430cae9
                             match = version.match(/^[\d.]+\.git\.(\d+)\./);
                             if (match) {
-                                return `dms (git) v1.0.3-${match[1]}`;
+                                function extractBaseVersion(value) {
+                                    if (!value)
+                                        return "";
+                                    let baseMatch = value.match(/(\d+\.\d+\.\d+)/);
+                                    if (baseMatch)
+                                        return baseMatch[1];
+                                    baseMatch = value.match(/(\d+\.\d+)/);
+                                    if (baseMatch)
+                                        return baseMatch[1];
+                                    return "";
+                                }
+
+                                let baseVersion = extractBaseVersion(cliVersion);
+                                if (!baseVersion)
+                                    baseVersion = extractBaseVersion(SystemUpdateService.semverVersion);
+                                if (baseVersion) {
+                                    return `dms (git) v${baseVersion}-${match[1]}`;
+                                }
+                                return `dms (git) v${match[1]}`;
                             }
 
                             // Stable release format: 1.0.3
                             match = version.match(/^([\d.]+)$/);
                             if (match) {
                                 return `dms v${match[1]}`;
+                            }
+
+                            if (!version && cliVersion) {
+                                match = cliVersion.match(/^([\d.]+)\+git(\d+)\./);
+                                if (match) {
+                                    return `dms (git) v${match[1]}-${match[2]}`;
+                                }
+                                match = cliVersion.match(/^([\d.]+)$/);
+                                if (match) {
+                                    return `dms v${match[1]}`;
+                                }
+                                return `dms ${cliVersion}`;
                             }
 
                             return `dms ${version}`;
@@ -224,7 +258,7 @@ Item {
                         anchors.horizontalCenter: parent.horizontalCenter
                         spacing: Theme.spacingS
 
-                        property bool compactMode: parent.width < 400
+                        property bool compactMode: parent.width < 450
 
                         DankButton {
                             id: docsButton
@@ -597,6 +631,7 @@ Item {
                     }
 
                     Row {
+                        anchors.left: parent.left
                         spacing: Theme.spacingL
 
                         Column {
@@ -606,6 +641,7 @@ Item {
                                 text: I18n.tr("Version")
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.surfaceVariantText
+                                horizontalAlignment: Text.AlignLeft
                             }
 
                             StyledText {
@@ -613,6 +649,7 @@ Item {
                                 font.pixelSize: Theme.fontSizeMedium
                                 font.weight: Font.Medium
                                 color: Theme.surfaceText
+                                horizontalAlignment: Text.AlignLeft
                             }
                         }
 
@@ -629,6 +666,7 @@ Item {
                                 text: I18n.tr("API")
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.surfaceVariantText
+                                horizontalAlignment: Text.AlignLeft
                             }
 
                             StyledText {
@@ -636,6 +674,7 @@ Item {
                                 font.pixelSize: Theme.fontSizeMedium
                                 font.weight: Font.Medium
                                 color: Theme.surfaceText
+                                horizontalAlignment: Text.AlignLeft
                             }
                         }
 
@@ -652,6 +691,7 @@ Item {
                                 text: I18n.tr("Status")
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.surfaceVariantText
+                                horizontalAlignment: Text.AlignLeft
                             }
 
                             Row {
@@ -670,6 +710,7 @@ Item {
                                     font.pixelSize: Theme.fontSizeMedium
                                     font.weight: Font.Medium
                                     color: Theme.surfaceText
+                                    horizontalAlignment: Text.AlignLeft
                                 }
                             }
                         }
@@ -684,6 +725,8 @@ Item {
                             text: I18n.tr("Capabilities")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
+                            width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         Flow {
@@ -749,6 +792,7 @@ Item {
                     }
 
                     Row {
+                        anchors.left: parent.left
                         spacing: Theme.spacingS
 
                         DankButton {

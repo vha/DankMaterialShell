@@ -11,6 +11,10 @@ Item {
     required property int iconSize
     property string fallbackText: "A"
     property color iconColor: Theme.surfaceText
+    property color colorOverride: "transparent"
+    property real brightnessOverride: 0.0
+    property real contrastOverride: 0.0
+    property real saturationOverride: 0.0
     property color fallbackBackgroundColor: Theme.surfaceLight
     property color fallbackTextColor: Theme.primary
     property real materialIconSizeAdjustment: Theme.spacingM
@@ -26,8 +30,11 @@ Item {
     readonly property bool isUnicode: iconValue.startsWith("unicode:")
     readonly property bool isSvgCorner: iconValue.startsWith("svg+corner:")
     readonly property bool isSvg: !isSvgCorner && iconValue.startsWith("svg:")
+    readonly property bool isImage: iconValue.startsWith("image:")
+    readonly property bool hasColorOverride: colorOverride.a > 0
     readonly property string materialName: isMaterial ? iconValue.substring(9) : ""
     readonly property string unicodeChar: isUnicode ? iconValue.substring(8) : ""
+    readonly property string imagePath: isImage ? iconValue.substring(6) : ""
     readonly property string svgSource: {
         if (isSvgCorner) {
             const parts = iconValue.substring(11).split("|");
@@ -38,7 +45,7 @@ Item {
         return "";
     }
     readonly property string svgCornerIcon: isSvgCorner ? (iconValue.substring(11).split("|")[1] || "") : ""
-    readonly property string iconPath: isMaterial || isUnicode || isSvg || isSvgCorner ? "" : Quickshell.iconPath(iconValue, true) || DesktopService.resolveIconPath(iconValue)
+    readonly property string iconPath: isMaterial || isUnicode || isSvg || isSvgCorner || isImage ? "" : Quickshell.iconPath(iconValue, true) || DesktopService.resolveIconPath(iconValue)
 
     visible: iconValue !== undefined && iconValue !== ""
 
@@ -46,7 +53,7 @@ Item {
         anchors.centerIn: parent
         name: root.materialName
         size: root.iconSize - root.materialIconSizeAdjustment
-        color: root.iconColor
+        color: root.hasColorOverride ? root.colorOverride : root.iconColor
         visible: root.isMaterial
     }
 
@@ -54,7 +61,7 @@ Item {
         anchors.centerIn: parent
         text: root.unicodeChar
         font.pixelSize: root.iconSize * root.unicodeIconScale
-        color: root.iconColor
+        color: root.hasColorOverride ? root.colorOverride : root.iconColor
         visible: root.isUnicode
     }
 
@@ -63,7 +70,19 @@ Item {
         source: root.svgSource
         size: root.iconSize
         cornerIcon: root.svgCornerIcon
+        colorOverride: root.colorOverride
+        brightnessOverride: root.brightnessOverride
+        contrastOverride: root.contrastOverride
+        saturationOverride: root.saturationOverride
         visible: root.isSvg || root.isSvgCorner
+    }
+
+    CachingImage {
+        id: cachingImg
+        anchors.fill: parent
+        imagePath: root.imagePath
+        maxCacheSize: root.iconSize * 2
+        visible: root.isImage && status === Image.Ready
     }
 
     IconImage {
@@ -71,9 +90,10 @@ Item {
 
         anchors.fill: parent
         source: root.iconPath
-        smooth: true
+        backer.sourceSize: Qt.size(root.iconSize, root.iconSize)
+        mipmap: true
         asynchronous: true
-        visible: !root.isMaterial && !root.isUnicode && !root.isSvg && !root.isSvgCorner && root.iconPath !== "" && status === Image.Ready
+        visible: !root.isMaterial && !root.isUnicode && !root.isSvg && !root.isSvgCorner && !root.isImage && root.iconPath !== "" && status === Image.Ready
     }
 
     Rectangle {
@@ -84,7 +104,7 @@ Item {
         anchors.rightMargin: root.fallbackRightMargin
         anchors.topMargin: root.fallbackTopMargin
         anchors.bottomMargin: root.fallbackBottomMargin
-        visible: !root.isMaterial && !root.isUnicode && !root.isSvg && !root.isSvgCorner && (root.iconPath === "" || iconImg.status !== Image.Ready)
+        visible: !root.isMaterial && !root.isUnicode && !root.isSvg && !root.isSvgCorner && !root.isImage && (root.iconPath === "" || iconImg.status !== Image.Ready)
         color: root.fallbackBackgroundColor
         radius: Theme.cornerRadius
         border.width: 0

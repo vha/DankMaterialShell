@@ -16,8 +16,8 @@ Item {
 
     Column {
         anchors.fill: parent
-        anchors.margins: Theme.spacingL
-        spacing: Theme.spacingL
+        anchors.margins: Theme.spacingM
+        spacing: Theme.spacingM
         focus: false
 
         ClipboardHeader {
@@ -25,9 +25,14 @@ Item {
             width: parent.width
             totalCount: modal.totalCount
             showKeyboardHints: modal.showKeyboardHints
+            activeTab: modal.activeTab
+            pinnedCount: modal.pinnedCount
             onKeyboardHintsToggled: modal.showKeyboardHints = !modal.showKeyboardHints
+            onTabChanged: tabName => modal.activeTab = tabName
             onClearAllClicked: {
-                clearConfirmDialog.show(I18n.tr("Clear All History?"), I18n.tr("This will permanently delete all clipboard history."), function () {
+                const hasPinned = modal.pinnedCount > 0;
+                const message = hasPinned ? I18n.tr("This will delete all unpinned entries. %1 pinned entries will be kept.").arg(modal.pinnedCount) : I18n.tr("This will permanently delete all clipboard history.");
+                clearConfirmDialog.show(I18n.tr("Clear History?"), message, function () {
                     modal.clearAll();
                     modal.hide();
                 }, function () {});
@@ -70,18 +75,20 @@ Item {
 
         Rectangle {
             width: parent.width
-            height: parent.height - ClipboardConstants.headerHeight - 70
+            height: parent.height - y - keyboardHintsContainer.height - Theme.spacingL
             radius: Theme.cornerRadius
             color: "transparent"
             clip: true
 
+            // Recents Tab
             DankListView {
                 id: clipboardListView
                 anchors.fill: parent
                 model: ScriptModel {
-                    values: clipboardContent.modal.clipboardEntries
+                    values: clipboardContent.modal.unpinnedEntries
                     objectProp: "id"
                 }
+                visible: modal.activeTab === "recents"
 
                 currentIndex: clipboardContent.modal ? clipboardContent.modal.selectedIndex : 0
                 spacing: Theme.spacingXS
@@ -114,11 +121,11 @@ Item {
                 }
 
                 StyledText {
-                    text: I18n.tr("No clipboard entries found")
+                    text: I18n.tr("No recent clipboard entries found")
                     anchors.centerIn: parent
                     font.pixelSize: Theme.fontSizeMedium
                     color: Theme.surfaceVariantText
-                    visible: clipboardContent.modal.clipboardEntries.length === 0
+                    visible: clipboardContent.modal.unpinnedEntries.length === 0
                 }
 
                 delegate: ClipboardEntry {
@@ -135,13 +142,62 @@ Item {
                     listView: clipboardListView
                     onCopyRequested: clipboardContent.modal.copyEntry(modelData)
                     onDeleteRequested: clipboardContent.modal.deleteEntry(modelData)
+                    onPinRequested: clipboardContent.modal.pinEntry(modelData)
+                    onUnpinRequested: clipboardContent.modal.unpinEntry(modelData)
+                }
+            }
+
+            // Saved Tab
+            DankListView {
+                id: savedListView
+                anchors.fill: parent
+                model: ScriptModel {
+                    values: clipboardContent.modal.pinnedEntries
+                    objectProp: "id"
+                }
+                visible: modal.activeTab === "saved"
+
+                spacing: Theme.spacingXS
+                interactive: true
+                flickDeceleration: 1500
+                maximumFlickVelocity: 2000
+                boundsBehavior: Flickable.DragAndOvershootBounds
+                boundsMovement: Flickable.FollowBoundsBehavior
+                pressDelay: 0
+                flickableDirection: Flickable.VerticalFlick
+
+                StyledText {
+                    text: I18n.tr("No saved clipboard entries")
+                    anchors.centerIn: parent
+                    font.pixelSize: Theme.fontSizeMedium
+                    color: Theme.surfaceVariantText
+                    visible: clipboardContent.modal.pinnedEntries.length === 0
+                }
+
+                delegate: ClipboardEntry {
+                    required property int index
+                    required property var modelData
+
+                    width: savedListView.width
+                    height: ClipboardConstants.itemHeight
+                    entry: modelData
+                    entryIndex: index + 1
+                    itemIndex: index
+                    isSelected: false
+                    modal: clipboardContent.modal
+                    listView: savedListView
+                    onCopyRequested: clipboardContent.modal.copyEntry(modelData)
+                    onDeleteRequested: clipboardContent.modal.deletePinnedEntry(modelData)
+                    onPinRequested: clipboardContent.modal.pinEntry(modelData)
+                    onUnpinRequested: clipboardContent.modal.unpinEntry(modelData)
                 }
             }
         }
 
         Item {
+            id: keyboardHintsContainer
             width: parent.width
-            height: modal.showKeyboardHints ? ClipboardConstants.keyboardHintsHeight + Theme.spacingL : 0
+            height: modal.showKeyboardHints ? ClipboardConstants.keyboardHintsHeight + Theme.spacingM : 0
 
             Behavior on height {
                 NumberAnimation {
@@ -156,7 +212,7 @@ Item {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.margins: Theme.spacingL
+        anchors.margins: Theme.spacingM
         visible: modal.showKeyboardHints
         wtypeAvailable: modal.wtypeAvailable
     }

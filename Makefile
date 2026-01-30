@@ -43,7 +43,6 @@ install-shell:
 	@mkdir -p $(SHELL_INSTALL_DIR)
 	@cp -r $(SHELL_DIR)/* $(SHELL_INSTALL_DIR)/
 	@rm -rf $(SHELL_INSTALL_DIR)/.git* $(SHELL_INSTALL_DIR)/.github
-	@$(MAKE) --no-print-directory -C $(CORE_DIR) print-version > $(SHELL_INSTALL_DIR)/VERSION
 	@echo "Shell files installed"
 
 install-completions:
@@ -59,10 +58,10 @@ install-completions:
 install-systemd:
 	@echo "Installing systemd user service..."
 	@mkdir -p $(SYSTEMD_USER_DIR)
-	@if [ -n "$(SUDO_USER)" ]; then chown -R $(SUDO_USER):$(SUDO_USER) $(SYSTEMD_USER_DIR); fi
+	@if [ -n "$(SUDO_USER)" ]; then chown -R $(SUDO_USER):"$(id -gn $SUDO_USER)" $(SYSTEMD_USER_DIR); fi
 	@sed 's|/usr/bin/dms|$(INSTALL_DIR)/dms|g' $(ASSETS_DIR)/systemd/dms.service > $(SYSTEMD_USER_DIR)/dms.service
 	@chmod 644 $(SYSTEMD_USER_DIR)/dms.service
-	@if [ -n "$(SUDO_USER)" ]; then chown $(SUDO_USER):$(SUDO_USER) $(SYSTEMD_USER_DIR)/dms.service; fi
+	@if [ -n "$(SUDO_USER)" ]; then chown $(SUDO_USER):"$(id -gn $SUDO_USER)" $(SYSTEMD_USER_DIR)/dms.service; fi
 	@echo "Systemd service installed to $(SYSTEMD_USER_DIR)/dms.service"
 
 install-icon:
