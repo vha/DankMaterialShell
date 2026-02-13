@@ -391,8 +391,12 @@ Singleton {
             const filtered = filterDisconnectedOnly(parsed);
             savedOutputs = filtered;
 
-            if (CompositorService.isHyprland)
+            if (CompositorService.isHyprland) {
                 initHyprlandSettingsFromConfig(parsed);
+                syncHyprlandVrrFromConfig(parsed);
+            }
+            if (CompositorService.isNiri)
+                syncNiriVrrFromConfig(parsed);
         });
     }
 
@@ -429,6 +433,44 @@ Singleton {
             SettingsData.hyprlandOutputSettings = current;
             SettingsData.saveSettings();
         }
+    }
+
+    function syncHyprlandVrrFromConfig(parsedOutputs) {
+        const current = JSON.parse(JSON.stringify(SettingsData.hyprlandOutputSettings));
+        let changed = false;
+        for (const outputName in parsedOutputs) {
+            const settings = parsedOutputs[outputName]?.hyprlandSettings;
+            const fromConfig = settings?.vrrFullscreenOnly ?? false;
+            const stored = current[outputName]?.vrrFullscreenOnly ?? false;
+            if (fromConfig === stored)
+                continue;
+            if (!current[outputName])
+                current[outputName] = {};
+            if (fromConfig)
+                current[outputName].vrrFullscreenOnly = true;
+            else
+                delete current[outputName].vrrFullscreenOnly;
+            changed = true;
+        }
+        if (changed) {
+            SettingsData.hyprlandOutputSettings = current;
+            SettingsData.saveSettings();
+        }
+    }
+
+    function syncNiriVrrFromConfig(parsedOutputs) {
+        let changed = false;
+        for (const outputName in parsedOutputs) {
+            const output = parsedOutputs[outputName];
+            const current = SettingsData.getNiriOutputSetting(outputName, "vrrOnDemand", false);
+            const fromConfig = output.vrr_on_demand ?? false;
+            if (current === fromConfig)
+                continue;
+            SettingsData.setNiriOutputSetting(outputName, "vrrOnDemand", fromConfig || undefined);
+            changed = true;
+        }
+        if (changed)
+            SettingsData.saveSettings();
     }
 
     function filterDisconnectedOnly(parsedOutputs) {
@@ -479,7 +521,8 @@ Singleton {
             const posMatch = body.match(/position\s+x=(-?\d+)\s+y=(-?\d+)/);
             const scaleMatch = body.match(/scale\s+([\d.]+)/);
             const transformMatch = body.match(/transform\s+"([^"]+)"/);
-            const vrrMatch = body.match(/variable-refresh-rate(?:\s+on)?/);
+            const vrrMatch = body.match(/variable-refresh-rate/);
+            const vrrOnDemandMatch = body.match(/variable-refresh-rate\s+on-demand=true/);
 
             result[name] = {
                 "name": name,
@@ -498,6 +541,7 @@ Singleton {
                 ] : [],
                 "current_mode": 0,
                 "vrr_enabled": !!vrrMatch,
+                "vrr_on_demand": !!vrrOnDemandMatch,
                 "vrr_supported": true
             };
         }
@@ -535,7 +579,7 @@ Singleton {
             const name = match[1].trim();
             const rest = line.substring(line.indexOf(match[7]) + match[7].length);
 
-            let transform = 0, vrr = false, bitdepth = undefined, cm = undefined;
+            let transform = 0, vrrMode = 0, bitdepth = undefined, cm = undefined;
             let sdrBrightness = undefined, sdrSaturation = undefined;
 
             const transformMatch = rest.match(/,\s*transform,\s*(\d+)/);
@@ -544,7 +588,7 @@ Singleton {
 
             const vrrMatch = rest.match(/,\s*vrr,\s*(\d+)/);
             if (vrrMatch)
-                vrr = vrrMatch[1] === "1";
+                vrrMode = parseInt(vrrMatch[1]);
 
             const bitdepthMatch = rest.match(/,\s*bitdepth,\s*(\d+)/);
             if (bitdepthMatch)
@@ -583,13 +627,14 @@ Singleton {
                     }
                 ],
                 "current_mode": 0,
-                "vrr_enabled": vrr,
+                "vrr_enabled": vrrMode >= 1,
                 "vrr_supported": true,
                 "hyprlandSettings": {
                     "bitdepth": bitdepth,
                     "colorManagement": cm,
                     "sdrBrightness": sdrBrightness,
-                    "sdrSaturation": sdrSaturation
+                    "sdrSaturation": sdrSaturation,
+                    "vrrFullscreenOnly": vrrMode === 2 ? true : undefined
                 },
                 "mirror": mirror
             };
@@ -624,28 +669,40 @@ Singleton {
         const result = {};
         const lines = content.split("\n");
         for (const line of lines) {
-            const match = line.match(/^\s*monitorrule=([^,]+),([^,]+),([^,]+),([^,]+),(\d+),([\d.]+),(-?\d+),(-?\d+),(\d+),(\d+),(\d+)/);
-            if (!match)
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("monitorrule="))
                 continue;
-            const name = match[1].trim();
+
+            const params = {};
+            for (const pair of trimmed.substring("monitorrule=".length).split(",")) {
+                const colonIdx = pair.indexOf(":");
+                if (colonIdx < 0)
+                    continue;
+                params[pair.substring(0, colonIdx).trim()] = pair.substring(colonIdx + 1).trim();
+            }
+
+            const name = params.name;
+            if (!name)
+                continue;
+
             result[name] = {
                 "name": name,
                 "logical": {
-                    "x": parseInt(match[7]),
-                    "y": parseInt(match[8]),
-                    "scale": parseFloat(match[6]),
-                    "transform": mangoToTransform(parseInt(match[5]))
+                    "x": parseInt(params.x || "0"),
+                    "y": parseInt(params.y || "0"),
+                    "scale": parseFloat(params.scale || "1"),
+                    "transform": mangoToTransform(parseInt(params.rr || "0"))
                 },
                 "modes": [
                     {
-                        "width": parseInt(match[9]),
-                        "height": parseInt(match[10]),
-                        "refresh_rate": parseInt(match[11]) * 1000
+                        "width": parseInt(params.width || "1920"),
+                        "height": parseInt(params.height || "1080"),
+                        "refresh_rate": parseFloat(params.refresh || "60") * 1000
                     }
                 ],
                 "current_mode": 0,
-                "vrr_enabled": false,
-                "vrr_supported": false
+                "vrr_enabled": parseInt(params.vrr || "0") === 1,
+                "vrr_supported": true
             };
         }
         return result;
@@ -1193,6 +1250,8 @@ Singleton {
                 changeDescriptions.push(outputId + ": " + I18n.tr("Force HDR") + " → " + (changes.supportsHdr ? I18n.tr("Yes") : I18n.tr("No")));
             if (changes.supportsWideColor !== undefined)
                 changeDescriptions.push(outputId + ": " + I18n.tr("Force Wide Color") + " → " + (changes.supportsWideColor ? I18n.tr("Yes") : I18n.tr("No")));
+            if (changes.vrrFullscreenOnly !== undefined)
+                changeDescriptions.push(outputId + ": " + I18n.tr("VRR Fullscreen Only") + " → " + (changes.vrrFullscreenOnly ? I18n.tr("Enabled") : I18n.tr("Disabled")));
         }
 
         if (CompositorService.isNiri) {
@@ -1297,7 +1356,12 @@ Singleton {
 
     function generateNiriOutputsKdl(outputsData, niriSettings) {
         let kdlContent = `// Auto-generated by DMS - do not edit manually\n\n`;
-        for (const outputName in outputsData) {
+        const sortedNames = Object.keys(outputsData).sort((a, b) => {
+            const la = outputsData[a].logical || {};
+            const lb = outputsData[b].logical || {};
+            return (la.x ?? 0) - (lb.x ?? 0) || (la.y ?? 0) - (lb.y ?? 0);
+        });
+        for (const outputName of sortedNames) {
             const output = outputsData[outputName];
             const identifier = getNiriOutputIdentifier(output, outputName);
             const settings = niriSettings[identifier] || {};

@@ -23,6 +23,9 @@ DankPopout {
     popupWidth: 400
     popupHeight: contentLoader.item ? contentLoader.item.implicitHeight : 400
     positioning: ""
+    animationScaleCollapsed: 1.0
+    animationOffset: 0
+
     screen: triggerScreen
     shouldBeVisible: notificationHistoryVisible
 
@@ -104,7 +107,6 @@ DankPopout {
 
             property var externalKeyboardController: null
             property real cachedHeaderHeight: 32
-
             implicitHeight: {
                 let baseHeight = Theme.spacingL * 2;
                 baseHeight += cachedHeaderHeight;
@@ -145,6 +147,22 @@ DankPopout {
                 if (event.key === Qt.Key_Escape) {
                     notificationHistoryVisible = false;
                     event.accepted = true;
+                    return;
+                }
+
+                if (event.key === Qt.Key_Left) {
+                    if (notificationHeader.currentTab > 0) {
+                        notificationHeader.currentTab = 0;
+                        event.accepted = true;
+                    }
+                    return;
+                }
+
+                if (event.key === Qt.Key_Right) {
+                    if (notificationHeader.currentTab === 0 && SettingsData.notificationHistoryEnabled) {
+                        notificationHeader.currentTab = 1;
+                        event.accepted = true;
+                    }
                     return;
                 }
                 if (notificationHeader.currentTab === 1) {
@@ -198,6 +216,7 @@ DankPopout {
                         visible: notificationHeader.currentTab === 0
                         width: parent.width
                         height: parent.height - notificationContent.cachedHeaderHeight - notificationSettings.height - contentColumnInner.spacing * 2
+                        cardAnimateExpansion: true
                     }
 
                     HistoryNotificationList {

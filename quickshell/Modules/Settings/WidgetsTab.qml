@@ -392,6 +392,12 @@ Item {
             widgetObj.showPrinterIcon = SettingsData.controlCenterShowPrinterIcon;
             widgetObj.showScreenSharingIcon = SettingsData.controlCenterShowScreenSharingIcon;
         }
+        if (widgetId === "runningApps") {
+            widgetObj.runningAppsCompactMode = SettingsData.runningAppsCompactMode;
+            widgetObj.runningAppsGroupByApp = SettingsData.runningAppsGroupByApp;
+            widgetObj.runningAppsCurrentWorkspace = SettingsData.runningAppsCurrentWorkspace;
+            widgetObj.runningAppsCurrentMonitor = false;
+        }
         if (widgetId === "diskUsage")
             widgetObj.mountPath = "/";
         if (widgetId === "cpuUsage" || widgetId === "memUsage" || widgetId === "cpuTemp" || widgetId === "gpuTemp")
@@ -419,7 +425,7 @@ Item {
             "id": widget.id,
             "enabled": widget.enabled
         };
-        var keys = ["size", "selectedGpuIndex", "pciId", "mountPath", "minimumWidth", "showSwap", "mediaSize", "clockCompactMode", "focusedWindowCompactMode", "runningAppsCompactMode", "keyboardLayoutNameCompactMode", "showNetworkIcon", "showBluetoothIcon", "showAudioIcon", "showAudioPercent", "showVpnIcon", "showBrightnessIcon", "showBrightnessPercent", "showMicIcon", "showMicPercent", "showBatteryIcon", "showPrinterIcon", "showScreenSharingIcon", "barMaxVisibleApps", "barMaxVisibleRunningApps", "barShowOverflowBadge"];
+        var keys = ["size", "selectedGpuIndex", "pciId", "mountPath", "minimumWidth", "showSwap", "mediaSize", "clockCompactMode", "focusedWindowCompactMode", "runningAppsCompactMode", "keyboardLayoutNameCompactMode", "runningAppsGroupByApp", "runningAppsCurrentWorkspace", "runningAppsCurrentMonitor", "showNetworkIcon", "showBluetoothIcon", "showAudioIcon", "showAudioPercent", "showVpnIcon", "showBrightnessIcon", "showBrightnessPercent", "showMicIcon", "showMicPercent", "showBatteryIcon", "showPrinterIcon", "showScreenSharingIcon", "barMaxVisibleApps", "barMaxVisibleRunningApps", "barShowOverflowBadge"];
         for (var i = 0; i < keys.length; i++) {
             if (widget[keys[i]] !== undefined)
                 result[keys[i]] = widget[keys[i]];
@@ -631,6 +637,12 @@ Item {
                     item.focusedWindowCompactMode = widget.focusedWindowCompactMode;
                 if (widget.runningAppsCompactMode !== undefined)
                     item.runningAppsCompactMode = widget.runningAppsCompactMode;
+                if (widget.runningAppsGroupByApp !== undefined)
+                    item.runningAppsGroupByApp = widget.runningAppsGroupByApp;
+                if (widget.runningAppsCurrentWorkspace !== undefined)
+                    item.runningAppsCurrentWorkspace = widget.runningAppsCurrentWorkspace;
+                if (widget.runningAppsCurrentMonitor !== undefined)
+                    item.runningAppsCurrentMonitor = widget.runningAppsCurrentMonitor;
                 if (widget.keyboardLayoutNameCompactMode !== undefined)
                     item.keyboardLayoutNameCompactMode = widget.keyboardLayoutNameCompactMode;
                 if (widget.barMaxVisibleApps !== undefined)
@@ -714,7 +726,7 @@ Item {
                 width: parent.width
                 height: barSelectorContent.implicitHeight + Theme.spacingL * 2
                 radius: Theme.cornerRadius
-                color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                color: Theme.surfaceContainerHigh
                 border.width: 0
                 visible: hasMultipleBars
 
@@ -767,7 +779,7 @@ Item {
                 width: parent.width
                 height: widgetManagementHeader.implicitHeight + Theme.spacingL * 2
                 radius: Theme.cornerRadius
-                color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                color: Theme.surfaceContainerHigh
                 border.width: 0
 
                 Column {
@@ -867,7 +879,7 @@ Item {
                     width: parent.width
                     height: leftSection.implicitHeight + Theme.spacingL * 2
                     radius: Theme.cornerRadius
-                    color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                    color: Theme.surfaceContainerHigh
                     border.width: 0
 
                     WidgetsTabSection {
@@ -925,7 +937,7 @@ Item {
                     width: parent.width
                     height: centerSection.implicitHeight + Theme.spacingL * 2
                     radius: Theme.cornerRadius
-                    color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                    color: Theme.surfaceContainerHigh
                     border.width: 0
 
                     WidgetsTabSection {
@@ -983,7 +995,7 @@ Item {
                     width: parent.width
                     height: rightSection.implicitHeight + Theme.spacingL * 2
                     radius: Theme.cornerRadius
-                    color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                    color: Theme.surfaceContainerHigh
                     border.width: 0
 
                     WidgetsTabSection {

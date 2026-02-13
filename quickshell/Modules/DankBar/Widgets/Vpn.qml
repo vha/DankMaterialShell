@@ -34,7 +34,7 @@ BasePill {
 
     content: Component {
         Item {
-            implicitWidth: root.widgetThickness - root.horizontalPadding * 2
+            implicitWidth: icon.width
             implicitHeight: root.widgetThickness - root.horizontalPadding * 2
 
             DankIcon {
@@ -71,6 +71,7 @@ BasePill {
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         enabled: !DMSNetworkService.isBusy
         onPressed: event => {
+            root.triggerRipple(this, event.x, event.y);
             switch (event.button) {
             case Qt.RightButton:
                 DMSNetworkService.toggleVpn();
@@ -115,9 +116,19 @@ BasePill {
                 const isLeft = root.axis?.edge === "left";
                 tooltipLoader.item.show(tooltipText, screenX + tooltipX, adjustedY, currentScreen, isLeft, !isLeft);
             } else {
-                const globalPos = mapToGlobal(width / 2, height);
-                const tooltipY = root.barThickness + root.barSpacing + Theme.spacingXS;
-                tooltipLoader.item.show(tooltipText, globalPos.x, tooltipY, root.parentScreen, false, false);
+                const isBottom = root.axis?.edge === "bottom";
+                const globalPos = mapToGlobal(width / 2, 0);
+                const currentScreen = root.parentScreen || Screen;
+
+                let tooltipY;
+                if (isBottom) {
+                    const tooltipHeight = Theme.fontSizeSmall * 1.5 + Theme.spacingS * 2;
+                    tooltipY = currentScreen.height - root.barThickness - root.barSpacing - Theme.spacingXS - tooltipHeight;
+                } else {
+                    tooltipY = root.barThickness + root.barSpacing + Theme.spacingXS;
+                }
+
+                tooltipLoader.item.show(tooltipText, globalPos.x, tooltipY, currentScreen, false, false);
             }
         }
         onExited: {

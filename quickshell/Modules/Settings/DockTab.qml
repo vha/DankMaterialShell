@@ -1,11 +1,21 @@
 import QtQuick
 import qs.Common
+import qs.Modals.FileBrowser
 import qs.Services
 import qs.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
     id: root
+
+    FileBrowserModal {
+        id: dockLogoFileBrowser
+        browserTitle: I18n.tr("Select Dock Launcher Logo")
+        browserIcon: "image"
+        browserType: "generic"
+        filterExtensions: ["*.svg", "*.png", "*.jpg", "*.jpeg", "*.webp"]
+        onFileSelected: path => SettingsData.set("dockLauncherLogoCustomPath", path.replace("file://", ""))
+    }
 
     DankFlickable {
         anchors.fill: parent
@@ -298,6 +308,40 @@ Item {
                         }
                     }
 
+                    Row {
+                        width: parent.width
+                        visible: SettingsData.dockLauncherLogoMode === "custom"
+                        spacing: Theme.spacingM
+
+                        StyledRect {
+                            width: parent.width - selectButton.width - Theme.spacingM
+                            height: 36
+                            radius: Theme.cornerRadius
+                            color: Qt.rgba(Theme.surfaceContainer.r, Theme.surfaceContainer.g, Theme.surfaceContainer.b, 0.9)
+                            border.color: Theme.outlineStrong
+                            border.width: 1
+
+                            StyledText {
+                                anchors.left: parent.left
+                                anchors.leftMargin: Theme.spacingM
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: SettingsData.dockLauncherLogoCustomPath || I18n.tr("Select an image file...")
+                                font.pixelSize: Theme.fontSizeMedium
+                                color: SettingsData.dockLauncherLogoCustomPath ? Theme.surfaceText : Theme.outlineButton
+                                width: parent.width - Theme.spacingM * 2
+                                elide: Text.ElideMiddle
+                            }
+                        }
+
+                        DankActionButton {
+                            id: selectButton
+                            iconName: "folder_open"
+                            width: 36
+                            height: 36
+                            onClicked: dockLogoFileBrowser.open()
+                        }
+                    }
+
                     Column {
                         width: parent.width
                         spacing: Theme.spacingL
@@ -473,6 +517,8 @@ Item {
                 iconName: "space_bar"
                 title: I18n.tr("Spacing")
                 settingKey: "dockSpacing"
+                collapsible: true
+                expanded: false
 
                 SettingsSliderRow {
                     text: I18n.tr("Padding")
@@ -524,6 +570,8 @@ Item {
                 iconName: "border_style"
                 title: I18n.tr("Border")
                 settingKey: "dockBorder"
+                collapsible: true
+                expanded: false
 
                 SettingsToggleRow {
                     text: I18n.tr("Border")

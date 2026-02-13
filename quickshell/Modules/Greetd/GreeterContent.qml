@@ -92,22 +92,19 @@ Item {
                 try {
                     const data = JSON.parse(text);
                     const mainKeyboard = data.keyboards.find(kb => kb.main === true);
+                    if (!mainKeyboard) {
+                        hyprlandCurrentLayout = "";
+                        hyprlandLayoutCount = 0;
+                        return;
+                    }
                     hyprlandKeyboard = mainKeyboard.name;
-                    if (mainKeyboard && mainKeyboard.active_keymap) {
+                    if (mainKeyboard.active_keymap) {
                         const parts = mainKeyboard.active_keymap.split(" ");
-                        if (parts.length > 0) {
-                            hyprlandCurrentLayout = parts[0].substring(0, 2).toUpperCase();
-                        } else {
-                            hyprlandCurrentLayout = mainKeyboard.active_keymap.substring(0, 2).toUpperCase();
-                        }
+                        hyprlandCurrentLayout = parts[0].substring(0, 2).toUpperCase();
                     } else {
                         hyprlandCurrentLayout = "";
                     }
-                    if (mainKeyboard && mainKeyboard.layout_names) {
-                        hyprlandLayoutCount = mainKeyboard.layout_names.length;
-                    } else {
-                        hyprlandLayoutCount = 0;
-                    }
+                    hyprlandLayoutCount = mainKeyboard.layout ? mainKeyboard.layout.split(",").length : 0;
                 } catch (e) {
                     hyprlandCurrentLayout = "";
                     hyprlandLayoutCount = 0;
@@ -131,6 +128,9 @@ Item {
         enabled: isPrimaryScreen
         function onLastSuccessfulUserChanged() {
             applyLastSuccessfulUser();
+        }
+        function onMemoryReadyChanged() {
+            finalizeSessionSelection();
         }
     }
 
@@ -1026,6 +1026,8 @@ Item {
 
     function finalizeSessionSelection() {
         if (GreeterState.sessionList.length === 0)
+            return;
+        if (!GreetdMemory.memoryReady)
             return;
 
         const savedSession = GreetdMemory.lastSessionId;

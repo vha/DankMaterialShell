@@ -17,8 +17,9 @@ Rectangle {
     property var parentModal: null
 
     signal tabChangeRequested(int tabIndex)
-    property var expandedCategories: ({})
-    property var autoExpandedCategories: ({})
+    property string _expandedIds: ","
+    property string _collapsedIds: ","
+    property string _autoExpandedIds: ","
     property bool searchActive: searchField.text.length > 0
     property int searchSelectedIndex: 0
     property int keyboardHighlightIndex: -1
@@ -240,11 +241,10 @@ Rectangle {
             "collapsedByDefault": true,
             "children": [
                 {
-                    "id": "printers",
-                    "text": I18n.tr("Printers"),
-                    "icon": "print",
-                    "tabIndex": 8,
-                    "cupsOnly": true
+                    "id": "audio",
+                    "text": I18n.tr("Audio"),
+                    "icon": "headphones",
+                    "tabIndex": 29
                 },
                 {
                     "id": "clipboard",
@@ -252,6 +252,13 @@ Rectangle {
                     "icon": "content_paste",
                     "tabIndex": 23,
                     "clipboardOnly": true
+                },
+                {
+                    "id": "printers",
+                    "text": I18n.tr("Printers"),
+                    "icon": "print",
+                    "tabIndex": 8,
+                    "cupsOnly": true
                 },
                 {
                     "id": "window_rules",
@@ -334,24 +341,46 @@ Rectangle {
         return true;
     }
 
-    function toggleCategory(categoryId) {
-        var newExpanded = Object.assign({}, expandedCategories);
-        newExpanded[categoryId] = !isCategoryExpanded(categoryId);
-        expandedCategories = newExpanded;
+    function _setExpanded(id, expanded) {
+        var marker = "," + id + ",";
+        if (expanded) {
+            if (_expandedIds.indexOf(marker) < 0)
+                _expandedIds = _expandedIds + id + ",";
+            _collapsedIds = _collapsedIds.replace(marker, ",");
+        } else {
+            _expandedIds = _expandedIds.replace(marker, ",");
+            if (_collapsedIds.indexOf(marker) < 0)
+                _collapsedIds = _collapsedIds + id + ",";
+        }
+    }
 
-        var newAutoExpanded = Object.assign({}, autoExpandedCategories);
-        delete newAutoExpanded[categoryId];
-        autoExpandedCategories = newAutoExpanded;
+    function _setAutoExpanded(id, value) {
+        var marker = "," + id + ",";
+        if (value) {
+            if (_autoExpandedIds.indexOf(marker) < 0)
+                _autoExpandedIds = _autoExpandedIds + id + ",";
+        } else {
+            _autoExpandedIds = _autoExpandedIds.replace(marker, ",");
+        }
+    }
+
+    function _isAutoExpanded(id) {
+        return _autoExpandedIds.indexOf("," + id + ",") >= 0;
+    }
+
+    function toggleCategory(categoryId) {
+        _setExpanded(categoryId, !isCategoryExpanded(categoryId));
+        _setAutoExpanded(categoryId, false);
     }
 
     function isCategoryExpanded(categoryId) {
-        if (expandedCategories[categoryId] !== undefined) {
-            return expandedCategories[categoryId];
-        }
-        var category = categoryStructure.find(cat => cat.id === categoryId);
-        if (category && category.collapsedByDefault) {
+        if (_collapsedIds.indexOf("," + categoryId + ",") >= 0)
             return false;
-        }
+        if (_expandedIds.indexOf("," + categoryId + ",") >= 0)
+            return true;
+        var category = categoryStructure.find(cat => cat.id === categoryId);
+        if (category && category.collapsedByDefault)
+            return false;
         return true;
     }
 
@@ -381,13 +410,8 @@ Rectangle {
             return;
 
         if (!isCategoryExpanded(parent.id)) {
-            var newExpanded = Object.assign({}, expandedCategories);
-            newExpanded[parent.id] = true;
-            expandedCategories = newExpanded;
-
-            var newAutoExpanded = Object.assign({}, autoExpandedCategories);
-            newAutoExpanded[parent.id] = true;
-            autoExpandedCategories = newAutoExpanded;
+            _setExpanded(parent.id, true);
+            _setAutoExpanded(parent.id, true);
         }
     }
 
@@ -395,14 +419,9 @@ Rectangle {
         var oldParent = findParentCategory(oldTabIndex);
         var newParent = findParentCategory(newTabIndex);
 
-        if (oldParent && oldParent !== newParent && autoExpandedCategories[oldParent.id]) {
-            var newExpanded = Object.assign({}, expandedCategories);
-            newExpanded[oldParent.id] = false;
-            expandedCategories = newExpanded;
-
-            var newAutoExpanded = Object.assign({}, autoExpandedCategories);
-            delete newAutoExpanded[oldParent.id];
-            autoExpandedCategories = newAutoExpanded;
+        if (oldParent && oldParent !== newParent && _isAutoExpanded(oldParent.id)) {
+            _setExpanded(oldParent.id, false);
+            _setAutoExpanded(oldParent.id, false);
         }
     }
 
@@ -498,7 +517,7 @@ Rectangle {
     implicitWidth: __calculatedWidth
     width: __calculatedWidth
     height: parent.height
-    color: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
+    color: Theme.surfaceContainer
     radius: Theme.cornerRadius
 
     StyledTextMetrics {
@@ -596,12 +615,12 @@ Rectangle {
                 id: searchField
                 width: parent.width - parent.leftPadding - parent.rightPadding
                 placeholderText: I18n.tr("Search...")
-                backgroundColor: Theme.withAlpha(Theme.surfaceContainerHighest, Theme.popupTransparency)
                 normalBorderColor: Theme.outlineMedium
                 focusedBorderColor: Theme.primary
                 leftIconName: "search"
                 leftIconSize: Theme.iconSize - 4
                 showClearButton: text.length > 0
+                usePopupTransparency: false
                 onTextChanged: {
                     SettingsSearchService.search(text);
                     root.searchSelectedIndex = 0;
@@ -689,10 +708,16 @@ Rectangle {
                         radius: Theme.cornerRadius
                         color: {
                             if (root.searchSelectedIndex === index)
-                                return Theme.primary;
+                                return Theme.buttonBg;
                             if (resultMouseArea.containsMouse)
                                 return Theme.surfaceHover;
                             return "transparent";
+                        }
+
+                        DankRipple {
+                            id: resultRipple
+                            rippleColor: root.searchSelectedIndex === resultDelegate.index ? Theme.buttonText : Theme.surfaceText
+                            cornerRadius: resultDelegate.radius
                         }
 
                         Row {
@@ -707,7 +732,7 @@ Rectangle {
                             DankIcon {
                                 name: resultDelegate.modelData.icon || "settings"
                                 size: Theme.iconSize - 2
-                                color: root.searchSelectedIndex === resultDelegate.index ? Theme.primaryText : Theme.surfaceText
+                                color: root.searchSelectedIndex === resultDelegate.index ? Theme.buttonText : Theme.surfaceText
                                 anchors.verticalCenter: parent.verticalCenter
                             }
 
@@ -720,7 +745,7 @@ Rectangle {
                                     text: resultDelegate.modelData.label
                                     font.pixelSize: Theme.fontSizeMedium
                                     font.weight: Font.Medium
-                                    color: root.searchSelectedIndex === resultDelegate.index ? Theme.primaryText : Theme.surfaceText
+                                    color: root.searchSelectedIndex === resultDelegate.index ? Theme.buttonText : Theme.surfaceText
                                     width: parent.width
                                     wrapMode: Text.Wrap
                                     horizontalAlignment: Text.AlignLeft
@@ -729,7 +754,7 @@ Rectangle {
                                 StyledText {
                                     text: resultDelegate.modelData.category
                                     font.pixelSize: Theme.fontSizeSmall - 1
-                                    color: root.searchSelectedIndex === resultDelegate.index ? Theme.withAlpha(Theme.primaryText, 0.7) : Theme.surfaceVariantText
+                                    color: root.searchSelectedIndex === resultDelegate.index ? Theme.withAlpha(Theme.buttonText, 0.7) : Theme.surfaceVariantText
                                     width: parent.width
                                     wrapMode: Text.Wrap
                                     horizontalAlignment: Text.AlignLeft
@@ -742,6 +767,7 @@ Rectangle {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
+                            onPressed: mouse => resultRipple.trigger(mouse.x, mouse.y)
                             onClicked: root.selectSearchResult(resultDelegate.modelData)
                         }
 
@@ -810,12 +836,18 @@ Rectangle {
 
                         color: {
                             if (isActive)
-                                return Theme.primary;
+                                return Theme.buttonBg;
                             if (isHighlighted)
-                                return Theme.primaryHover;
+                                return Theme.buttonHover;
                             if (categoryMouseArea.containsMouse)
                                 return Theme.surfaceHover;
                             return "transparent";
+                        }
+
+                        DankRipple {
+                            id: categoryRipple
+                            rippleColor: categoryRow.isActive ? Theme.buttonText : Theme.surfaceText
+                            cornerRadius: categoryRow.radius
                         }
 
                         Row {
@@ -828,7 +860,7 @@ Rectangle {
                             DankIcon {
                                 name: categoryDelegate.modelData.icon || ""
                                 size: Theme.iconSize - 2
-                                color: categoryRow.isActive ? Theme.primaryText : Theme.surfaceText
+                                color: categoryRow.isActive ? Theme.buttonText : Theme.surfaceText
                                 anchors.verticalCenter: parent.verticalCenter
                             }
 
@@ -836,7 +868,7 @@ Rectangle {
                                 text: categoryDelegate.modelData.text || ""
                                 font.pixelSize: Theme.fontSizeMedium
                                 font.weight: (categoryRow.isActive || root.isChildActive(categoryDelegate.modelData)) ? Font.Medium : Font.Normal
-                                color: categoryRow.isActive ? Theme.primaryText : Theme.surfaceText
+                                color: categoryRow.isActive ? Theme.buttonText : Theme.surfaceText
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                         }
@@ -857,6 +889,7 @@ Rectangle {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
+                            onPressed: mouse => categoryRipple.trigger(mouse.x, mouse.y)
                             onClicked: {
                                 root.keyboardHighlightIndex = -1;
                                 if (categoryDelegate.modelData.children) {
@@ -900,12 +933,18 @@ Rectangle {
                                 visible: root.isItemVisible(modelData)
                                 color: {
                                     if (isActive)
-                                        return Theme.primary;
+                                        return Theme.buttonBg;
                                     if (isHighlighted)
-                                        return Theme.primaryHover;
+                                        return Theme.buttonHover;
                                     if (childMouseArea.containsMouse)
                                         return Theme.surfaceHover;
                                     return "transparent";
+                                }
+
+                                DankRipple {
+                                    id: childRipple
+                                    rippleColor: childDelegate.isActive ? Theme.buttonText : Theme.surfaceText
+                                    cornerRadius: childDelegate.radius
                                 }
 
                                 Row {
@@ -918,7 +957,7 @@ Rectangle {
                                     DankIcon {
                                         name: childDelegate.modelData.icon || ""
                                         size: Theme.iconSize - 4
-                                        color: childDelegate.isActive ? Theme.primaryText : Theme.surfaceVariantText
+                                        color: childDelegate.isActive ? Theme.buttonText : Theme.surfaceVariantText
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
 
@@ -926,7 +965,7 @@ Rectangle {
                                         text: childDelegate.modelData.text || ""
                                         font.pixelSize: Theme.fontSizeSmall + 1
                                         font.weight: childDelegate.isActive ? Font.Medium : Font.Normal
-                                        color: childDelegate.isActive ? Theme.primaryText : Theme.surfaceText
+                                        color: childDelegate.isActive ? Theme.buttonText : Theme.surfaceText
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
                                 }
@@ -936,6 +975,7 @@ Rectangle {
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
+                                    onPressed: mouse => childRipple.trigger(mouse.x, mouse.y)
                                     onClicked: {
                                         root.keyboardHighlightIndex = -1;
                                         root.tabChangeRequested(childDelegate.modelData.tabIndex);

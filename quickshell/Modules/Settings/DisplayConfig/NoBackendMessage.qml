@@ -5,10 +5,13 @@ import qs.Widgets
 StyledRect {
     id: root
 
+    LayoutMirroring.enabled: I18n.isRtl
+    LayoutMirroring.childrenInherit: true
+
     width: parent.width
     height: messageContent.implicitHeight + Theme.spacingL * 2
     radius: Theme.cornerRadius
-    color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+    color: Theme.surfaceContainerHigh
     border.color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.2)
     border.width: 0
 
@@ -39,6 +42,8 @@ StyledRect {
                     font.pixelSize: Theme.fontSizeLarge
                     font.weight: Font.Medium
                     color: Theme.surfaceText
+                    width: parent.width
+                    horizontalAlignment: Text.AlignLeft
                 }
 
                 StyledText {
@@ -47,6 +52,7 @@ StyledRect {
                     color: Theme.surfaceVariantText
                     wrapMode: Text.WordWrap
                     width: parent.width
+                    horizontalAlignment: Text.AlignLeft
                 }
             }
         }

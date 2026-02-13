@@ -89,7 +89,7 @@ Flow {
             width: Math.max(contentItem.implicitWidth + root.buttonPadding * 2, root.minButtonWidth) + (selected ? 4 : 0)
             height: root.buttonHeight
 
-            color: selected ? Theme.primary : Theme.surfaceVariant
+            color: selected ? Theme.buttonBg : Theme.surfaceVariant
             border.color: "transparent"
             border.width: 0
 
@@ -155,9 +155,9 @@ Flow {
                 bottomRightRadius: parent.bottomRightRadius
                 color: {
                     if (pressed)
-                        return selected ? Theme.primaryPressed : Theme.surfaceTextHover;
+                        return selected ? Theme.buttonPressed : Theme.surfaceTextHover;
                     if (hovered)
-                        return selected ? Theme.primaryHover : Theme.surfaceTextHover;
+                        return selected ? Theme.buttonHover : Theme.surfaceTextHover;
                     return "transparent";
                 }
 
@@ -167,6 +167,12 @@ Flow {
                         easing.type: Theme.standardEasing
                     }
                 }
+            }
+
+            DankRipple {
+                id: segmentRipple
+                cornerRadius: Theme.cornerRadius
+                rippleColor: segment.selected ? Theme.buttonText : Theme.surfaceVariantText
             }
 
             Item {
@@ -183,7 +189,7 @@ Flow {
                         id: checkIcon
                         name: "check"
                         size: root.checkIconSize
-                        color: segment.selected ? Theme.primaryText : Theme.surfaceVariantText
+                        color: segment.selected ? Theme.buttonText : Theme.surfaceVariantText
                         visible: root.checkEnabled && segment.selected
                         opacity: segment.selected ? 1 : 0
                         scale: segment.selected ? 1 : 0.6
@@ -211,7 +217,7 @@ Flow {
                         text: typeof modelData === "string" ? modelData : modelData.text || ""
                         font.pixelSize: root.textSize
                         font.weight: segment.selected ? Font.Medium : Font.Normal
-                        color: segment.selected ? Theme.primaryText : Theme.surfaceVariantText
+                        color: segment.selected ? Theme.buttonText : Theme.surfaceVariantText
                         anchors.verticalCenter: parent.verticalCenter
                     }
                 }
@@ -222,6 +228,7 @@ Flow {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
+                onPressed: mouse => segmentRipple.trigger(mouse.x, mouse.y)
                 onClicked: root.selectItem(index)
             }
         }

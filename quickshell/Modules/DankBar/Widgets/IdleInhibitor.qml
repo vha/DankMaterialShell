@@ -1,6 +1,4 @@
 import QtQuick
-import QtQuick.Controls
-import Quickshell
 import qs.Common
 import qs.Modules.Plugins
 import qs.Services
@@ -11,10 +9,11 @@ BasePill {
 
     content: Component {
         Item {
-            implicitWidth: root.widgetThickness - root.horizontalPadding * 2
+            implicitWidth: icon.width
             implicitHeight: root.widgetThickness - root.horizontalPadding * 2
 
             DankIcon {
+                id: icon
                 anchors.centerIn: parent
                 name: SessionService.idleInhibited ? "motion_sensor_active" : "motion_sensor_idle"
                 size: Theme.barIconSize(root.barThickness, -4, root.barConfig?.noBackground)
@@ -27,8 +26,11 @@ BasePill {
         z: 1
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
+        onPressed: mouse => {
+            root.triggerRipple(this, mouse.x, mouse.y);
+        }
         onClicked: {
-            SessionService.toggleIdleInhibit()
+            SessionService.toggleIdleInhibit();
         }
     }
 }

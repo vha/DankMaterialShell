@@ -7,6 +7,7 @@ import qs.Widgets
 FloatingWindow {
     id: root
 
+    property bool disablePopupTransparency: true
     property string wifiPasswordSSID: ""
     property string wifiPasswordInput: ""
     property string wifiUsernameInput: ""
@@ -634,7 +635,7 @@ FloatingWindow {
                 Rectangle {
                     id: savePasswordCheckbox
 
-                    property bool checked: true
+                    property bool checked: !isVpnPrompt
 
                     width: 20
                     height: 20

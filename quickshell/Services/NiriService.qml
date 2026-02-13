@@ -167,46 +167,6 @@ Singleton {
         }
     }
 
-    Process {
-        id: ensureOutputsProcess
-        property string outputsPath: ""
-
-        onExited: exitCode => {
-            if (exitCode !== 0)
-                console.warn("NiriService: Failed to ensure outputs.kdl, exit code:", exitCode);
-        }
-    }
-
-    Process {
-        id: ensureBindsProcess
-        property string bindsPath: ""
-
-        onExited: exitCode => {
-            if (exitCode !== 0)
-                console.warn("NiriService: Failed to ensure binds.kdl, exit code:", exitCode);
-        }
-    }
-
-    Process {
-        id: ensureCursorProcess
-        property string cursorPath: ""
-
-        onExited: exitCode => {
-            if (exitCode !== 0)
-                console.warn("NiriService: Failed to ensure cursor.kdl, exit code:", exitCode);
-        }
-    }
-
-    Process {
-        id: ensureWindowrulesProcess
-        property string windowrulesPath: ""
-
-        onExited: exitCode => {
-            if (exitCode !== 0)
-                console.warn("NiriService: Failed to ensure windowrules.kdl, exit code:", exitCode);
-        }
-    }
-
     DankSocket {
         id: eventStreamSocket
         path: root.socketPath
@@ -668,7 +628,15 @@ Singleton {
             return;
         if (pendingScreenshotPath && data.path === pendingScreenshotPath) {
             const editor = Quickshell.env("DMS_SCREENSHOT_EDITOR");
-            const command = editor === "satty" ? ["satty", "-f", data.path] : ["swappy", "-f", data.path];
+            let command;
+            if (editor === "satty") {
+                command = ["satty", "-f", data.path];
+            } else if (editor === "swappy" || !editor) {
+                command = ["swappy", "-f", data.path];
+            } else {
+                // Custom command with %path% placeholder
+                command = editor.split(" ").map(arg => arg === "%path%" ? data.path : arg);
+            }
             Quickshell.execDetached({
                 "command": command
             });
@@ -1076,6 +1044,87 @@ Singleton {
         return result;
     }
 
+    function filterCurrentDisplay(toplevels, screenName) {
+        if (!toplevels || toplevels.length === 0 || !screenName)
+            return toplevels;
+
+        const outputWorkspaceIds = new Set();
+        for (var i = 0; i < allWorkspaces.length; i++) {
+            const ws = allWorkspaces[i];
+            if (ws.output === screenName)
+                outputWorkspaceIds.add(ws.id);
+        }
+
+        if (outputWorkspaceIds.size === 0)
+            return toplevels;
+
+        const displayWindows = windows.filter(niriWindow => outputWorkspaceIds.has(niriWindow.workspace_id));
+        const usedToplevels = new Set();
+        const result = [];
+
+        for (const niriWindow of displayWindows) {
+            let bestMatch = null;
+            let bestScore = -1;
+
+            for (const toplevel of toplevels) {
+                if (usedToplevels.has(toplevel))
+                    continue;
+                if (toplevel.appId === niriWindow.app_id) {
+                    let score = 1;
+
+                    if (niriWindow.title && toplevel.title) {
+                        if (toplevel.title === niriWindow.title) {
+                            score = 3;
+                        } else if (toplevel.title.includes(niriWindow.title) || niriWindow.title.includes(toplevel.title)) {
+                            score = 2;
+                        }
+                    }
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMatch = toplevel;
+                        if (score === 3)
+                            break;
+                    }
+                }
+            }
+
+            if (!bestMatch)
+                continue;
+            usedToplevels.add(bestMatch);
+
+            const workspace = workspaces[niriWindow.workspace_id];
+            const isFocused = niriWindow.is_focused ?? (workspace && workspace.active_window_id === niriWindow.id) ?? false;
+
+            const enrichedToplevel = {
+                "appId": bestMatch.appId,
+                "title": bestMatch.title,
+                "activated": isFocused,
+                "niriWindowId": niriWindow.id,
+                "niriWorkspaceId": niriWindow.workspace_id,
+                "activate": function () {
+                    return NiriService.focusWindow(niriWindow.id);
+                },
+                "close": function () {
+                    if (bestMatch.close) {
+                        return bestMatch.close();
+                    }
+                    return false;
+                }
+            };
+
+            for (let prop in bestMatch) {
+                if (!(prop in enrichedToplevel)) {
+                    enrichedToplevel[prop] = bestMatch[prop];
+                }
+            }
+
+            result.push(enrichedToplevel);
+        }
+
+        return result;
+    }
+
     function generateNiriLayoutConfig() {
         if (!CompositorService.isNiri || configGenerationPending)
             return;
@@ -1141,25 +1190,13 @@ Singleton {
         writeAlttabProcess.command = ["sh", "-c", `mkdir -p "${niriDmsDir}" && cat > "${alttabPath}" << 'EOF'\n${alttabContent}\nEOF`];
         writeAlttabProcess.running = true;
 
-        const outputsPath = niriDmsDir + "/outputs.kdl";
-        ensureOutputsProcess.outputsPath = outputsPath;
-        ensureOutputsProcess.command = ["sh", "-c", `mkdir -p "${niriDmsDir}" && [ ! -f "${outputsPath}" ] && touch "${outputsPath}" || true`];
-        ensureOutputsProcess.running = true;
-
-        const bindsPath = niriDmsDir + "/binds.kdl";
-        ensureBindsProcess.bindsPath = bindsPath;
-        ensureBindsProcess.command = ["sh", "-c", `mkdir -p "${niriDmsDir}" && [ ! -f "${bindsPath}" ] && touch "${bindsPath}" || true`];
-        ensureBindsProcess.running = true;
-
-        const cursorPath = niriDmsDir + "/cursor.kdl";
-        ensureCursorProcess.cursorPath = cursorPath;
-        ensureCursorProcess.command = ["sh", "-c", `mkdir -p "${niriDmsDir}" && [ ! -f "${cursorPath}" ] && touch "${cursorPath}" || true`];
-        ensureCursorProcess.running = true;
-
-        const windowrulesPath = niriDmsDir + "/windowrules.kdl";
-        ensureWindowrulesProcess.windowrulesPath = windowrulesPath;
-        ensureWindowrulesProcess.command = ["sh", "-c", `mkdir -p "${niriDmsDir}" && [ ! -f "${windowrulesPath}" ] && touch "${windowrulesPath}" || true`];
-        ensureWindowrulesProcess.running = true;
+        for (const name of ["outputs", "binds", "cursor", "windowrules", "colors", "alttab", "layout"]) {
+            const path = niriDmsDir + "/" + name + ".kdl";
+            Proc.runCommand("niri-ensure-" + name, ["sh", "-c", `mkdir -p "${niriDmsDir}" && [ ! -f "${path}" ] && touch "${path}" || true`], (output, exitCode) => {
+                if (exitCode !== 0)
+                    console.warn("NiriService: Failed to ensure " + name + ".kdl, exit code:", exitCode);
+            });
+        }
 
         configGenerationPending = false;
     }
@@ -1322,7 +1359,12 @@ Singleton {
             return;
         let kdlContent = `// Auto-generated by DMS - do not edit manually\n\n`;
 
-        for (const outputName in data) {
+        const sortedNames = Object.keys(data).sort((a, b) => {
+            const la = data[a].logical || {};
+            const lb = data[b].logical || {};
+            return (la.x ?? 0) - (lb.x ?? 0) || (la.y ?? 0) - (lb.y ?? 0);
+        });
+        for (const outputName of sortedNames) {
             const output = data[outputName];
             const identifier = getOutputIdentifier(output, outputName);
             const niriSettings = SettingsData.getNiriOutputSettings(identifier);
@@ -1360,7 +1402,7 @@ Singleton {
                 }
             }
 
-            if (output.vrr_enabled) {
+            if (output.vrr_enabled || niriSettings.vrrOnDemand) {
                 const vrrOnDemand = niriSettings.vrrOnDemand ?? false;
                 kdlContent += vrrOnDemand ? `    variable-refresh-rate on-demand=true\n` : `    variable-refresh-rate\n`;
             }
@@ -1447,6 +1489,19 @@ Singleton {
                 "SetWorkspaceName": {
                     "name": name,
                     "workspace": null
+                }
+            }
+        });
+    }
+
+    function moveWorkspaceToIndex(workspaceIdx, targetIndex) {
+        return send({
+            "Action": {
+                "MoveWorkspaceToIndex": {
+                    "index": targetIndex,
+                    "reference": {
+                        "Index": workspaceIdx
+                    }
                 }
             }
         });

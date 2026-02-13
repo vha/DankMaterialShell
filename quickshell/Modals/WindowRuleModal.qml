@@ -7,6 +7,7 @@ import qs.Widgets
 FloatingWindow {
     id: root
 
+    property bool disablePopupTransparency: true
     property var editingRule: null
     property bool isEditMode: editingRule !== null
     property bool isNiri: CompositorService.isNiri
@@ -304,6 +305,8 @@ FloatingWindow {
         color: Theme.primary
         topPadding: Theme.spacingM
         bottomPadding: Theme.spacingXS
+        width: parent.width
+        horizontalAlignment: Text.AlignLeft
     }
 
     component CheckboxRow: Row {
@@ -370,6 +373,9 @@ FloatingWindow {
         anchors.fill: parent
         focus: true
 
+        LayoutMirroring.enabled: I18n.isRtl
+        LayoutMirroring.childrenInherit: true
+
         Keys.onEscapePressed: event => {
             hide();
             event.accepted = true;
@@ -400,12 +406,16 @@ FloatingWindow {
                         font.pixelSize: Theme.fontSizeLarge
                         color: Theme.surfaceText
                         font.weight: Font.Medium
+                        width: parent.width
+                        horizontalAlignment: Text.AlignLeft
                     }
 
                     StyledText {
                         text: I18n.tr("Configure match criteria and actions")
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceTextMedium
+                        width: parent.width
+                        horizontalAlignment: Text.AlignLeft
                     }
                 }
             }
@@ -549,6 +559,8 @@ FloatingWindow {
                             text: I18n.tr("Output")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
+                            width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         InputField {
@@ -574,6 +586,8 @@ FloatingWindow {
                             text: I18n.tr("Workspace")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
+                            width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         InputField {
@@ -605,6 +619,8 @@ FloatingWindow {
                             text: I18n.tr("Column Width")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
+                            width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         InputField {
@@ -630,6 +646,8 @@ FloatingWindow {
                             text: I18n.tr("Window Height")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
+                            width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         InputField {
@@ -709,6 +727,8 @@ FloatingWindow {
                             text: I18n.tr("Block Out From")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
+                            width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         DankDropdown {
@@ -729,6 +749,8 @@ FloatingWindow {
                             text: I18n.tr("Column Display")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
+                            width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         DankDropdown {
@@ -801,6 +823,8 @@ FloatingWindow {
                             text: I18n.tr("Min W")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
+                            width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         InputField {
@@ -826,6 +850,8 @@ FloatingWindow {
                             text: I18n.tr("Max W")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
+                            width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         InputField {
@@ -851,6 +877,8 @@ FloatingWindow {
                             text: I18n.tr("Min H")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
+                            width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         InputField {
@@ -876,6 +904,8 @@ FloatingWindow {
                             text: I18n.tr("Max H")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
+                            width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         InputField {
@@ -959,6 +989,8 @@ FloatingWindow {
                             text: I18n.tr("Size")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
+                            width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         InputField {
@@ -984,6 +1016,8 @@ FloatingWindow {
                             text: I18n.tr("Move")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
+                            width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         InputField {
@@ -1015,6 +1049,8 @@ FloatingWindow {
                             text: I18n.tr("Monitor")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
+                            width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         InputField {
@@ -1040,6 +1076,8 @@ FloatingWindow {
                             text: I18n.tr("Workspace")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
+                            width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         InputField {

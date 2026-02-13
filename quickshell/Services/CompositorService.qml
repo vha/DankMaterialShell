@@ -335,24 +335,59 @@ Singleton {
         return toplevels;
     }
 
+    function filterCurrentDisplay(toplevels, screenName) {
+        if (!toplevels || toplevels.length === 0 || !screenName)
+            return toplevels;
+        if (useNiriSorting)
+            return NiriService.filterCurrentDisplay(toplevels, screenName);
+        if (isHyprland)
+            return filterHyprlandCurrentDisplaySafe(toplevels, screenName);
+        return toplevels;
+    }
+
+    function filterHyprlandCurrentDisplaySafe(toplevels, screenName) {
+        if (!toplevels || toplevels.length === 0 || !Hyprland.toplevels)
+            return toplevels;
+
+        let monitorWindows = new Set();
+        try {
+            const hy = Array.from(Hyprland.toplevels.values);
+            for (const t of hy) {
+                const mon = _get(t, ["monitor", "name"], "");
+                if (mon === screenName && t.wayland)
+                    monitorWindows.add(t.wayland);
+            }
+        } catch (e) {}
+
+        return toplevels.filter(w => monitorWindows.has(w));
+    }
+
     function filterHyprlandCurrentWorkspaceSafe(toplevels, screenName) {
         if (!toplevels || toplevels.length === 0 || !Hyprland.toplevels)
             return toplevels;
 
         let currentWorkspaceId = null;
         try {
-            const hy = Array.from(Hyprland.toplevels.values);
-            for (const t of hy) {
-                const mon = _get(t, ["monitor", "name"], "");
-                const wsId = _get(t, ["workspace", "id"], null);
-                const active = !!_get(t, ["activated"], false);
-                if (mon === screenName && wsId !== null) {
-                    if (active) {
-                        currentWorkspaceId = wsId;
-                        break;
+            if (Hyprland.monitors) {
+                const monitor = Hyprland.monitors.values.find(m => m.name === screenName);
+                if (monitor)
+                    currentWorkspaceId = _get(monitor, ["activeWorkspace", "id"], null);
+            }
+
+            if (currentWorkspaceId === null) {
+                const hy = Array.from(Hyprland.toplevels.values);
+                for (const t of hy) {
+                    const mon = _get(t, ["monitor", "name"], "");
+                    const wsId = _get(t, ["workspace", "id"], null);
+                    const active = !!_get(t, ["activated"], false);
+                    if (mon === screenName && wsId !== null) {
+                        if (active) {
+                            currentWorkspaceId = wsId;
+                            break;
+                        }
+                        if (currentWorkspaceId === null)
+                            currentWorkspaceId = wsId;
                     }
-                    if (currentWorkspaceId === null)
-                        currentWorkspaceId = wsId;
                 }
             }
 
@@ -360,7 +395,7 @@ Singleton {
                 const wss = Array.from(Hyprland.workspaces.values);
                 const focusedId = _get(Hyprland, ["focusedWorkspace", "id"], null);
                 for (const ws of wss) {
-                    const monName = _get(ws, ["monitor"], "");
+                    const monName = _get(ws, ["monitor", "name"], "");
                     const wsId = _get(ws, ["id"], null);
                     if (monName === screenName && wsId !== null) {
                         if (focusedId !== null && wsId === focusedId) {
@@ -379,7 +414,6 @@ Singleton {
         if (currentWorkspaceId === null)
             return toplevels;
 
-        // Map wayland → wsId snapshot
         let map = new Map();
         try {
             const hy = Array.from(Hyprland.toplevels.values);

@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
 import Quickshell.Widgets
 import qs.Common
 import qs.Services
@@ -37,10 +36,18 @@ PanelWindow {
         desktopEntry = entry || null;
 
         visible = true;
+
+        if (targetScreen) {
+            TrayMenuManager.registerMenu(targetScreen.name, root);
+        }
     }
 
     function close() {
         visible = false;
+
+        if (root.screen) {
+            TrayMenuManager.unregisterMenu(root.screen.name);
+        }
     }
 
     screen: null
@@ -54,6 +61,19 @@ PanelWindow {
         left: true
         right: true
         bottom: true
+    }
+
+    Component.onDestruction: {
+        if (root.screen) {
+            TrayMenuManager.unregisterMenu(root.screen.name);
+        }
+    }
+
+    Connections {
+        target: PopoutManager
+        function onPopoutOpening() {
+            root.close();
+        }
     }
 
     Rectangle {
@@ -192,12 +212,19 @@ PanelWindow {
                         }
                     }
 
+                    DankRipple {
+                        id: windowRipple
+                        rippleColor: Theme.surfaceText
+                        cornerRadius: Theme.cornerRadius
+                    }
+
                     MouseArea {
                         id: windowArea
                         anchors.fill: parent
                         anchors.rightMargin: 24
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
+                        onPressed: mouse => windowRipple.trigger(mouse.x, mouse.y)
                         onClicked: {
                             if (modelData && modelData.activate) {
                                 modelData.activate();
@@ -264,11 +291,18 @@ PanelWindow {
                         }
                     }
 
+                    DankRipple {
+                        id: actionRipple
+                        rippleColor: Theme.surfaceText
+                        cornerRadius: Theme.cornerRadius
+                    }
+
                     MouseArea {
                         id: actionArea
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
+                        onPressed: mouse => actionRipple.trigger(mouse.x, mouse.y)
                         onClicked: {
                             if (modelData) {
                                 SessionService.launchDesktopAction(root.desktopEntry, modelData);
@@ -312,11 +346,18 @@ PanelWindow {
                     wrapMode: Text.NoWrap
                 }
 
+                DankRipple {
+                    id: pinRipple
+                    rippleColor: Theme.surfaceText
+                    cornerRadius: Theme.cornerRadius
+                }
+
                 MouseArea {
                     id: pinArea
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
+                    onPressed: mouse => pinRipple.trigger(mouse.x, mouse.y)
                     onClicked: {
                         if (!root.appData) {
                             return;
@@ -365,11 +406,18 @@ PanelWindow {
                     wrapMode: Text.NoWrap
                 }
 
+                DankRipple {
+                    id: nvidiaRipple
+                    rippleColor: Theme.surfaceText
+                    cornerRadius: Theme.cornerRadius
+                }
+
                 MouseArea {
                     id: nvidiaArea
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
+                    onPressed: mouse => nvidiaRipple.trigger(mouse.x, mouse.y)
                     onClicked: {
                         if (root.desktopEntry) {
                             SessionService.launchDesktopEntry(root.desktopEntry, true);
@@ -405,11 +453,18 @@ PanelWindow {
                     wrapMode: Text.NoWrap
                 }
 
+                DankRipple {
+                    id: closeRipple
+                    rippleColor: Theme.error
+                    cornerRadius: Theme.cornerRadius
+                }
+
                 MouseArea {
                     id: closeArea
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
+                    onPressed: mouse => closeRipple.trigger(mouse.x, mouse.y)
                     onClicked: {
                         if (root.appData?.type === "window") {
                             root.appData?.toplevel?.close();

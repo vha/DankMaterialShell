@@ -1,29 +1,23 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Effects
 import Quickshell
-import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.Common
+import qs.Modules.Plugins
 import qs.Services
 import qs.Widgets
 
-Item {
+BasePill {
     id: root
 
+    enableBackgroundHover: false
+    enableCursor: false
+    section: "left"
+
     property var widgetData: null
-    property var barConfig: null
-    property bool isVertical: axis?.isVertical ?? false
-    property var axis: null
-    property string section: "left"
-    property var parentScreen
     property var hoveredItem: null
     property var topBar: null
-    property real widgetThickness: 30
-    property real barThickness: 48
-    property real barSpacing: 4
     property bool isAutoHideBar: false
-    readonly property real horizontalPadding: (barConfig?.noBackground ?? false) ? 2 : Theme.spacingS
     property Item windowRoot: (Window.window ? Window.window.contentItem : null)
 
     property int draggedIndex: -1
@@ -66,7 +60,7 @@ Item {
     readonly property real barY: barBounds.y
 
     readonly property real minTooltipY: {
-        if (!parentScreen || !isVertical) {
+        if (!parentScreen || !isVerticalOrientation) {
             return 0;
         }
 
@@ -322,7 +316,9 @@ Item {
     }
 
     function applyOverflow(baseResult) {
-        const { items } = baseResult;
+        const {
+            items
+        } = baseResult;
         const maxPinned = root.maxVisibleApps;
         const maxRunning = root.maxVisibleRunningApps;
 
@@ -403,110 +399,20 @@ Item {
 
     Component.onCompleted: updateModel()
 
-    readonly property int calculatedSize: {
-        const count = dockItems.length;
-        if (count === 0)
-            return 0;
-
-        if (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode) {
-            return count * 24 + (count - 1) * Theme.spacingXS + horizontalPadding * 2;
-        } else {
-            return count * (24 + Theme.spacingXS + 120) + (count - 1) * Theme.spacingXS + horizontalPadding * 2;
-        }
-    }
-
-    readonly property real realCalculatedSize: {
-        let total = horizontalPadding * 2;
-        const compact = (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode);
-
-        for (let i = 0; i < dockItems.length; i++) {
-            const item = dockItems[i];
-            const isInOverflow = item.isInOverflow === true;
-            if (isInOverflow && !root.overflowExpanded)
-                continue;
-
-            let itemSize = 0;
-            if (item.type === "separator") {
-                itemSize = 8;
-            } else {
-                itemSize = compact ? 24 : (24 + Theme.spacingXS + 120);
-            }
-
-            total += itemSize;
-            if (i < dockItems.length - 1)
-                total += Theme.spacingXS;
-        }
-        return total;
-    }
-
-    width: dockItems.length > 0 ? (isVertical ? barThickness : realCalculatedSize) : 0
-    height: dockItems.length > 0 ? (isVertical ? realCalculatedSize : barThickness) : 0
     visible: dockItems.length > 0
+    readonly property real iconCellSize: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground) + 6
 
-    Item {
-        id: visualBackground
-        width: root.isVertical ? root.widgetThickness : root.realCalculatedSize
-        height: root.isVertical ? root.realCalculatedSize : root.widgetThickness
-        anchors.centerIn: parent
-        clip: false
+    content: Component {
+        Item {
+            implicitWidth: layoutLoader.item ? layoutLoader.item.implicitWidth : 0
+            implicitHeight: layoutLoader.item ? layoutLoader.item.implicitHeight : 0
 
-        Rectangle {
-            id: outline
-            anchors.centerIn: parent
-            width: {
-                const borderWidth = (barConfig?.widgetOutlineEnabled ?? false) ? (barConfig?.widgetOutlineThickness ?? 1) : 0;
-                return parent.width + borderWidth * 2;
-            }
-            height: {
-                const borderWidth = (barConfig?.widgetOutlineEnabled ?? false) ? (barConfig?.widgetOutlineThickness ?? 1) : 0;
-                return parent.height + borderWidth * 2;
-            }
-            radius: (barConfig?.noBackground ?? false) ? 0 : Theme.cornerRadius
-            color: "transparent"
-            border.width: (barConfig?.widgetOutlineEnabled ?? false) ? (barConfig?.widgetOutlineThickness ?? 1) : 0
-            border.color: {
-                if (!(barConfig?.widgetOutlineEnabled ?? false)) {
-                    return "transparent";
-                }
-                const colorOption = barConfig?.widgetOutlineColor || "primary";
-                const opacity = barConfig?.widgetOutlineOpacity ?? 1.0;
-                switch (colorOption) {
-                case "surfaceText":
-                    return Theme.withAlpha(Theme.surfaceText, opacity);
-                case "secondary":
-                    return Theme.withAlpha(Theme.secondary, opacity);
-                case "primary":
-                    return Theme.withAlpha(Theme.primary, opacity);
-                default:
-                    return Theme.withAlpha(Theme.primary, opacity);
-                }
+            Loader {
+                id: layoutLoader
+                anchors.centerIn: parent
+                sourceComponent: root.isVerticalOrientation ? columnLayout : rowLayout
             }
         }
-
-        Rectangle {
-            id: background
-            anchors.fill: parent
-            radius: (barConfig?.noBackground ?? false) ? 0 : Theme.cornerRadius
-            color: {
-                if (dockItems.length === 0)
-                    return "transparent";
-                if ((barConfig?.noBackground ?? false))
-                    return "transparent";
-
-                const baseColor = Theme.widgetBaseBackgroundColor;
-                const transparency = (root.barConfig && root.barConfig.widgetTransparency !== undefined) ? root.barConfig.widgetTransparency : 1.0;
-                if (Theme.widgetBackgroundHasAlpha) {
-                    return Qt.rgba(baseColor.r, baseColor.g, baseColor.b, baseColor.a * transparency);
-                }
-                return Theme.withAlpha(baseColor, transparency);
-            }
-        }
-    }
-
-    Loader {
-        id: layoutLoader
-        anchors.centerIn: parent
-        sourceComponent: root.isVertical ? columnLayout : rowLayout
     }
 
     Component {
@@ -555,9 +461,9 @@ Item {
             readonly property bool isOverflowToggle: modelData.type === "overflow-toggle"
             readonly property bool isInOverflow: modelData.isInOverflow === true
 
-            readonly property real visualSize: isSeparator ? 8 : ((widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode) ? 24 : (24 + Theme.spacingXS + 120))
-            readonly property real visualWidth: root.isVertical ? root.barThickness : visualSize
-            readonly property real visualHeight: root.isVertical ? visualSize : root.barThickness
+            readonly property real visualSize: isSeparator ? 8 : ((widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode) ? root.iconCellSize : (root.iconCellSize + Theme.spacingXS + 120))
+            readonly property real visualWidth: root.isVerticalOrientation ? root.barThickness : visualSize
+            readonly property real visualHeight: root.isVerticalOrientation ? visualSize : root.barThickness
 
             visible: !isInOverflow || root.overflowExpanded
             opacity: (isInOverflow && !root.overflowExpanded) ? 0 : 1
@@ -604,8 +510,8 @@ Item {
             }
 
             transform: Translate {
-                x: root.isVertical ? 0 : delegateItem.shiftOffset
-                y: root.isVertical ? delegateItem.shiftOffset : 0
+                x: root.isVerticalOrientation ? 0 : delegateItem.shiftOffset
+                y: root.isVerticalOrientation ? delegateItem.shiftOffset : 0
 
                 Behavior on x {
                     enabled: !root.suppressShiftAnimation
@@ -625,8 +531,8 @@ Item {
 
             Rectangle {
                 visible: isSeparator
-                width: root.isVertical ? root.barThickness * 0.6 : 2
-                height: root.isVertical ? 2 : root.barThickness * 0.6
+                width: root.isVerticalOrientation ? root.barThickness * 0.6 : 2
+                height: root.isVerticalOrientation ? 2 : root.barThickness * 0.6
                 color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.3)
                 radius: 1
                 anchors.centerIn: parent
@@ -640,7 +546,7 @@ Item {
                 iconSize: 24
                 overflowCount: modelData.overflowCount || 0
                 overflowExpanded: root.overflowExpanded
-                isVertical: root.isVertical
+                isVertical: root.isVerticalOrientation
                 showBadge: root.showOverflowBadge
                 z: 10
                 onClicked: {
@@ -688,20 +594,42 @@ Item {
                     return appName + (windowTitle ? " • " + windowTitle : "");
                 }
 
+                readonly property bool enlargeEnabled: (widgetData?.appsDockEnlargeOnHover !== undefined ? widgetData.appsDockEnlargeOnHover : SettingsData.appsDockEnlargeOnHover)
+                readonly property real enlargeScale: enlargeEnabled && mouseArea.containsMouse ? (widgetData?.appsDockEnlargePercentage !== undefined ? widgetData.appsDockEnlargePercentage : SettingsData.appsDockEnlargePercentage) / 100.0 : 1.0
+                readonly property real baseIconSizeMultiplier: (widgetData?.appsDockIconSizePercentage !== undefined ? widgetData.appsDockIconSizePercentage : SettingsData.appsDockIconSizePercentage) / 100.0
+                readonly property real effectiveIconSize: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground) * baseIconSizeMultiplier
+
+                readonly property color activeOverlayColor: {
+                    switch (SettingsData.appsDockActiveColorMode) {
+                    case "secondary":
+                        return Theme.secondary;
+                    case "primaryContainer":
+                        return Theme.primaryContainer;
+                    case "error":
+                        return Theme.error;
+                    case "success":
+                        return Theme.success;
+                    default:
+                        return Theme.primary;
+                    }
+                }
+
                 transform: Translate {
-                    x: (dragHandler.dragging && !root.isVertical) ? dragHandler.dragAxisOffset : 0
-                    y: (dragHandler.dragging && root.isVertical) ? dragHandler.dragAxisOffset : 0
+                    x: (dragHandler.dragging && !root.isVerticalOrientation) ? dragHandler.dragAxisOffset : 0
+                    y: (dragHandler.dragging && root.isVerticalOrientation) ? dragHandler.dragAxisOffset : 0
                 }
 
                 Rectangle {
                     id: visualContent
-                    width: root.isVertical ? 24 : delegateItem.visualSize
-                    height: root.isVertical ? delegateItem.visualSize : 24
+                    width: root.isVerticalOrientation ? root.iconCellSize : delegateItem.visualSize
+                    height: root.isVerticalOrientation ? delegateItem.visualSize : root.iconCellSize
                     anchors.centerIn: parent
                     radius: Theme.cornerRadius
                     color: {
-                        if (appItem.isFocused) {
-                            return mouseArea.containsMouse ? Theme.primarySelected : Theme.withAlpha(Theme.primary, 0.2);
+                        const colorizeEnabled = (widgetData?.appsDockColorizeActive !== undefined ? widgetData.appsDockColorizeActive : SettingsData.appsDockColorizeActive);
+
+                        if (appItem.isFocused && colorizeEnabled) {
+                            return mouseArea.containsMouse ? Theme.withAlpha(Qt.lighter(appItem.activeOverlayColor, 1.3), 0.4) : Theme.withAlpha(appItem.activeOverlayColor, 0.3);
                         }
                         return mouseArea.containsMouse ? Theme.widgetBaseHoverColor : "transparent";
                     }
@@ -713,13 +641,13 @@ Item {
                     AppIconRenderer {
                         id: coreIcon
                         readonly property bool isCompact: (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode)
-                        anchors.left: (root.isVertical || isCompact) ? undefined : parent.left
-                        anchors.leftMargin: (root.isVertical || isCompact) ? 0 : Theme.spacingXS
-                        anchors.top: (root.isVertical && !isCompact) ? parent.top : undefined
-                        anchors.topMargin: (root.isVertical && !isCompact) ? Theme.spacingXS : 0
-                        anchors.centerIn: (root.isVertical || isCompact) ? parent : undefined
+                        anchors.left: (root.isVerticalOrientation || isCompact) ? undefined : parent.left
+                        anchors.leftMargin: (root.isVerticalOrientation || isCompact) ? 0 : Theme.spacingXS
+                        anchors.top: (root.isVerticalOrientation && !isCompact) ? parent.top : undefined
+                        anchors.topMargin: (root.isVerticalOrientation && !isCompact) ? Theme.spacingXS : 0
+                        anchors.centerIn: (root.isVerticalOrientation || isCompact) ? parent : undefined
 
-                        iconSize: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                        iconSize: appItem.effectiveIconSize
                         materialIconSizeAdjustment: 0
                         iconValue: {
                             if (!modelData || !modelData.isCoreApp || !modelData.coreAppData)
@@ -734,19 +662,28 @@ Item {
                         fallbackText: "?"
                         visible: iconValue !== ""
                         z: 2
+
+                        transformOrigin: Item.Center
+                        scale: appItem.enlargeScale
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: 120
+                                easing.type: Easing.OutCubic
+                            }
+                        }
                     }
 
                     IconImage {
                         id: iconImg
                         readonly property bool isCompact: (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode)
-                        anchors.left: (root.isVertical || isCompact) ? undefined : parent.left
-                        anchors.leftMargin: (root.isVertical || isCompact) ? 0 : Theme.spacingXS
-                        anchors.top: (root.isVertical && !isCompact) ? parent.top : undefined
-                        anchors.topMargin: (root.isVertical && !isCompact) ? Theme.spacingXS : 0
-                        anchors.centerIn: (root.isVertical || isCompact) ? parent : undefined
+                        anchors.left: (root.isVerticalOrientation || isCompact) ? undefined : parent.left
+                        anchors.leftMargin: (root.isVerticalOrientation || isCompact) ? 0 : Theme.spacingXS
+                        anchors.top: (root.isVerticalOrientation && !isCompact) ? parent.top : undefined
+                        anchors.topMargin: (root.isVerticalOrientation && !isCompact) ? Theme.spacingXS : 0
+                        anchors.centerIn: (root.isVerticalOrientation || isCompact) ? parent : undefined
 
-                        width: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
-                        height: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                        width: appItem.effectiveIconSize
+                        height: appItem.effectiveIconSize
                         source: {
                             root._desktopEntriesUpdateTrigger;
                             root._appIdSubstitutionsTrigger;
@@ -771,20 +708,38 @@ Item {
                             colorizationColor: Theme.primary
                         }
                         z: 2
+
+                        transformOrigin: Item.Center
+                        scale: appItem.enlargeScale
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: 120
+                                easing.type: Easing.OutCubic
+                            }
+                        }
                     }
 
                     DankIcon {
                         readonly property bool isCompact: (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode)
-                        anchors.left: (root.isVertical || isCompact) ? undefined : parent.left
-                        anchors.leftMargin: (root.isVertical || isCompact) ? 0 : Theme.spacingXS
-                        anchors.top: (root.isVertical && !isCompact) ? parent.top : undefined
-                        anchors.topMargin: (root.isVertical && !isCompact) ? Theme.spacingXS : 0
-                        anchors.centerIn: (root.isVertical || isCompact) ? parent : undefined
+                        anchors.left: (root.isVerticalOrientation || isCompact) ? undefined : parent.left
+                        anchors.leftMargin: (root.isVerticalOrientation || isCompact) ? 0 : Theme.spacingXS
+                        anchors.top: (root.isVerticalOrientation && !isCompact) ? parent.top : undefined
+                        anchors.topMargin: (root.isVerticalOrientation && !isCompact) ? Theme.spacingXS : 0
+                        anchors.centerIn: (root.isVerticalOrientation || isCompact) ? parent : undefined
 
-                        size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                        size: appItem.effectiveIconSize
                         name: "sports_esports"
                         color: Theme.widgetTextColor
                         visible: !iconImg.visible && !coreIcon.visible && Paths.isSteamApp(appItem.appId)
+
+                        transformOrigin: Item.Center
+                        scale: appItem.enlargeScale
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: 120
+                                easing.type: Easing.OutCubic
+                            }
+                        }
                     }
 
                     Text {
@@ -801,6 +756,15 @@ Item {
                         }
                         font.pixelSize: 10
                         color: Theme.widgetTextColor
+
+                        transformOrigin: Item.Center
+                        scale: appItem.enlargeScale
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: 120
+                                easing.type: Easing.OutCubic
+                            }
+                        }
                     }
 
                     Rectangle {
@@ -812,7 +776,7 @@ Item {
                         height: 14
                         radius: 7
                         color: Theme.primary
-                        visible: modelData.type === "grouped" && appItem.windowCount > 1
+                        visible: modelData.type === "grouped" && appItem.windowCount > 1 && (widgetData?.barShowOverflowBadge !== undefined ? widgetData.barShowOverflowBadge : SettingsData.barShowOverflowBadge)
                         z: 10
 
                         StyledText {
@@ -824,7 +788,7 @@ Item {
                     }
 
                     StyledText {
-                        visible: !root.isVertical && !(widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode)
+                        visible: !root.isVerticalOrientation && !(widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode)
                         anchors.left: iconImg.right
                         anchors.leftMargin: Theme.spacingXS
                         anchors.right: parent.right
@@ -838,17 +802,17 @@ Item {
                     }
 
                     Rectangle {
-                        visible: modelData.isRunning
-                        width: root.isVertical ? 2 : 20
-                        height: root.isVertical ? 20 : 2
+                        visible: modelData.isRunning && !(widgetData?.appsDockHideIndicators !== undefined ? widgetData.appsDockHideIndicators : SettingsData.appsDockHideIndicators)
+                        width: root.isVerticalOrientation ? 2 : 20
+                        height: root.isVerticalOrientation ? 20 : 2
                         radius: 1
                         color: appItem.isFocused ? Theme.primary : Theme.surfaceText
                         opacity: appItem.isFocused ? 1 : 0.5
 
-                        anchors.bottom: root.isVertical ? undefined : parent.bottom
-                        anchors.right: root.isVertical ? parent.right : undefined
-                        anchors.horizontalCenter: root.isVertical ? undefined : parent.horizontalCenter
-                        anchors.verticalCenter: root.isVertical ? parent.verticalCenter : undefined
+                        anchors.bottom: root.isVerticalOrientation ? undefined : parent.bottom
+                        anchors.right: root.isVerticalOrientation ? parent.right : undefined
+                        anchors.horizontalCenter: root.isVerticalOrientation ? undefined : parent.horizontalCenter
+                        anchors.verticalCenter: root.isVerticalOrientation ? parent.verticalCenter : undefined
 
                         anchors.margins: 0
                         z: 5
@@ -951,10 +915,10 @@ Item {
                         if (!dragHandler.dragging)
                             return;
 
-                        const axisOffset = root.isVertical ? (mouse.y - dragHandler.dragStartPos.y) : (mouse.x - dragHandler.dragStartPos.x);
+                        const axisOffset = root.isVerticalOrientation ? (mouse.y - dragHandler.dragStartPos.y) : (mouse.x - dragHandler.dragStartPos.x);
                         dragHandler.dragAxisOffset = axisOffset;
 
-                        const itemSize = (root.isVertical ? delegateItem.height : delegateItem.width) + Theme.spacingXS;
+                        const itemSize = (root.isVerticalOrientation ? delegateItem.height : delegateItem.width) + Theme.spacingXS;
                         const slotOffset = Math.round(axisOffset / itemSize);
                         const newTargetIndex = Math.max(0, Math.min(root.pinnedAppCount - 1, index + slotOffset));
 
@@ -970,22 +934,19 @@ Item {
 
                         tooltipLoader.active = true;
                         if (tooltipLoader.item) {
-                            if (root.isVertical) {
+                            if (root.isVerticalOrientation) {
                                 const globalPos = delegateItem.mapToGlobal(0, delegateItem.height / 2);
                                 const screenX = root.parentScreen ? root.parentScreen.x : 0;
                                 const screenY = root.parentScreen ? root.parentScreen.y : 0;
-                                const barThickness = root.effectiveBarThickness;
-                                const spacing = barConfig?.spacing ?? 4;
                                 const isLeft = root.axis?.edge === "left";
-                                const tooltipOffset = barThickness + spacing + Theme.spacingM;
-                                const tooltipX = isLeft ? tooltipOffset : (root.parentScreen.width - tooltipOffset);
-                                const screenRelativeY = globalPos.y - screenY + root.barY;
+                                const tooltipX = isLeft ? (root.barThickness + root.barSpacing + Theme.spacingXS) : (root.parentScreen.width - root.barThickness - root.barSpacing - Theme.spacingXS);
+                                const screenRelativeY = globalPos.y - screenY + root.minTooltipY;
                                 tooltipLoader.item.show(appItem.tooltipText, screenX + tooltipX, screenRelativeY, root.parentScreen, isLeft, !isLeft);
                             } else {
                                 const globalPos = delegateItem.mapToGlobal(delegateItem.width / 2, delegateItem.height);
                                 const screenHeight = root.parentScreen ? root.parentScreen.height : Screen.height;
                                 const isBottom = root.axis?.edge === "bottom";
-                                const tooltipY = isBottom ? (screenHeight - Theme.barHeight - (barConfig?.spacing ?? 4) - Theme.spacingXS - 35) : (Theme.barHeight + (barConfig?.spacing ?? 4) + Theme.spacingXS);
+                                const tooltipY = isBottom ? (screenHeight - root.barThickness - root.barSpacing - Theme.spacingXS - 35) : (root.barThickness + root.barSpacing + Theme.spacingXS);
                                 tooltipLoader.item.show(appItem.tooltipText, globalPos.x, tooltipY, root.parentScreen, false, false);
                             }
                         }
@@ -1009,21 +970,27 @@ Item {
 
                             if (contextMenuLoader.item) {
                                 const globalPos = delegateItem.mapToGlobal(delegateItem.width / 2, delegateItem.height / 2);
-
+                                const screenX = root.parentScreen ? root.parentScreen.x : 0;
+                                const screenY = root.parentScreen ? root.parentScreen.y : 0;
                                 const isBarVertical = root.axis?.isVertical ?? false;
                                 const barEdge = root.axis?.edge ?? "top";
 
-                                let x = globalPos.x;
-                                let y = globalPos.y;
+                                let x = globalPos.x - screenX;
+                                let y = globalPos.y - screenY;
 
-                                if (barEdge === "bottom") {
-                                    y = (root.parentScreen ? root.parentScreen.height : Screen.height) - root.effectiveBarThickness;
-                                } else if (barEdge === "top") {
-                                    y = root.effectiveBarThickness;
-                                } else if (barEdge === "left") {
-                                    x = root.effectiveBarThickness;
-                                } else if (barEdge === "right") {
-                                    x = (root.parentScreen ? root.parentScreen.width : Screen.width) - root.effectiveBarThickness;
+                                switch (barEdge) {
+                                case "bottom":
+                                    y = (root.parentScreen ? root.parentScreen.height : Screen.height) - root.barThickness - root.barSpacing;
+                                    break;
+                                case "top":
+                                    y = root.barThickness + root.barSpacing;
+                                    break;
+                                case "left":
+                                    x = root.barThickness + root.barSpacing;
+                                    break;
+                                case "right":
+                                    x = (root.parentScreen ? root.parentScreen.width : Screen.width) - root.barThickness - root.barSpacing;
+                                    break;
                                 }
 
                                 const shouldHidePin = modelData.appId === "org.quickshell";

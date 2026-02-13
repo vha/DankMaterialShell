@@ -134,6 +134,7 @@ Singleton {
     property string widgetBackgroundColor: "sch"
     property string widgetColorMode: "default"
     property string controlCenterTileColorMode: "primary"
+    property string buttonColorMode: "primary"
     property real cornerRadius: 12
     property int niriLayoutGapsOverride: -1
     property int niriLayoutRadiusOverride: -1
@@ -153,6 +154,14 @@ Singleton {
     property bool nightModeEnabled: false
     property int animationSpeed: SettingsData.AnimationSpeed.Short
     property int customAnimationDuration: 500
+    property bool syncComponentAnimationSpeeds: true
+    onSyncComponentAnimationSpeedsChanged: saveSettings()
+    property int popoutAnimationSpeed: SettingsData.AnimationSpeed.Short
+    property int popoutCustomAnimationDuration: 150
+    property int modalAnimationSpeed: SettingsData.AnimationSpeed.Short
+    property int modalCustomAnimationDuration: 150
+    property bool enableRippleEffects: true
+    onEnableRippleEffectsChanged: saveSettings()
     property string wallpaperFillMode: "Fill"
     property bool blurredWallpaperLayer: false
     property bool blurWallpaperOnOverview: false
@@ -241,6 +250,7 @@ Singleton {
     property bool showWorkspacePadding: false
     property bool workspaceScrolling: false
     property bool showWorkspaceApps: false
+    property bool workspaceDragReorder: true
     property bool groupWorkspaceApps: true
     property int maxWorkspaceIcons: 3
     property int workspaceAppIconSizeOffset: 0
@@ -260,15 +270,23 @@ Singleton {
     property bool scrollTitleEnabled: true
     property bool audioVisualizerEnabled: true
     property string audioScrollMode: "volume"
+    property int audioWheelScrollAmount: 5
     property bool clockCompactMode: false
     property bool focusedWindowCompactMode: false
     property bool runningAppsCompactMode: true
     property int barMaxVisibleApps: 0
     property int barMaxVisibleRunningApps: 0
     property bool barShowOverflowBadge: true
+    property bool appsDockHideIndicators: false
+    property bool appsDockColorizeActive: false
+    property string appsDockActiveColorMode: "primary"
+    property bool appsDockEnlargeOnHover: false
+    property int appsDockEnlargePercentage: 125
+    property int appsDockIconSizePercentage: 100
     property bool keyboardLayoutNameCompactMode: false
-    property bool runningAppsCurrentWorkspace: false
+    property bool runningAppsCurrentWorkspace: true
     property bool runningAppsGroupByApp: false
+    property bool runningAppsCurrentMonitor: false
     property var appIdSubstitutions: []
     property string centeringMode: "index"
     property string clockDateFormat: ""
@@ -465,6 +483,7 @@ Singleton {
     property bool lockScreenShowPasswordField: true
     property bool lockScreenShowMediaPlayer: true
     property bool lockScreenPowerOffMonitorsOnLock: false
+    property bool lockAtStartup: false
 
     property bool enableFprint: false
     property int maxFprintTries: 15
@@ -485,11 +504,13 @@ Singleton {
     property bool notificationHistorySaveLow: true
     property bool notificationHistorySaveNormal: true
     property bool notificationHistorySaveCritical: true
+    property var notificationRules: []
 
     property bool osdAlwaysShowValue: false
     property int osdPosition: SettingsData.Position.BottomCenter
     property bool osdVolumeEnabled: true
     property bool osdMediaVolumeEnabled: true
+    property bool osdMediaPlaybackEnabled: true
     property bool osdBrightnessEnabled: true
     property bool osdIdleInhibitorEnabled: true
     property bool osdMicMuteEnabled: true
@@ -1003,6 +1024,7 @@ Singleton {
 
         for config_dir in ${_configDir}/gtk-3.0 ${_configDir}/gtk-4.0; do
         settings_file="$config_dir/settings.ini"
+        [ -f "$settings_file" ] && [ ! -w "$settings_file" ] && continue
         if [ -f "$settings_file" ]; then
         if grep -q "^gtk-icon-theme-name=" "$settings_file"; then
         sed -i 's/^gtk-icon-theme-name=.*/gtk-icon-theme-name=${gtkThemeName}/' "$settings_file"
@@ -1801,17 +1823,23 @@ Singleton {
 
     function setCursorTheme(themeName) {
         const updated = JSON.parse(JSON.stringify(cursorSettings));
+        if (updated.theme === themeName)
+            return;
         updated.theme = themeName;
         cursorSettings = updated;
         saveSettings();
+        updateXResources();
         updateCompositorCursor();
     }
 
     function setCursorSize(size) {
         const updated = JSON.parse(JSON.stringify(cursorSettings));
+        if (updated.size === size)
+            return;
         updated.size = size;
         cursorSettings = updated;
         saveSettings();
+        updateXResources();
         updateCompositorCursor();
     }
 
@@ -1819,7 +1847,6 @@ Singleton {
     // https://github.com/Supreeeme/xwayland-satellite/issues/104
     // no idea if this matters on other compositors but we also set XCURSOR stuff in the launcher
     function updateCompositorCursor() {
-        updateXResources();
         if (typeof CompositorService === "undefined")
             return;
         if (CompositorService.isNiri && typeof NiriService !== "undefined") {
@@ -1847,10 +1874,24 @@ Singleton {
 
         const script = `
             xresources_file="${xresourcesPath}"
-            temp_file="\${xresources_file}.tmp.$$"
+            [ -f "$xresources_file" ] && [ ! -w "$xresources_file" ] && exit 0
             theme_name="${themeName}"
             cursor_size="${size}"
 
+            current_theme=""
+            current_size=""
+            if [ -f "$xresources_file" ]; then
+                current_theme=$(grep -E '^[[:space:]]*Xcursor\\.theme:' "$xresources_file" 2>/dev/null | sed 's/.*:[[:space:]]*//' | head -1)
+                current_size=$(grep -E '^[[:space:]]*Xcursor\\.size:' "$xresources_file" 2>/dev/null | sed 's/.*:[[:space:]]*//' | head -1)
+            fi
+
+            [ "$current_theme" = "$theme_name" ] && [ "$current_size" = "$cursor_size" ] && exit 0
+
+            if [ -f "$xresources_file" ]; then
+                cp "$xresources_file" "\${xresources_file}.backup$(date +%s)"
+            fi
+
+            temp_file="\${xresources_file}.tmp.$$"
             if [ -f "$xresources_file" ]; then
                 grep -v '^[[:space:]]*Xcursor\\.theme:' "$xresources_file" | grep -v '^[[:space:]]*Xcursor\\.size:' > "$temp_file" 2>/dev/null || true
             else
@@ -2097,6 +2138,56 @@ Singleton {
         saveSettings();
     }
 
+    function addNotificationRule() {
+        var rules = JSON.parse(JSON.stringify(notificationRules || []));
+        rules.push({
+            enabled: true,
+            field: "appName",
+            pattern: "",
+            matchType: "contains",
+            action: "mute",
+            urgency: "default"
+        });
+        notificationRules = rules;
+        saveSettings();
+    }
+
+    function updateNotificationRule(index, ruleData) {
+        var rules = JSON.parse(JSON.stringify(notificationRules || []));
+        if (index < 0 || index >= rules.length)
+            return;
+        var existing = rules[index] || {};
+        rules[index] = Object.assign({}, existing, ruleData || {});
+        notificationRules = rules;
+        saveSettings();
+    }
+
+    function updateNotificationRuleField(index, key, value) {
+        if (key === undefined || key === null || key === "")
+            return;
+        var patch = {};
+        patch[key] = value;
+        updateNotificationRule(index, patch);
+    }
+
+    function removeNotificationRule(index) {
+        var rules = JSON.parse(JSON.stringify(notificationRules || []));
+        if (index < 0 || index >= rules.length)
+            return;
+        rules.splice(index, 1);
+        notificationRules = rules;
+        saveSettings();
+    }
+
+    function getDefaultNotificationRules() {
+        return Spec.SPEC.notificationRules.def;
+    }
+
+    function resetNotificationRules() {
+        notificationRules = JSON.parse(JSON.stringify(Spec.SPEC.notificationRules.def));
+        saveSettings();
+    }
+
     function getDefaultAppIdSubstitutions() {
         return Spec.SPEC.appIdSubstitutions.def;
     }
@@ -2122,19 +2213,34 @@ Singleton {
             Theme.reloadCustomThemeVariant();
     }
 
-    function getRegistryThemeMultiVariant(themeId, defaults) {
+    function getRegistryThemeMultiVariant(themeId, defaults, mode) {
         var stored = registryThemeVariants[themeId];
-        if (stored && typeof stored === "object")
-            return stored;
-        return defaults || {};
+        if (!stored || typeof stored !== "object")
+            return defaults || {};
+        if ((stored.dark && typeof stored.dark === "object") || (stored.light && typeof stored.light === "object")) {
+            if (!mode)
+                return stored.dark || stored.light || defaults || {};
+            var modeData = stored[mode];
+            if (modeData && typeof modeData === "object")
+                return modeData;
+            return defaults || {};
+        }
+        return stored;
     }
 
-    function setRegistryThemeMultiVariant(themeId, flavor, accent) {
+    function setRegistryThemeMultiVariant(themeId, flavor, accent, mode) {
         var variants = JSON.parse(JSON.stringify(registryThemeVariants));
-        variants[themeId] = {
-            flavor: flavor,
-            accent: accent
-        };
+        var existing = variants[themeId];
+        var perMode = {};
+        if (existing && typeof existing === "object") {
+            if ((existing.dark && typeof existing.dark === "object") || (existing.light && typeof existing.light === "object")) {
+                perMode = existing;
+            } else if (typeof existing.flavor === "string") {
+                perMode.dark = {flavor: existing.flavor, accent: existing.accent || ""};
+            }
+        }
+        perMode[mode || "dark"] = {flavor: flavor, accent: accent};
+        variants[themeId] = perMode;
         registryThemeVariants = variants;
         saveSettings();
         if (typeof Theme !== "undefined")

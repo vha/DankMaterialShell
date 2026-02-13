@@ -384,8 +384,18 @@ PanelWindow {
                 DankCircularImage {
                     id: iconContainer
 
-                    readonly property bool hasNotificationImage: notificationData && notificationData.image && notificationData.image !== ""
-                    readonly property bool needsImagePersist: hasNotificationImage && notificationData.image.startsWith("image://qsimage/") && !notificationData.persistedImagePath
+                    readonly property string rawImage: notificationData?.image || ""
+                    readonly property string iconFromImage: {
+                        if (rawImage.startsWith("image://icon/"))
+                            return rawImage.substring(13);
+                        return "";
+                    }
+                    readonly property bool imageHasSpecialPrefix: {
+                        const icon = iconFromImage;
+                        return icon.startsWith("material:") || icon.startsWith("svg:") || icon.startsWith("unicode:") || icon.startsWith("image:");
+                    }
+                    readonly property bool hasNotificationImage: rawImage !== "" && !rawImage.startsWith("image://icon/")
+                    readonly property bool needsImagePersist: hasNotificationImage && rawImage.startsWith("image://qsimage/") && !notificationData.persistedImagePath
 
                     width: popupIconSize
                     height: popupIconSize
@@ -395,22 +405,26 @@ PanelWindow {
                     imageSource: {
                         if (!notificationData)
                             return "";
-
                         if (hasNotificationImage)
                             return notificationData.cleanImage || "";
-
-                        if (notificationData.appIcon) {
-                            const appIcon = notificationData.appIcon;
-                            if (appIcon.startsWith("file://") || appIcon.startsWith("http://") || appIcon.startsWith("https://"))
-                                return appIcon;
-
-                            return Quickshell.iconPath(appIcon, true);
-                        }
-                        return "";
+                        if (imageHasSpecialPrefix)
+                            return "";
+                        const appIcon = notificationData.appIcon;
+                        if (!appIcon)
+                            return iconFromImage ? "image://icon/" + iconFromImage : "";
+                        if (appIcon.startsWith("file://") || appIcon.startsWith("http://") || appIcon.startsWith("https://") || appIcon.includes("/"))
+                            return appIcon;
+                        if (appIcon.startsWith("material:") || appIcon.startsWith("svg:") || appIcon.startsWith("unicode:") || appIcon.startsWith("image:"))
+                            return "";
+                        return Quickshell.iconPath(appIcon, true);
                     }
 
                     hasImage: hasNotificationImage
-                    fallbackIcon: ""
+                    fallbackIcon: {
+                        if (imageHasSpecialPrefix)
+                            return iconFromImage;
+                        return notificationData?.appIcon || iconFromImage || "";
+                    }
                     fallbackText: {
                         const appName = notificationData?.appName || "?";
                         return appName.charAt(0).toUpperCase();
@@ -704,7 +718,7 @@ PanelWindow {
             target: content
             property: "swipeOffset"
             to: isTopCenter ? -content.height : (SettingsData.notificationPopupPosition === SettingsData.Position.Left || SettingsData.notificationPopupPosition === SettingsData.Position.Bottom ? -content.width : content.width)
-            duration: Anims.durShort
+            duration: Theme.shortDuration
             easing.type: Easing.OutCubic
             onStopped: {
                 NotificationService.dismissNotification(notificationData);
@@ -743,9 +757,9 @@ PanelWindow {
             return isLeft ? -Anims.slidePx : Anims.slidePx;
         }
         to: 0
-        duration: Anims.durMed
+        duration: Theme.mediumDuration
         easing.type: Easing.BezierSpline
-        easing.bezierCurve: isTopCenter ? Anims.standardDecel : Anims.emphasizedDecel
+        easing.bezierCurve: isTopCenter ? Theme.expressiveCurves.standardDecel : Theme.expressiveCurves.emphasizedDecel
         onStopped: {
             if (!win.exiting && !win._isDestroying) {
                 if (isTopCenter) {
@@ -774,9 +788,9 @@ PanelWindow {
                 const isLeft = SettingsData.notificationPopupPosition === SettingsData.Position.Left || SettingsData.notificationPopupPosition === SettingsData.Position.Bottom;
                 return isLeft ? -Anims.slidePx : Anims.slidePx;
             }
-            duration: Anims.durShort
+            duration: Theme.shortDuration
             easing.type: Easing.BezierSpline
-            easing.bezierCurve: Anims.emphasizedAccel
+            easing.bezierCurve: Theme.expressiveCurves.emphasizedAccel
         }
 
         NumberAnimation {
@@ -784,9 +798,9 @@ PanelWindow {
             property: "opacity"
             from: 1
             to: 0
-            duration: Anims.durShort
+            duration: Theme.shortDuration
             easing.type: Easing.BezierSpline
-            easing.bezierCurve: Anims.standardAccel
+            easing.bezierCurve: Theme.expressiveCurves.standardAccel
         }
 
         NumberAnimation {
@@ -794,9 +808,9 @@ PanelWindow {
             property: "scale"
             from: 1
             to: 0.98
-            duration: Anims.durShort
+            duration: Theme.shortDuration
             easing.type: Easing.BezierSpline
-            easing.bezierCurve: Anims.emphasizedAccel
+            easing.bezierCurve: Theme.expressiveCurves.emphasizedAccel
         }
     }
 
@@ -853,9 +867,9 @@ PanelWindow {
         enabled: !exiting && !_isDestroying
 
         NumberAnimation {
-            duration: Anims.durShort
+            duration: Theme.shortDuration
             easing.type: Easing.BezierSpline
-            easing.bezierCurve: Anims.standardDecel
+            easing.bezierCurve: Theme.expressiveCurves.standardDecel
         }
     }
 }

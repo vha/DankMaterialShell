@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell.Io
 import Quickshell.Hyprland
 import Quickshell.Wayland
+import Quickshell.Services.SystemTray
 import qs.Common
 import qs.Services
 import qs.Modules.Settings.DisplayConfig
@@ -335,6 +336,36 @@ Item {
         function stop(): void {
             if (MprisController.activePlayer) {
                 MprisController.activePlayer.stop();
+            }
+        }
+
+        function increment(step: string): string {
+            if (MprisController.activePlayer && MprisController.activePlayer.volumeSupported) {
+                const currentVolume = Math.round(MprisController.activePlayer.volume * 100);
+                const stepValue = parseInt(step || "5");
+                const newVolume = Math.max(0, Math.min(100, currentVolume + stepValue));
+
+                MprisController.activePlayer.volume = newVolume / 100;
+                return `Player volume increased to ${newVolume}%`;
+            }
+        }
+
+        function decrement(step: string): string {
+            if (MprisController.activePlayer && MprisController.activePlayer.volumeSupported) {
+                const currentVolume = Math.round(MprisController.activePlayer.volume * 100);
+                const stepValue = parseInt(step || "5");
+                const newVolume = Math.max(0, Math.min(100, currentVolume - stepValue));
+
+                MprisController.activePlayer.volume = newVolume / 100;
+                return `Player volume decreased to ${newVolume}%`;
+            }
+        }
+
+        function setvolume(percentage: string): string {
+            if (MprisController.activePlayer && MprisController.activePlayer.volumeSupported) {
+                const clampedVolume = Math.max(0, Math.min(100, percentage));
+                MprisController.activePlayer.volume = clampedVolume / 100;
+                return `Player volume set to ${clampedVolume}%`;
             }
         }
 
@@ -941,8 +972,10 @@ Item {
             if (!PluginService.availablePlugins[pluginId])
                 return `PLUGIN_NOT_FOUND: ${pluginId}`;
 
-            if (!PluginService.isPluginLoaded(pluginId))
-                return `PLUGIN_NOT_LOADED: ${pluginId}`;
+            if (!PluginService.isPluginLoaded(pluginId)) {
+                const success = PluginService.enablePlugin(pluginId);
+                return success ? `PLUGIN_RELOAD_SUCCESS: ${pluginId}` : `PLUGIN_RELOAD_FAILED: ${pluginId}`;
+            }
 
             const success = PluginService.reloadPlugin(pluginId);
             return success ? `PLUGIN_RELOAD_SUCCESS: ${pluginId}` : `PLUGIN_RELOAD_FAILED: ${pluginId}`;
@@ -1529,5 +1562,57 @@ Item {
         }
 
         target: "outputs"
+    }
+
+    IpcHandler {
+        function findTrayItem(itemId: string): var {
+            if (!itemId)
+                return null;
+
+            return SystemTray.items.values.find(item => {
+                const id = item?.id || "";
+                const title = item?.tooltipTitle || "";
+                const fullKey = title ? `${id}::${title}` : id;
+                return fullKey === itemId || id === itemId;
+            });
+        }
+
+        function list(): string {
+            const items = SystemTray.items.values;
+            if (items.length === 0)
+                return "No tray items available";
+
+            return items.map(item => {
+                const id = item?.id || "";
+                const title = item?.tooltipTitle || "";
+                const fullKey = title ? `${id}::${title}` : id;
+                const hasMenu = item?.hasMenu ? " [menu]" : "";
+                return fullKey + hasMenu;
+            }).join("\n");
+        }
+
+        function activate(itemId: string): string {
+            const item = findTrayItem(itemId);
+            if (!item)
+                return `ERROR: Tray item not found: ${itemId}`;
+
+            item.activate();
+            return `SUCCESS: Activated ${itemId}`;
+        }
+
+        function status(itemId: string): string {
+            const item = findTrayItem(itemId);
+            if (!item)
+                return `ERROR: Tray item not found: ${itemId}`;
+
+            const id = item?.id || "";
+            const title = item?.tooltipTitle || "";
+            const hasMenu = item?.hasMenu || false;
+            const onlyMenu = item?.onlyMenu || false;
+
+            return `id: ${id}\ntitle: ${title}\nhasMenu: ${hasMenu}\nonlyMenu: ${onlyMenu}`;
+        }
+
+        target: "tray"
     }
 }

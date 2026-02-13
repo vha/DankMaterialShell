@@ -10,8 +10,15 @@ DankListView {
     property bool keyboardActive: false
     property bool autoScrollDisabled: false
     property bool isAnimatingExpansion: false
-    property alias count: listView.count
     property alias listContentHeight: listView.contentHeight
+    property bool cardAnimateExpansion: true
+    property bool listInitialized: false
+
+    Component.onCompleted: {
+        Qt.callLater(() => {
+            listInitialized = true;
+        });
+    }
 
     clip: true
     model: NotificationService.groupedNotifications
@@ -77,10 +84,17 @@ DankListView {
         property real swipeOffset: 0
         property bool isDismissing: false
         readonly property real dismissThreshold: width * 0.35
+        property bool __delegateInitialized: false
+
+        Component.onCompleted: {
+            Qt.callLater(() => {
+                __delegateInitialized = true;
+            });
+        }
 
         width: ListView.view.width
-        height: isDismissing ? 0 : notificationCard.height
-        clip: isDismissing
+        height: isDismissing ? 0 : notificationCard.targetHeight
+        clip: isDismissing || notificationCard.isAnimating
 
         NotificationCard {
             id: notificationCard
@@ -88,6 +102,7 @@ DankListView {
             x: delegateRoot.swipeOffset
             notificationGroup: modelData
             keyboardNavigationActive: listView.keyboardActive
+            animateExpansion: listView.cardAnimateExpansion && listView.listInitialized
             opacity: 1 - Math.abs(delegateRoot.swipeOffset) / (delegateRoot.width * 0.5)
             onIsAnimatingChanged: {
                 if (isAnimating) {
@@ -124,7 +139,7 @@ DankListView {
             }
 
             Behavior on x {
-                enabled: !swipeDragHandler.active
+                enabled: !swipeDragHandler.active && listView.listInitialized
                 NumberAnimation {
                     duration: Theme.shortDuration
                     easing.type: Theme.standardEasing
@@ -132,8 +147,9 @@ DankListView {
             }
 
             Behavior on opacity {
+                enabled: listView.listInitialized
                 NumberAnimation {
-                    duration: Theme.shortDuration
+                    duration: listView.listInitialized ? Theme.shortDuration : 0
                 }
             }
         }

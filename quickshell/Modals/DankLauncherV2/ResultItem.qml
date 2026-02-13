@@ -38,14 +38,25 @@ Rectangle {
     color: isSelected ? Theme.primaryPressed : isHovered ? Theme.primaryHoverLight : "transparent"
     radius: Theme.cornerRadius
 
+    DankRipple {
+        id: rippleLayer
+        rippleColor: Theme.surfaceText
+        cornerRadius: root.radius
+    }
+
     MouseArea {
         id: itemArea
+        z: 1
         anchors.fill: parent
         anchors.rightMargin: root.item?.type === "plugin_browse" ? 40 : 0
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
 
+        onPressed: mouse => {
+            if (mouse.button === Qt.LeftButton)
+                rippleLayer.trigger(mouse.x, mouse.y);
+        }
         onClicked: mouse => {
             if (mouse.button === Qt.RightButton) {
                 var scenePos = mapToItem(null, mouse.x, mouse.y);
@@ -82,23 +93,27 @@ Rectangle {
             width: parent.width - 36 - Theme.spacingM * 3 - rightContent.width
             spacing: 2
 
-            StyledText {
+            Text {
                 width: parent.width
-                text: root.item?.name ?? ""
+                text: root.item?._hName ?? root.item?.name ?? ""
+                textFormat: root.item?._hRich ? Text.RichText : Text.PlainText
                 font.pixelSize: Theme.fontSizeMedium
                 font.weight: Font.Medium
+                font.family: Theme.fontFamily
                 color: Theme.surfaceText
                 elide: Text.ElideRight
                 horizontalAlignment: Text.AlignLeft
             }
 
-            StyledText {
+            Text {
                 width: parent.width
-                text: root.item?.subtitle ?? ""
+                text: root.item?._hSub ?? root.item?.subtitle ?? ""
+                textFormat: root.item?._hRich ? Text.RichText : Text.PlainText
                 font.pixelSize: Theme.fontSizeSmall
+                font.family: Theme.fontFamily
                 color: Theme.surfaceVariantText
                 elide: Text.ElideRight
-                visible: text.length > 0
+                visible: (root.item?.subtitle ?? "").length > 0
                 horizontalAlignment: Text.AlignLeft
             }
         }
@@ -149,7 +164,7 @@ Rectangle {
             }
 
             Rectangle {
-                visible: root.item?.type && root.item.type !== "app" && root.item.type !== "plugin_browse"
+                visible: !!root.item?.type && root.item.type !== "app" && root.item.type !== "plugin_browse"
                 width: typeBadge.implicitWidth + Theme.spacingS * 2
                 height: 20
                 radius: 10

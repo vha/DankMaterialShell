@@ -22,12 +22,18 @@ Row {
         radius: (Theme.iconSize + Theme.spacingS * 2) / 2
         color: iconArea.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : Theme.withAlpha(Theme.primary, 0)
 
+        DankRipple {
+            id: iconRipple
+            cornerRadius: parent.radius
+        }
+
         MouseArea {
             id: iconArea
             anchors.fill: parent
             visible: defaultSink !== null
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
+            onPressed: mouse => iconRipple.trigger(mouse.x, mouse.y)
             onClicked: {
                 if (defaultSink) {
                     SessionData.suppressOSDTemporarily();
@@ -69,7 +75,7 @@ Row {
         width: parent.width - (Theme.iconSize + Theme.spacingS * 2)
         enabled: defaultSink !== null
         minimum: 0
-        maximum: 100
+        maximum: AudioService.sinkMaxVolume
         showValue: true
         unit: "%"
         valueOverride: actualVolumePercent
@@ -91,7 +97,7 @@ Row {
     Binding {
         target: volumeSlider
         property: "value"
-        value: defaultSink ? Math.min(100, Math.round(defaultSink.audio.volume * 100)) : 0
+        value: defaultSink ? Math.min(AudioService.sinkMaxVolume, Math.round(defaultSink.audio.volume * 100)) : 0
         when: !volumeSlider.isDragging
     }
 }

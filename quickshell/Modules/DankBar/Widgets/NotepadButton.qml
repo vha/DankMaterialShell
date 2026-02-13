@@ -10,27 +10,24 @@ import qs.Widgets
 BasePill {
     id: root
 
-    readonly property string focusedScreenName: (
-        CompositorService.isHyprland && typeof Hyprland !== "undefined" && Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.monitor ? (Hyprland.focusedWorkspace.monitor.name || "") :
-        CompositorService.isNiri && typeof NiriService !== "undefined" && NiriService.currentOutput ? NiriService.currentOutput : ""
-    )
+    readonly property string focusedScreenName: (CompositorService.isHyprland && typeof Hyprland !== "undefined" && Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.monitor ? (Hyprland.focusedWorkspace.monitor.name || "") : CompositorService.isNiri && typeof NiriService !== "undefined" && NiriService.currentOutput ? NiriService.currentOutput : "")
 
     function resolveNotepadInstance() {
         if (typeof notepadSlideoutVariants === "undefined" || !notepadSlideoutVariants || !notepadSlideoutVariants.instances) {
-            return null
+            return null;
         }
 
-        const targetScreen = focusedScreenName
+        const targetScreen = focusedScreenName;
         if (targetScreen) {
             for (var i = 0; i < notepadSlideoutVariants.instances.length; i++) {
-                var slideout = notepadSlideoutVariants.instances[i]
+                var slideout = notepadSlideoutVariants.instances[i];
                 if (slideout.modelData && slideout.modelData.name === targetScreen) {
-                    return slideout
+                    return slideout;
                 }
             }
         }
 
-        return notepadSlideoutVariants.instances.length > 0 ? notepadSlideoutVariants.instances[0] : null
+        return notepadSlideoutVariants.instances.length > 0 ? notepadSlideoutVariants.instances[0] : null;
     }
 
     readonly property var notepadInstance: resolveNotepadInstance()
@@ -104,15 +101,11 @@ BasePill {
         let anchorY = relativeY;
 
         if (isVertical) {
-            anchorX = edge === "left"
-                ? (root.barThickness + root.barSpacing + gap)
-                : (screen.width - (root.barThickness + root.barSpacing + gap));
+            anchorX = edge === "left" ? (root.barThickness + root.barSpacing + gap) : (screen.width - (root.barThickness + root.barSpacing + gap));
             anchorY = relativeY + root.minTooltipY;
         } else {
             anchorX = relativeX;
-            anchorY = edge === "bottom"
-                ? (screen.height - (root.barThickness + root.barSpacing + gap))
-                : (root.barThickness + root.barSpacing + gap);
+            anchorY = edge === "bottom" ? (screen.height - (root.barThickness + root.barSpacing + gap)) : (root.barThickness + root.barSpacing + gap);
         }
 
         contextMenuWindow.showAt(anchorX, anchorY, isVertical, edge, screen);
@@ -120,7 +113,7 @@ BasePill {
 
     content: Component {
         Item {
-            implicitWidth: root.widgetThickness - root.horizontalPadding * 2
+            implicitWidth: notepadIcon.width
             implicitHeight: root.widgetThickness - root.horizontalPadding * 2
 
             DankIcon {
@@ -137,14 +130,17 @@ BasePill {
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onClicked: function(mouse) {
+        onPressed: mouse => {
+            root.triggerRipple(this, mouse.x, mouse.y);
+        }
+        onClicked: function (mouse) {
             if (mouse.button === Qt.RightButton) {
                 openContextMenu();
                 return;
             }
-            const inst = root.notepadInstance
+            const inst = root.notepadInstance;
             if (inst) {
-                inst.toggle()
+                inst.toggle();
             }
         }
     }
@@ -168,10 +164,18 @@ BasePill {
             edge = barEdge ?? "top";
 
             visible = true;
+
+            if (contextMenuWindow.screen) {
+                TrayMenuManager.registerMenu(contextMenuWindow.screen.name, contextMenuWindow);
+            }
         }
 
         function closeMenu() {
             visible = false;
+
+            if (contextMenuWindow.screen) {
+                TrayMenuManager.unregisterMenu(contextMenuWindow.screen.name);
+            }
         }
 
         screen: null
@@ -185,6 +189,19 @@ BasePill {
             left: true
             right: true
             bottom: true
+        }
+
+        Component.onDestruction: {
+            if (contextMenuWindow.screen) {
+                TrayMenuManager.unregisterMenu(contextMenuWindow.screen.name);
+            }
+        }
+
+        Connections {
+            target: PopoutManager
+            function onPopoutOpening() {
+                contextMenuWindow.closeMenu();
+            }
         }
 
         MouseArea {

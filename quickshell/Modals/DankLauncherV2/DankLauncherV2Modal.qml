@@ -90,6 +90,8 @@ Item {
             spotlightContent.controller.activePluginName = "";
             spotlightContent.controller.pluginFilter = "";
             spotlightContent.controller.collapsedSections = {};
+            spotlightContent.controller.selectedFlatIndex = 0;
+            spotlightContent.controller.selectedItem = null;
             if (query) {
                 spotlightContent.controller.setSearchQuery(query);
             } else {
@@ -196,7 +198,7 @@ Item {
 
     Timer {
         id: closeCleanupTimer
-        interval: Theme.expressiveDurations.expressiveFastSpatial + 50
+        interval: Theme.modalAnimationDuration + 50
         repeat: false
         onTriggered: {
             isClosing = false;
@@ -307,10 +309,9 @@ Item {
             visible: contentVisible || opacity > 0
 
             Behavior on opacity {
-                NumberAnimation {
-                    duration: Theme.expressiveDurations.expressiveFastSpatial
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: contentVisible ? Theme.expressiveCurves.expressiveFastSpatial : Theme.expressiveCurves.emphasized
+                DankAnim {
+                    duration: Theme.modalAnimationDuration
+                    easing.bezierCurve: contentVisible ? Theme.expressiveCurves.expressiveDefaultSpatial : Theme.expressiveCurves.emphasized
                 }
             }
         }
@@ -343,18 +344,16 @@ Item {
             transformOrigin: Item.Center
 
             Behavior on opacity {
-                NumberAnimation {
-                    duration: Theme.expressiveDurations.fast
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: contentVisible ? Theme.expressiveCurves.expressiveFastSpatial : Theme.expressiveCurves.standardAccel
+                DankAnim {
+                    duration: Theme.modalAnimationDuration
+                    easing.bezierCurve: contentVisible ? Theme.expressiveCurves.expressiveDefaultSpatial : Theme.expressiveCurves.emphasized
                 }
             }
 
             Behavior on scale {
-                NumberAnimation {
-                    duration: Theme.expressiveDurations.fast
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: contentVisible ? Theme.expressiveCurves.expressiveFastSpatial : Theme.expressiveCurves.standardAccel
+                DankAnim {
+                    duration: Theme.modalAnimationDuration
+                    easing.bezierCurve: contentVisible ? Theme.expressiveCurves.expressiveDefaultSpatial : Theme.expressiveCurves.emphasized
                 }
             }
 

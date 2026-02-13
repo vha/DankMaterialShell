@@ -1,4 +1,7 @@
 {
+  "%1 Animation Speed": {
+    "%1 Animation Speed": ""
+  },
   "%1 DMS bind(s) may be overridden by config binds that come after the include.": {
     "%1 DMS bind(s) may be overridden by config binds that come after the include.": "%1 DMS bağlamaları, dahil etmeden sonra gelen yapılandırma bağlamaları tarafından geçersiz kılınabilir."
   },
@@ -13,6 +16,9 @@
   },
   "%1 connected": {
     "%1 connected": "%1 bağlı"
+  },
+  "%1 custom animation duration": {
+    "%1 custom animation duration": ""
   },
   "%1 days ago": {
     "%1 days ago": "%1 gün önce"
@@ -185,6 +191,9 @@
   "Active": {
     "Active": "Etkin"
   },
+  "Active Color": {
+    "Active Color": ""
+  },
   "Active Lock Screen Monitor": {
     "Active Lock Screen Monitor": "Aktif Kilit Ekranı Monitörü"
   },
@@ -232,6 +241,9 @@
   },
   "Adjust the number of columns in grid view mode.": {
     "Adjust the number of columns in grid view mode.": "Izgara görünümü modunda sütun sayısını ayarla"
+  },
+  "Adjust volume per scroll indent": {
+    "Adjust volume per scroll indent": ""
   },
   "Advanced": {
     "Advanced": "Gelişmiş"
@@ -284,6 +296,9 @@
   "Analog": {
     "Analog": "Analog"
   },
+  "Animation Duration": {
+    "Animation Duration": ""
+  },
   "Animation Speed": {
     "Animation Speed": "Animasyon Hızı"
   },
@@ -329,6 +344,9 @@
   "Apps Dock": {
     "Apps Dock": ""
   },
+  "Apps Dock Settings": {
+    "Apps Dock Settings": ""
+  },
   "Apps Icon": {
     "Apps Icon": "Uygulamalar"
   },
@@ -367,6 +385,35 @@
   },
   "Audio Visualizer": {
     "Audio Visualizer": "Ses Görselleştirici"
+  },
+  "Audio device rename dialog field label": {
+    "Custom Name": ""
+  },
+  "Audio device rename dialog hint": {
+    "Press Enter and the audio system will restart to apply the change": ""
+  },
+  "Audio device rename dialog placeholder": {
+    "Enter device name...": ""
+  },
+  "Audio device rename dialog title": {
+    "Set Custom Device Name": ""
+  },
+  "Audio settings description": {
+    "Set custom names for your audio input devices": "",
+    "Set custom names for your audio output devices": ""
+  },
+  "Audio settings empty state": {
+    "No input devices found": "",
+    "No output devices found": ""
+  },
+  "Audio settings: maximum volume limit per device": {
+    "Max Volume": ""
+  },
+  "Audio settings: speaker/headphone devices": {
+    "Output Devices": ""
+  },
+  "Audio system restarted": {
+    "Audio system restarted": ""
   },
   "Audio volume control": {
     "Audio volume control": "Ses seviyesi kontrolü"
@@ -460,6 +507,9 @@
   },
   "Automatically lock after": {
     "Automatically lock after": "Şu zaman sonra otomatik olarak kilitle"
+  },
+  "Automatically lock the screen when DMS starts": {
+    "Automatically lock the screen when DMS starts": ""
   },
   "Automatically lock the screen when the system prepares to suspend": {
     "Automatically lock the screen when the system prepares to suspend": "Sistem askıya alınmaya hazırlanırken ekranı otomatik olarak kilitle"
@@ -623,6 +673,9 @@
   "Browse or search plugins": {
     "Browse or search plugins": ""
   },
+  "Button Color": {
+    "Button Color": ""
+  },
   "CPU": {
     "CPU": "CPU"
   },
@@ -664,6 +717,9 @@
   },
   "Cancel": {
     "Cancel": "İptal"
+  },
+  "Cancel all jobs for \"%1\"?": {
+    "Cancel all jobs for \"%1\"?": ""
   },
   "Canceled": {
     "Canceled": "İptal Edildi"
@@ -875,6 +931,9 @@
   "Color displayed on monitors without the lock screen": {
     "Color displayed on monitors without the lock screen": "Kilit ekranı olmayan monitörlerde görüntülenen renk"
   },
+  "Color for primary action buttons": {
+    "Color for primary action buttons": ""
+  },
   "Color temperature for day time": {
     "Color temperature for day time": "Gündüz için renk sıcaklığı"
   },
@@ -889,6 +948,9 @@
   },
   "Colorful mix of bright contrasting accents.": {
     "Colorful mix of bright contrasting accents.": "Parlak kontrastlı vurguların renkli karışımı."
+  },
+  "Colorize Active": {
+    "Colorize Active": ""
   },
   "Column": {
     "Column": "Kolon"
@@ -952,6 +1014,9 @@
   },
   "Configure match criteria and actions": {
     "Configure match criteria and actions": ""
+  },
+  "Configure which displays show \"%1": {
+    "Configure which displays show \"%1\"": ""
   },
   "Configure which displays show shell components": {
     "Configure which displays show shell components": "Hangi ekranların kabuk bileşenlerini göstereceğini yapılandırın"
@@ -1094,6 +1159,9 @@
   "Create rule for:": {
     "Create rule for:": ""
   },
+  "Create rules to mute, ignore, hide from history, or override notification priority.": {
+    "Create rules to mute, ignore, hide from history, or override notification priority.": ""
+  },
   "Creating...": {
     "Creating...": "Oluşturuluyor..."
   },
@@ -1208,6 +1276,9 @@
   "DWL service not available": {
     "DWL service not available": "DWL hizmeti kullanılamıyor"
   },
+  "Daily": {
+    "Daily": ""
+  },
   "Daily Forecast": {
     "Daily Forecast": "Günlük Hava Tahmini"
   },
@@ -1274,6 +1345,9 @@
   "Delete": {
     "Delete": "Sil"
   },
+  "Delete \"%1\"?": {
+    "Delete \"%1\"?": ""
+  },
   "Delete Class": {
     "Delete Class": "Sınıf Sil"
   },
@@ -1285,6 +1359,12 @@
   },
   "Delete VPN": {
     "Delete VPN": "VPN'i Sil"
+  },
+  "Delete class \"%1\"?": {
+    "Delete class \"%1\"?": ""
+  },
+  "Delete profile \"%1\"?": {
+    "Delete profile \"%1\"?": ""
   },
   "Derives colors that closely match the underlying image.": {
     "Derives colors that closely match the underlying image.": "Altta yatan görüntüye çok yakın renkler türetir"
@@ -1321,6 +1401,9 @@
   },
   "Device connections": {
     "Device connections": "Cihaz bağlantıları"
+  },
+  "Device names updated": {
+    "Device names updated": ""
   },
   "Device paired": {
     "Device paired": "Cihaz eşleştirildi"
@@ -1472,8 +1555,14 @@
   "Door Open": {
     "Door Open": "Kapı Açık"
   },
+  "Drag to Reorder": {
+    "Drag to Reorder": ""
+  },
   "Drag widgets to reorder within sections. Use the eye icon to hide/show widgets (maintains spacing), or X to remove them completely.": {
     "Drag widgets to reorder within sections. Use the eye icon to hide/show widgets (maintains spacing), or X to remove them completely.": "Widget'ları sürükleyerek bölümler içinde yeniden sıralayın. Göz simgesini kullanarak widget'ları gizleyin/gösterin (aralıkları korur) veya X simgesini kullanarak tamamen kaldırın."
+  },
+  "Drag workspace indicators to reorder them": {
+    "Drag workspace indicators to reorder them": ""
   },
   "Driver": {
     "Driver": "Sürücü"
@@ -1532,6 +1621,9 @@
   "Enable Overview Overlay": {
     "Enable Overview Overlay": "Genel Görünüm Katmanını Etkinleştir"
   },
+  "Enable Ripple Effects": {
+    "Enable Ripple Effects": ""
+  },
   "Enable System Monitor": {
     "Enable System Monitor": "Sistem Monitörünü Etkinleştir"
   },
@@ -1582,6 +1674,12 @@
   },
   "End": {
     "End": "Son"
+  },
+  "Enlarge on Hover": {
+    "Enlarge on Hover": ""
+  },
+  "Enlargement %": {
+    "Enlargement %": ""
   },
   "Enter 6-digit passkey": {
     "Enter 6-digit passkey": "6 haneli şifreyi gir"
@@ -1781,11 +1879,17 @@
   "Failed to remove printer from class": {
     "Failed to remove printer from class": "Yazıcı sınıftan kaldırılamadı"
   },
+  "Failed to restart audio system": {
+    "Failed to restart audio system": ""
+  },
   "Failed to restart job": {
     "Failed to restart job": "İş yeniden başlatılamadı"
   },
   "Failed to resume printer": {
     "Failed to resume printer": "Yazıcıyı devam ettirme başarısız"
+  },
+  "Failed to save audio config": {
+    "Failed to save audio config": ""
   },
   "Failed to save clipboard setting": {
     "Failed to save clipboard setting": "Pano ayarı kaydedilemedi"
@@ -1844,6 +1948,9 @@
   "Feels Like": {
     "Feels Like": "Hissedilen"
   },
+  "Field": {
+    "Field": ""
+  },
   "File": {
     "File": "Dosya"
   },
@@ -1852,6 +1959,9 @@
   },
   "File Information": {
     "File Information": "Dosya Bilgisi"
+  },
+  "File search requires dsearch\nInstall from github.com/morelazers/dsearch": {
+    "File search requires dsearch\nInstall from github.com/morelazers/dsearch": ""
   },
   "File search requires dsearch\\nInstall from github.com/morelazers/dsearch": {
     "File search requires dsearch\\nInstall from github.com/morelazers/dsearch": ""
@@ -1958,6 +2068,9 @@
   "Forget": {
     "Forget": "Unut"
   },
+  "Forget \"%1\"?": {
+    "Forget \"%1\"?": ""
+  },
   "Forget Device": {
     "Forget Device": "Aygıtı Unut"
   },
@@ -1975,6 +2088,9 @@
   },
   "Fullscreen": {
     "Fullscreen": ""
+  },
+  "Fullscreen Only": {
+    "Fullscreen Only": ""
   },
   "Fun": {
     "Fun": "Eğlence"
@@ -1999,6 +2115,9 @@
   },
   "GitHub": {
     "GitHub": "GitHub"
+  },
+  "Globally scale all animation durations": {
+    "Globally scale all animation durations": ""
   },
   "Golden Hour": {
     "Golden Hour": "Altın Saat"
@@ -2099,11 +2218,17 @@
   "Hide": {
     "Hide": ""
   },
+  "Hide 3rd Party": {
+    "Hide 3rd Party": ""
+  },
   "Hide App": {
     "Hide App": ""
   },
   "Hide Delay": {
     "Hide Delay": "Gizleme Gecikmesi"
+  },
+  "Hide Indicators": {
+    "Hide Indicators": ""
   },
   "Hide When Typing": {
     "Hide When Typing": ""
@@ -2159,6 +2284,9 @@
   "Hour": {
     "Hour": "Saat"
   },
+  "Hourly": {
+    "Hourly": ""
+  },
   "Hourly Forecast": {
     "Hourly Forecast": "Saatlik Hava Tahmini"
   },
@@ -2191,6 +2319,9 @@
   },
   "Icon Size": {
     "Icon Size": "Simge Boyutu"
+  },
+  "Icon Size %": {
+    "Icon Size %": ""
   },
   "Icon Theme": {
     "Icon Theme": "Simge Teması"
@@ -2248,6 +2379,9 @@
   },
   "Inherit": {
     "Inherit": "Devral"
+  },
+  "Inhibitable": {
+    "Inhibitable": ""
   },
   "Input Devices": {
     "Input Devices": "Giriş Aygıtları"
@@ -2602,6 +2736,12 @@
   "Loading keybinds...": {
     "Loading keybinds...": "Tuş kombinasyonları yükleniyor..."
   },
+  "Loading overlay subtitle": {
+    "This may take a few seconds": ""
+  },
+  "Loading overlay while WirePlumber restarts": {
+    "Restarting audio system...": ""
+  },
   "Loading plugins...": {
     "Loading plugins...": "Eklentiler yükleniyor..."
   },
@@ -2637,6 +2777,9 @@
   },
   "Lock Screen layout": {
     "Lock Screen layout": "Kilit Ekranı düzeni"
+  },
+  "Lock at startup": {
+    "Lock at startup": ""
   },
   "Lock before suspend": {
     "Lock before suspend": "Askıya almadan önce kilitle"
@@ -2800,6 +2943,9 @@
   "Media Needed": {
     "Media Needed": "Kağıt Gerekli"
   },
+  "Media Playback": {
+    "Media Playback": ""
+  },
   "Media Player": {
     "Media Player": "Medya Oynatıcı"
   },
@@ -2862,6 +3008,9 @@
   },
   "Modal Background": {
     "Modal Background": "Modal Arkaplanı"
+  },
+  "Modals": {
+    "Modals": ""
   },
   "Mode": {
     "Mode": "Mod"
@@ -3061,6 +3210,9 @@
   "No apps found": {
     "No apps found": ""
   },
+  "No apps have been launched yet.": {
+    "No apps have been launched yet.": ""
+  },
   "No battery": {
     "No battery": "Batarya yok"
   },
@@ -3145,6 +3297,12 @@
   "No variants created. Click Add to create a new monitor widget.": {
     "No variants created. Click Add to create a new monitor widget.": "Hiçbir varyant oluşturulmadı. Yeni bir monitör widget'ı oluşturmak için Ekle'ye tıklayın."
   },
+  "No wallpapers found\n\nClick the folder icon below to browse": {
+    "No wallpapers found\n\nClick the folder icon below to browse": ""
+  },
+  "No widgets added. Click \"Add Widget\" to get started.": {
+    "No widgets added. Click \"Add Widget\" to get started.": ""
+  },
   "No widgets available": {
     "No widgets available": "Kullanılabilir widget yok"
   },
@@ -3199,6 +3357,9 @@
   "Notification Popups": {
     "Notification Popups": "Bildirim Balonları"
   },
+  "Notification Rules": {
+    "Notification Rules": ""
+  },
   "Notification Settings": {
     "Notification Settings": "Bildirim Ayarları"
   },
@@ -3232,6 +3393,12 @@
   "Offline Report": {
     "Offline Report": "Çevrimdışı Rapor"
   },
+  "On": {
+    "On": ""
+  },
+  "On-Demand": {
+    "On-Demand": ""
+  },
   "On-Screen Displays": {
     "On-Screen Displays": "Ekran Üstü Gösterimler"
   },
@@ -3258,6 +3425,9 @@
   },
   "Open Notepad File": {
     "Open Notepad File": "Not Defteri Dosyası Aç"
+  },
+  "Open a new note": {
+    "Open a new note": ""
   },
   "Open folder": {
     "Open folder": ""
@@ -3447,6 +3617,9 @@
   "Phone Connect ping action": {
     "Ping sent to": ""
   },
+  "Phone Connect refresh tooltip": {
+    "Refresh": ""
+  },
   "Phone Connect service unavailable message": {
     "Phone Connect unavailable": ""
   },
@@ -3522,6 +3695,12 @@
   "Pointer": {
     "Pointer": "İşaretçi"
   },
+  "Popouts": {
+    "Popouts": ""
+  },
+  "Popouts and Modals follow global Animation Speed (disable to customize independently)": {
+    "Popouts and Modals follow global Animation Speed (disable to customize independently)": ""
+  },
   "Popup Position": {
     "Popup Position": "Bildirim Pozisyonu"
   },
@@ -3573,6 +3752,9 @@
   "Precip": {
     "Precip": ""
   },
+  "Precipitation": {
+    "Precipitation": ""
+  },
   "Precipitation Chance": {
     "Precipitation Chance": "Yağış Olasılığı"
   },
@@ -3623,6 +3805,9 @@
   },
   "Printers: ": {
     "Printers: ": "Yazıcılar:"
+  },
+  "Priority": {
+    "Priority": ""
   },
   "Privacy Indicator": {
     "Privacy Indicator": "Gizlilik Göstergesi"
@@ -3768,6 +3953,9 @@
   "Reset Size": {
     "Reset Size": "Boyutu Sıfırla"
   },
+  "Reset to default name": {
+    "Reset to default name": ""
+  },
   "Resize Widget": {
     "Resize Widget": "Widgetı Yeniden Boyutlandır"
   },
@@ -3809,6 +3997,9 @@
   },
   "Right-click bar widget to cycle": {
     "Right-click bar widget to cycle": "Çubuk widget'ını sağ tıklayarak döngüye değiştir"
+  },
+  "Ripple Effects": {
+    "Ripple Effects": ""
   },
   "Root Filesystem": {
     "Root Filesystem": "Kök Dosya Sistemi"
@@ -3852,6 +4043,12 @@
   "Running Apps Settings": {
     "Running Apps Settings": "Çalışan Uygulamalar Ayarları"
   },
+  "Running apps filter: only show apps from the active workspace": {
+    "Current Workspace": ""
+  },
+  "Running apps filter: only show apps from the same monitor": {
+    "Current Monitor": ""
+  },
   "SDR Brightness": {
     "SDR Brightness": "SDR Parlaklık"
   },
@@ -3875,6 +4072,9 @@
   },
   "Saved Configurations": {
     "Saved Configurations": "Kaydedilen Yapılandırmalar"
+  },
+  "Saved Note": {
+    "Saved Note": ""
   },
   "Saved item deleted": {
     "Saved item deleted": ""
@@ -3938,6 +4138,9 @@
   },
   "Search Options": {
     "Search Options": ""
+  },
+  "Search by key combo, description, or action name.\n\nDefault action copies the keybind to clipboard.\nRight-click or press Right Arrow to pin frequently used keybinds - they'll appear at the top when not searching.": {
+    "Search by key combo, description, or action name.\n\nDefault action copies the keybind to clipboard.\nRight-click or press Right Arrow to pin frequently used keybinds - they'll appear at the top when not searching.": ""
   },
   "Search by key combo, description, or action name.\\n\\nDefault action copies the keybind to clipboard.\\nRight-click or press Right Arrow to pin frequently used keybinds - they'll appear at the top when not searching.": {
     "Search by key combo, description, or action name.\\n\\nDefault action copies the keybind to clipboard.\\nRight-click or press Right Arrow to pin frequently used keybinds - they'll appear at the top when not searching.": ""
@@ -4050,6 +4253,9 @@
   "Server": {
     "Server": "Sunucu"
   },
+  "Set custom name": {
+    "Set custom name": ""
+  },
   "Set different wallpapers for each connected monitor": {
     "Set different wallpapers for each connected monitor": "Bağlı her monitör için farklı duvar kağıtları ayarlayın"
   },
@@ -4088,6 +4294,9 @@
   },
   "Show": {
     "Show": ""
+  },
+  "Show 3rd Party": {
+    "Show 3rd Party": ""
   },
   "Show All Tags": {
     "Show All Tags": "Tüm Etiketleri Göster"
@@ -4152,6 +4361,9 @@
   "Show Log Out": {
     "Show Log Out": "Çıkışı Göster"
   },
+  "Show Material Design ripple animations on interactive elements": {
+    "Show Material Design ripple animations on interactive elements": ""
+  },
   "Show Memory": {
     "Show Memory": "Belleği Göster"
   },
@@ -4184,6 +4396,9 @@
   },
   "Show Restart DMS": {
     "Show Restart DMS": "DMS'yi Yeniden Başlatı Göster"
+  },
+  "Show Saved Items": {
+    "Show Saved Items": ""
   },
   "Show Seconds": {
     "Show Seconds": "Saniyeleri Göster"
@@ -4257,6 +4472,9 @@
   "Show on-screen display when idle inhibitor state changes": {
     "Show on-screen display when idle inhibitor state changes": "Boşta kalma engelleyici durumu değiştiğinde ekran gösterimi göster"
   },
+  "Show on-screen display when media player status changes": {
+    "Show on-screen display when media player status changes": ""
+  },
   "Show on-screen display when media player volume changes": {
     "Show on-screen display when media player volume changes": "Medya oynatıcının ses seviyesi değiştiğinde ekran üstü görüntü göster"
   },
@@ -4296,6 +4514,9 @@
   "Shows current workspace and allows switching": {
     "Shows current workspace and allows switching": "Mevcut çalışma alanı gösterir ve değiştirmeye izin verir"
   },
+  "Shows the original device name before renaming": {
+    "Original: %1": ""
+  },
   "Shows when caps lock is active": {
     "Shows when caps lock is active": "Caps Lock tuşunun etkin olduğunu gösterir"
   },
@@ -4322,6 +4543,9 @@
   },
   "Sizing": {
     "Sizing": "Boyutlandırma"
+  },
+  "Skip confirmation": {
+    "Skip confirmation": ""
   },
   "Small": {
     "Small": ""
@@ -4443,6 +4667,9 @@
   "Sync Mode with Portal": {
     "Sync Mode with Portal": "Modu Portal ile Eşitle"
   },
+  "Sync Popouts & Modals": {
+    "Sync Popouts & Modals": ""
+  },
   "Sync Position Across Screens": {
     "Sync Position Across Screens": ""
   },
@@ -4542,11 +4769,17 @@
   "Third-Party Plugin Warning": {
     "Third-Party Plugin Warning": "Üçüncü Taraf Eklenti Uyarısı"
   },
+  "Third-party plugins are created by the community and are not officially supported by DankMaterialShell.\n\nThese plugins may pose security and privacy risks - install at your own risk.": {
+    "Third-party plugins are created by the community and are not officially supported by DankMaterialShell.\n\nThese plugins may pose security and privacy risks - install at your own risk.": ""
+  },
   "Third-party plugins are created by the community and are not officially supported by DankMaterialShell.\\n\\nThese plugins may pose security and privacy risks - install at your own risk.": {
     "Third-party plugins are created by the community and are not officially supported by DankMaterialShell.\\n\\nThese plugins may pose security and privacy risks - install at your own risk.": "Üçüncü taraf eklentiler topluluk tarafından oluşturulmuştur ve DankMaterialShell tarafından resmi olarak desteklenmemektedir.\\n\\nBu eklentiler güvenlik ve gizlilik riskleri oluşturabilir - kendi sorumluluğunuzda yükleyin."
   },
   "This bind is overridden by config.kdl": {
     "This bind is overridden by config.kdl": "Bu bağ, config.kdl tarafından geçersiz kılındı."
+  },
+  "This plugin does not have 'settings_write' permission.\n\nAdd \"permissions\": [\"settings_read\", \"settings_write\"] to plugin.json": {
+    "This plugin does not have 'settings_write' permission.\n\nAdd \"permissions\": [\"settings_read\", \"settings_write\"] to plugin.json": ""
   },
   "This widget prevents GPU power off states, which can significantly impact battery life on laptops. It is not recommended to use this on laptops with hybrid graphics.": {
     "This widget prevents GPU power off states, which can significantly impact battery life on laptops. It is not recommended to use this on laptops with hybrid graphics.": "Bu widget, dizüstü bilgisayarlarda pil ömrünü önemli ölçüde etkileyebilen GPU güç kapatma durumlarını önler. Hibrit grafik kartına sahip dizüstü bilgisayarlarda kullanılması önerilmez."
@@ -4725,6 +4958,9 @@
   "Unknown": {
     "Unknown": "Bilinmeyen"
   },
+  "Unknown Artist": {
+    "Unknown Artist": ""
+  },
   "Unknown Config": {
     "Unknown Config": "Bilinmeyen Yapılandırma"
   },
@@ -4736,6 +4972,9 @@
   },
   "Unknown Network": {
     "Unknown Network": "Bilinmeyen Ağ"
+  },
+  "Unknown Title": {
+    "Unknown Title": ""
   },
   "Unnamed Rule": {
     "Unnamed Rule": ""
@@ -4899,6 +5138,9 @@
   "VRR": {
     "VRR": "VRR"
   },
+  "VRR Fullscreen Only": {
+    "VRR Fullscreen Only": ""
+  },
   "VRR On-Demand": {
     "VRR On-Demand": "Talep üzerine VRR"
   },
@@ -4937,6 +5179,9 @@
   },
   "Visibility": {
     "Visibility": "Görüş"
+  },
+  "Visual Effects": {
+    "Visual Effects": ""
   },
   "Visual divider between widgets": {
     "Visual divider between widgets": "Widget'lar arası görsel ayırıcı"
@@ -4985,6 +5230,9 @@
   },
   "When enabled, apps are sorted alphabetically. When disabled, apps are sorted by usage frequency.": {
     "When enabled, apps are sorted alphabetically. When disabled, apps are sorted by usage frequency.": "Etkinleştirildiğinde, uygulamalar alfabetik olarak sıralanır. Devre dışı bırakıldığında, uygulamalar kullanım sıklığına göre sıralanır."
+  },
+  "When locked": {
+    "When locked": ""
   },
   "When updater widget is used, then hide it if no update found": {
     "Hide Updater Widget": "Güncelleyici Widgetını Gizle",
@@ -5198,6 +5446,16 @@
   "browse themes button | theme browser header | theme browser window title": {
     "Browse Themes": "Temalara Göz At"
   },
+  "button color option | color option | primary color | tile color option": {
+    "Primary": ""
+  },
+  "button color option | color option | secondary color | tile color option": {
+    "Secondary": ""
+  },
+  "button color option | tile color option": {
+    "Primary Container": "",
+    "Surface Variant": ""
+  },
   "catppuccin theme description": {
     "Soothing pastel theme based on Catppuccin": "Catppuccin tabanlı rahatlatıcı pastel tema"
   },
@@ -5247,6 +5505,7 @@
     "dgop not available": "dgop mevcut değil"
   },
   "dgop unavailable error message": {
+    "The 'dgop' tool is required for system monitoring.\nPlease install dgop to use this feature.": "",
     "The 'dgop' tool is required for system monitoring.\\nPlease install dgop to use this feature.": ""
   },
   "disk io header in system monitor": {
@@ -5318,6 +5577,9 @@
   },
   "fallback gpu name": {
     "Unknown GPU": ""
+  },
+  "featured": {
+    "featured": ""
   },
   "files": {
     "files": "dosyalar"
@@ -5513,6 +5775,9 @@
     "Disabled": "",
     "Full Content": ""
   },
+  "lock screen notification mode option | notification rule match field option": {
+    "App Names": ""
+  },
   "lock screen notification privacy setting": {
     "Control what notification information is shown on the lock screen": "",
     "Notification Display": ""
@@ -5561,6 +5826,7 @@
     "nav": ""
   },
   "network status": {
+    "Connected": "",
     "Disabling WiFi...": "",
     "Enabling WiFi...": "",
     "Ethernet": "",
@@ -5618,6 +5884,30 @@
   },
   "notification history toggle label": {
     "Enable History": "Geçmişi Aç"
+  },
+  "notification rule action option": {
+    "Ignore Completely": "",
+    "Mute Popups": "",
+    "No History": "",
+    "Popup Only": ""
+  },
+  "notification rule action option | notification rule urgency option | widget style option": {
+    "Default": ""
+  },
+  "notification rule match field option": {
+    "Body": "",
+    "Desktop Entry": "",
+    "Summary": ""
+  },
+  "notification rule match type option": {
+    "Contains": "",
+    "Exact": "",
+    "Regex": ""
+  },
+  "notification rule urgency option": {
+    "Critical Priority": "",
+    "Low Priority": "",
+    "Normal Priority": ""
   },
   "now": {
     "now": ""
@@ -5771,6 +6061,9 @@
   },
   "uptime label in footer": {
     "Uptime:": ""
+  },
+  "v%1 by %2": {
+    "v%1 by %2": ""
   },
   "version requirement": {
     "Requires %1": ""

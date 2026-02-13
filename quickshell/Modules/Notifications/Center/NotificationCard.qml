@@ -13,6 +13,7 @@ Rectangle {
     property bool descriptionExpanded: (NotificationService.expandedMessages[(notificationGroup && notificationGroup.latestNotification && notificationGroup.latestNotification.notification && notificationGroup.latestNotification.notification.id) ? (notificationGroup.latestNotification.notification.id + "_desc") : ""] || false)
     property bool userInitiatedExpansion: false
     property bool isAnimating: false
+    property bool animateExpansion: true
 
     property bool isGroupSelected: false
     property int selectedNotificationIndex: -1
@@ -29,11 +30,20 @@ Rectangle {
 
     width: parent ? parent.width : 400
     height: expanded ? (expandedContent.height + cardPadding * 2) : (baseCardHeight + collapsedContent.extraHeight)
+    readonly property real targetHeight: expanded ? (expandedContent.height + cardPadding * 2) : (baseCardHeight + collapsedContent.extraHeight)
     radius: Theme.cornerRadius
+    property bool __initialized: false
+
+    Component.onCompleted: {
+        Qt.callLater(() => {
+            __initialized = true;
+        });
+    }
 
     Behavior on border.color {
+        enabled: root.__initialized
         ColorAnimation {
-            duration: Theme.shortDuration
+            duration: root.__initialized ? Theme.shortDuration : 0
             easing.type: Theme.standardEasing
         }
     }
@@ -113,7 +123,17 @@ Rectangle {
 
         DankCircularImage {
             id: iconContainer
-            readonly property bool hasNotificationImage: notificationGroup?.latestNotification?.image && notificationGroup.latestNotification.image !== ""
+            readonly property string rawImage: notificationGroup?.latestNotification?.image || ""
+            readonly property string iconFromImage: {
+                if (rawImage.startsWith("image://icon/"))
+                    return rawImage.substring(13);
+                return "";
+            }
+            readonly property bool imageHasSpecialPrefix: {
+                const icon = iconFromImage;
+                return icon.startsWith("material:") || icon.startsWith("svg:") || icon.startsWith("unicode:") || icon.startsWith("image:");
+            }
+            readonly property bool hasNotificationImage: rawImage !== "" && !rawImage.startsWith("image://icon/")
 
             width: iconSize
             height: iconSize
@@ -123,17 +143,24 @@ Rectangle {
             imageSource: {
                 if (hasNotificationImage)
                     return notificationGroup.latestNotification.cleanImage;
-                if (notificationGroup?.latestNotification?.appIcon) {
-                    const appIcon = notificationGroup.latestNotification.appIcon;
-                    if (appIcon.startsWith("file://") || appIcon.startsWith("http://") || appIcon.startsWith("https://"))
-                        return appIcon;
-                    return Quickshell.iconPath(appIcon, true);
-                }
-                return "";
+                if (imageHasSpecialPrefix)
+                    return "";
+                const appIcon = notificationGroup?.latestNotification?.appIcon;
+                if (!appIcon)
+                    return iconFromImage ? "image://icon/" + iconFromImage : "";
+                if (appIcon.startsWith("file://") || appIcon.startsWith("http://") || appIcon.startsWith("https://") || appIcon.includes("/"))
+                    return appIcon;
+                if (appIcon.startsWith("material:") || appIcon.startsWith("svg:") || appIcon.startsWith("unicode:") || appIcon.startsWith("image:"))
+                    return "";
+                return Quickshell.iconPath(appIcon, true);
             }
 
             hasImage: hasNotificationImage
-            fallbackIcon: ""
+            fallbackIcon: {
+                if (imageHasSpecialPrefix)
+                    return iconFromImage;
+                return notificationGroup?.latestNotification?.appIcon || iconFromImage || "";
+            }
             fallbackText: {
                 const appName = notificationGroup?.appName || "?";
                 return appName.charAt(0).toUpperCase();
@@ -314,9 +341,7 @@ Rectangle {
             Repeater {
                 id: notificationRepeater
                 objectName: "notificationRepeater"
-                model: ScriptModel {
-                    values: notificationGroup?.notifications?.slice(0, 10) || []
-                }
+                model: notificationGroup?.notifications?.slice(0, 10) || []
 
                 delegate: Rectangle {
                     required property var modelData
@@ -326,6 +351,13 @@ Rectangle {
                     readonly property real expandedIconSize: compactMode ? 40 : 48
                     readonly property real expandedItemPadding: compactMode ? Theme.spacingS : Theme.spacingM
                     readonly property real expandedBaseHeight: expandedItemPadding * 2 + expandedIconSize + actionButtonHeight + contentSpacing * 2
+                    property bool __delegateInitialized: false
+
+                    Component.onCompleted: {
+                        Qt.callLater(() => {
+                            __delegateInitialized = true;
+                        });
+                    }
 
                     width: parent.width
                     height: {
@@ -342,8 +374,9 @@ Rectangle {
                     border.width: 1
 
                     Behavior on border.color {
+                        enabled: __delegateInitialized
                         ColorAnimation {
-                            duration: Theme.shortDuration
+                            duration: __delegateInitialized ? Theme.shortDuration : 0
                             easing.type: Theme.standardEasing
                         }
                     }
@@ -360,7 +393,17 @@ Rectangle {
                         DankCircularImage {
                             id: messageIcon
 
-                            readonly property bool hasNotificationImage: modelData?.image && modelData.image !== ""
+                            readonly property string rawImage: modelData?.image || ""
+                            readonly property string iconFromImage: {
+                                if (rawImage.startsWith("image://icon/"))
+                                    return rawImage.substring(13);
+                                return "";
+                            }
+                            readonly property bool imageHasSpecialPrefix: {
+                                const icon = iconFromImage;
+                                return icon.startsWith("material:") || icon.startsWith("svg:") || icon.startsWith("unicode:") || icon.startsWith("image:");
+                            }
+                            readonly property bool hasNotificationImage: rawImage !== "" && !rawImage.startsWith("image://icon/")
 
                             width: expandedIconSize
                             height: expandedIconSize
@@ -371,18 +414,23 @@ Rectangle {
                             imageSource: {
                                 if (hasNotificationImage)
                                     return modelData.cleanImage;
-
-                                if (modelData?.appIcon) {
-                                    const appIcon = modelData.appIcon;
-                                    if (appIcon.startsWith("file://") || appIcon.startsWith("http://") || appIcon.startsWith("https://"))
-                                        return appIcon;
-
-                                    return Quickshell.iconPath(appIcon, true);
-                                }
-                                return "";
+                                if (imageHasSpecialPrefix)
+                                    return "";
+                                const appIcon = modelData?.appIcon;
+                                if (!appIcon)
+                                    return iconFromImage ? "image://icon/" + iconFromImage : "";
+                                if (appIcon.startsWith("file://") || appIcon.startsWith("http://") || appIcon.startsWith("https://") || appIcon.includes("/"))
+                                    return appIcon;
+                                if (appIcon.startsWith("material:") || appIcon.startsWith("svg:") || appIcon.startsWith("unicode:") || appIcon.startsWith("image:"))
+                                    return "";
+                                return Quickshell.iconPath(appIcon, true);
                             }
 
-                            fallbackIcon: ""
+                            fallbackIcon: {
+                                if (imageHasSpecialPrefix)
+                                    return iconFromImage;
+                                return modelData?.appIcon || iconFromImage || "";
+                            }
 
                             fallbackText: {
                                 const appName = modelData?.appName || "?";
@@ -485,13 +533,13 @@ Rectangle {
                                         Rectangle {
                                             property bool isHovered: false
 
-                                            width: Math.max(actionText.implicitWidth + Theme.spacingM, compactMode ? 40 : 50)
+                                            width: Math.max(expandedActionText.implicitWidth + Theme.spacingM, compactMode ? 40 : 50)
                                             height: actionButtonHeight
                                             radius: Theme.spacingXS
                                             color: isHovered ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.1) : "transparent"
 
                                             StyledText {
-                                                id: actionText
+                                                id: expandedActionText
                                                 text: {
                                                     const baseText = modelData.text || "View";
                                                     if (keyboardNavigationActive && (isGroupSelected || selectedNotificationIndex >= 0))
@@ -522,13 +570,13 @@ Rectangle {
                                     Rectangle {
                                         property bool isHovered: false
 
-                                        width: Math.max(clearText.implicitWidth + Theme.spacingM, compactMode ? 40 : 50)
+                                        width: Math.max(expandedClearText.implicitWidth + Theme.spacingM, compactMode ? 40 : 50)
                                         height: actionButtonHeight
                                         radius: Theme.spacingXS
                                         color: isHovered ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.1) : "transparent"
 
                                         StyledText {
-                                            id: clearText
+                                            id: expandedClearText
                                             text: I18n.tr("Dismiss")
                                             color: parent.isHovered ? Theme.primary : Theme.surfaceVariantText
                                             font.pixelSize: Theme.fontSizeSmall
@@ -568,13 +616,13 @@ Rectangle {
             Rectangle {
                 property bool isHovered: false
 
-                width: Math.max(actionText.implicitWidth + Theme.spacingM, compactMode ? 40 : 50)
+                width: Math.max(collapsedActionText.implicitWidth + Theme.spacingM, compactMode ? 40 : 50)
                 height: actionButtonHeight
                 radius: Theme.spacingXS
                 color: isHovered ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.1) : "transparent"
 
                 StyledText {
-                    id: actionText
+                    id: collapsedActionText
                     text: {
                         const baseText = modelData.text || "View";
                         if (keyboardNavigationActive && isGroupSelected) {
@@ -616,13 +664,13 @@ Rectangle {
         anchors.rightMargin: Theme.spacingL
         anchors.top: collapsedContent.bottom
         anchors.topMargin: contentSpacing
-        width: Math.max(clearText.implicitWidth + Theme.spacingM, compactMode ? 40 : 50)
+        width: Math.max(collapsedClearText.implicitWidth + Theme.spacingM, compactMode ? 40 : 50)
         height: actionButtonHeight
         radius: Theme.spacingXS
         color: isHovered ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.1) : "transparent"
 
         StyledText {
-            id: clearText
+            id: collapsedClearText
             text: I18n.tr("Dismiss")
             color: clearButton.isHovered ? Theme.primary : Theme.surfaceVariantText
             font.pixelSize: Theme.fontSizeSmall
@@ -683,10 +731,11 @@ Rectangle {
     }
 
     Behavior on height {
-        enabled: root.userInitiatedExpansion
+        enabled: root.userInitiatedExpansion && root.animateExpansion
         NumberAnimation {
-            duration: Theme.mediumDuration
-            easing.type: Theme.emphasizedEasing
+            duration: Theme.expressiveDurations.normal
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.standard
             onRunningChanged: {
                 if (running) {
                     root.isAnimating = true;

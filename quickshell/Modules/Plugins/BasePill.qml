@@ -1,5 +1,7 @@
 import QtQuick
 import qs.Common
+import qs.Services
+import qs.Widgets
 
 Item {
     id: root
@@ -17,13 +19,17 @@ Item {
     property bool isFirst: false
     property bool isLast: false
     property real sectionSpacing: 0
+    property bool enableBackgroundHover: true
+    property bool enableCursor: true
+    readonly property bool isMouseHovered: mouseArea.containsMouse
     property bool isLeftBarEdge: false
     property bool isRightBarEdge: false
     property bool isTopBarEdge: false
     property bool isBottomBarEdge: false
-    readonly property real horizontalPadding: (barConfig?.noBackground ?? false) ? 0 : Math.max(Theme.spacingXS, Theme.spacingS * (widgetThickness / 30))
-    readonly property real visualWidth: isVerticalOrientation ? widgetThickness : (contentLoader.item ? (contentLoader.item.implicitWidth + horizontalPadding * 2) : 0)
-    readonly property real visualHeight: isVerticalOrientation ? (contentLoader.item ? (contentLoader.item.implicitHeight + horizontalPadding * 2) : 0) : widgetThickness
+    readonly property real dpr: parentScreen ? CompositorService.getScreenScale(parentScreen) : 1
+    readonly property real horizontalPadding: (barConfig?.noBackground ?? false) ? 0 : Theme.snap(Math.max(Theme.spacingXS, Theme.spacingS * (widgetThickness / 30)), dpr)
+    readonly property real visualWidth: Theme.snap(isVerticalOrientation ? widgetThickness : (contentLoader.item ? (contentLoader.item.implicitWidth + horizontalPadding * 2) : 0), dpr)
+    readonly property real visualHeight: Theme.snap(isVerticalOrientation ? (contentLoader.item ? (contentLoader.item.implicitHeight + horizontalPadding * 2) : 0) : widgetThickness, dpr)
     readonly property alias visualContent: visualContent
     readonly property real barEdgeExtension: 1000
     readonly property real gapExtension: sectionSpacing
@@ -33,8 +39,13 @@ Item {
     readonly property real bottomMargin: isVerticalOrientation ? (isBottomBarEdge && isLast ? barEdgeExtension : (isLast ? gapExtension : gapExtension / 2)) : 0
 
     signal clicked
-    signal rightClicked
+    signal rightClicked(real rootX, real rootY)
     signal wheel(var wheelEvent)
+
+    function triggerRipple(sourceItem, mouseX, mouseY) {
+        const pos = sourceItem.mapToItem(visualContent, mouseX, mouseY);
+        rippleLayer.trigger(pos.x, pos.y);
+    }
 
     width: isVerticalOrientation ? barThickness : visualWidth
     height: isVerticalOrientation ? visualHeight : barThickness
@@ -93,7 +104,7 @@ Item {
                 }
 
                 const rawTransparency = (root.barConfig && root.barConfig.widgetTransparency !== undefined) ? root.barConfig.widgetTransparency : 1.0;
-                const isHovered = mouseArea.containsMouse || (root.isHovered || false);
+                const isHovered = root.enableBackgroundHover && (mouseArea.containsMouse || (root.isHovered || false));
                 const transparency = isHovered ? Math.max(0.3, rawTransparency) : rawTransparency;
                 const baseColor = isHovered ? Theme.widgetBaseHoverColor : Theme.widgetBaseBackgroundColor;
 
@@ -102,6 +113,12 @@ Item {
                 }
                 return Theme.withAlpha(baseColor, transparency);
             }
+        }
+
+        DankRipple {
+            id: rippleLayer
+            rippleColor: Theme.surfaceText
+            cornerRadius: background.radius
         }
 
         Loader {
@@ -119,13 +136,16 @@ Item {
         width: root.width + root.leftMargin + root.rightMargin
         height: root.height + root.topMargin + root.bottomMargin
         hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
+        cursorShape: root.enableCursor ? Qt.PointingHandCursor : Qt.ArrowCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onPressed: function (mouse) {
             if (mouse.button === Qt.RightButton) {
-                root.rightClicked();
+                const rPos = mouseArea.mapToItem(root, mouse.x, mouse.y);
+                root.rightClicked(rPos.x, rPos.y);
                 return;
             }
+            const ripplePos = mouseArea.mapToItem(visualContent, mouse.x, mouse.y);
+            rippleLayer.trigger(ripplePos.x, ripplePos.y);
             if (popoutTarget) {
                 // Ensure bar context is set first if supported
                 if (popoutTarget.setBarContext) {

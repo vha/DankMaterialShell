@@ -1,5 +1,12 @@
 [
   {
+    "term": "%1 Animation Speed",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "%1 DMS bind(s) may be overridden by config binds that come after the include.",
     "translation": "",
     "context": "",
@@ -29,6 +36,13 @@
   },
   {
     "term": "%1 connected",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "%1 custom animation duration",
     "translation": "",
     "context": "",
     "reference": "",
@@ -462,6 +476,13 @@
     "comment": ""
   },
   {
+    "term": "Active Color",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Active Lock Screen Monitor",
     "translation": "",
     "context": "",
@@ -575,6 +596,13 @@
   },
   {
     "term": "Adjust the number of columns in grid view mode.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Adjust volume per scroll indent",
     "translation": "",
     "context": "",
     "reference": "",
@@ -721,6 +749,13 @@
     "comment": ""
   },
   {
+    "term": "Animation Duration",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Animation Speed",
     "translation": "",
     "context": "",
@@ -772,7 +807,7 @@
   {
     "term": "App Names",
     "translation": "",
-    "context": "lock screen notification mode option",
+    "context": "lock screen notification mode option | notification rule match field option",
     "reference": "",
     "comment": ""
   },
@@ -841,6 +876,13 @@
   },
   {
     "term": "Apps Dock",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Apps Dock Settings",
     "translation": "",
     "context": "",
     "reference": "",
@@ -939,6 +981,13 @@
   },
   {
     "term": "Audio Visualizer",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Audio system restarted",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1163,6 +1212,13 @@
   },
   {
     "term": "Automatically lock after",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Automatically lock the screen when DMS starts",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1442,6 +1498,13 @@
     "comment": ""
   },
   {
+    "term": "Body",
+    "translation": "",
+    "context": "notification rule match field option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Border",
     "translation": "",
     "context": "launcher border option",
@@ -1589,6 +1652,13 @@
     "comment": ""
   },
   {
+    "term": "Button Color",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "CPU",
     "translation": "",
     "context": "",
@@ -1688,6 +1758,13 @@
   },
   {
     "term": "Cancel",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Cancel all jobs for \"%1\"?",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2002,13 +2079,6 @@
     "comment": ""
   },
   {
-    "term": "Click + to add a rule for the focused window",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Click Import to add a .ovpn or .conf",
     "translation": "",
     "context": "",
@@ -2198,6 +2268,13 @@
     "comment": ""
   },
   {
+    "term": "Color for primary action buttons",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Color temperature for day time",
     "translation": "",
     "context": "",
@@ -2241,6 +2318,13 @@
   },
   {
     "term": "Colorful mix of bright contrasting accents.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Colorize Active",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2422,6 +2506,13 @@
     "comment": ""
   },
   {
+    "term": "Configure which displays show \"%1\"",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Configure which displays show shell components",
     "translation": "",
     "context": "",
@@ -2494,7 +2585,7 @@
   {
     "term": "Connected",
     "translation": "",
-    "context": "KDE Connect connected status | network status",
+    "context": "network status",
     "reference": "",
     "comment": ""
   },
@@ -2523,6 +2614,13 @@
     "term": "Connecting...",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Contains",
+    "translation": "",
+    "context": "notification rule match type option",
     "reference": "",
     "comment": ""
   },
@@ -2765,6 +2863,13 @@
     "comment": ""
   },
   {
+    "term": "Create rules to mute, ignore, hide from history, or override notification priority.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Creating...",
     "translation": "",
     "context": "",
@@ -2774,7 +2879,7 @@
   {
     "term": "Critical Priority",
     "translation": "",
-    "context": "",
+    "context": "notification rule urgency option",
     "reference": "",
     "comment": ""
   },
@@ -2789,6 +2894,13 @@
     "term": "Current Items",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Current Monitor",
+    "translation": "",
+    "context": "Running apps filter: only show apps from the same monitor",
     "reference": "",
     "comment": ""
   },
@@ -2824,6 +2936,13 @@
     "term": "Current Weather",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Current Workspace",
+    "translation": "",
+    "context": "Running apps filter: only show apps from the active workspace",
     "reference": "",
     "comment": ""
   },
@@ -2922,6 +3041,13 @@
     "term": "Custom Logout Command",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Custom Name",
+    "translation": "",
+    "context": "Audio device rename dialog field label",
     "reference": "",
     "comment": ""
   },
@@ -3066,7 +3192,7 @@
     "comment": ""
   },
   {
-    "term": "Daily Forecast",
+    "term": "Daily",
     "translation": "",
     "context": "",
     "reference": "",
@@ -3194,7 +3320,7 @@
   {
     "term": "Default",
     "translation": "",
-    "context": "widget style option",
+    "context": "notification rule action option | notification rule urgency option | widget style option",
     "reference": "",
     "comment": ""
   },
@@ -3241,6 +3367,13 @@
     "comment": ""
   },
   {
+    "term": "Delete \"%1\"?",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Delete Class",
     "translation": "",
     "context": "",
@@ -3269,6 +3402,20 @@
     "comment": ""
   },
   {
+    "term": "Delete class \"%1\"?",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Delete profile \"%1\"?",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Derives colors that closely match the underlying image.",
     "translation": "",
     "context": "",
@@ -3286,6 +3433,13 @@
     "term": "Desktop Clock",
     "translation": "",
     "context": "Desktop clock widget name",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Desktop Entry",
+    "translation": "",
+    "context": "notification rule match field option",
     "reference": "",
     "comment": ""
   },
@@ -3333,6 +3487,13 @@
   },
   {
     "term": "Device connections",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Device names updated",
     "translation": "",
     "context": "",
     "reference": "",
@@ -3717,7 +3878,21 @@
     "comment": ""
   },
   {
+    "term": "Drag to Reorder",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Drag widgets to reorder within sections. Use the eye icon to hide/show widgets (maintains spacing), or X to remove them completely.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Drag workspace indicators to reorder them",
     "translation": "",
     "context": "",
     "reference": "",
@@ -3878,6 +4053,13 @@
     "comment": ""
   },
   {
+    "term": "Enable Ripple Effects",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Enable System Sounds",
     "translation": "",
     "context": "",
@@ -3941,6 +4123,20 @@
     "comment": ""
   },
   {
+    "term": "Enlarge on Hover",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Enlargement %",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Enter 6-digit passkey",
     "translation": "",
     "context": "",
@@ -3993,6 +4189,13 @@
     "term": "Enter custom top bar format (e.g., ddd MMM d)",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Enter device name...",
+    "translation": "",
+    "context": "Audio device rename dialog placeholder",
     "reference": "",
     "comment": ""
   },
@@ -4084,6 +4287,13 @@
     "term": "Ethernet",
     "translation": "",
     "context": "network status",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Exact",
+    "translation": "",
+    "context": "notification rule match type option",
     "reference": "",
     "comment": ""
   },
@@ -4473,6 +4683,13 @@
     "comment": ""
   },
   {
+    "term": "Failed to restart audio system",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Failed to restart job",
     "translation": "",
     "context": "",
@@ -4490,6 +4707,13 @@
     "term": "Failed to ring device",
     "translation": "",
     "context": "Phone Connect error",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Failed to save audio config",
+    "translation": "",
+    "context": "",
     "reference": "",
     "comment": ""
   },
@@ -4676,6 +4900,13 @@
     "comment": ""
   },
   {
+    "term": "Field",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "File",
     "translation": "",
     "context": "",
@@ -4704,7 +4935,7 @@
     "comment": ""
   },
   {
-    "term": "File search requires dsearch\\nInstall from github.com/morelazers/dsearch",
+    "term": "File search requires dsearch\nInstall from github.com/morelazers/dsearch",
     "translation": "",
     "context": "",
     "reference": "",
@@ -4740,13 +4971,6 @@
   },
   {
     "term": "Find in note...",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Fine-tune animation timing in milliseconds",
     "translation": "",
     "context": "",
     "reference": "",
@@ -4970,6 +5194,13 @@
     "comment": ""
   },
   {
+    "term": "Forget \"%1\"?",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Forget Device",
     "translation": "",
     "context": "",
@@ -5041,6 +5272,13 @@
   },
   {
     "term": "Fullscreen",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Fullscreen Only",
     "translation": "",
     "context": "",
     "reference": "",
@@ -5132,6 +5370,13 @@
   },
   {
     "term": "GitHub",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Globally scale all animation durations",
     "translation": "",
     "context": "",
     "reference": "",
@@ -5383,6 +5628,13 @@
     "comment": ""
   },
   {
+    "term": "Hide 3rd Party",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Hide App",
     "translation": "",
     "context": "",
@@ -5391,6 +5643,13 @@
   },
   {
     "term": "Hide Delay",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Hide Indicators",
     "translation": "",
     "context": "",
     "reference": "",
@@ -5544,7 +5803,7 @@
     "comment": ""
   },
   {
-    "term": "Hourly Forecast",
+    "term": "Hourly",
     "translation": "",
     "context": "",
     "reference": "",
@@ -5628,6 +5887,13 @@
     "comment": ""
   },
   {
+    "term": "Icon Size %",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Icon Theme",
     "translation": "",
     "context": "",
@@ -5666,6 +5932,13 @@
     "term": "If the field is hidden, it will appear as soon as a key is pressed.",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Ignore Completely",
+    "translation": "",
+    "context": "notification rule action option",
     "reference": "",
     "comment": ""
   },
@@ -5762,6 +6035,13 @@
   },
   {
     "term": "Inherit",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Inhibitable",
     "translation": "",
     "context": "",
     "reference": "",
@@ -6335,6 +6615,13 @@
     "comment": ""
   },
   {
+    "term": "Lock at startup",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Lock before suspend",
     "translation": "",
     "context": "",
@@ -6393,7 +6680,7 @@
   {
     "term": "Low Priority",
     "translation": "",
-    "context": "",
+    "context": "notification rule urgency option",
     "reference": "",
     "comment": ""
   },
@@ -6615,6 +6902,13 @@
     "comment": ""
   },
   {
+    "term": "Max Volume",
+    "translation": "",
+    "context": "Audio settings: maximum volume limit per device",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Max W",
     "translation": "",
     "context": "",
@@ -6742,6 +7036,13 @@
   },
   {
     "term": "Media Needed",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Media Playback",
     "translation": "",
     "context": "",
     "reference": "",
@@ -6902,6 +7203,13 @@
     "comment": ""
   },
   {
+    "term": "Modals",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Mode",
     "translation": "",
     "context": "",
@@ -7045,6 +7353,13 @@
     "term": "Multi-Monitor",
     "translation": "",
     "context": "greeter feature card title",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Mute Popups",
+    "translation": "",
+    "context": "notification rule action option",
     "reference": "",
     "comment": ""
   },
@@ -7364,6 +7679,13 @@
     "comment": ""
   },
   {
+    "term": "No History",
+    "translation": "",
+    "context": "notification rule action option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No Media",
     "translation": "",
     "context": "",
@@ -7442,6 +7764,13 @@
   },
   {
     "term": "No apps found",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No apps have been launched yet.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -7567,6 +7896,13 @@
     "comment": ""
   },
   {
+    "term": "No input devices found",
+    "translation": "",
+    "context": "Audio settings empty state",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No items added yet",
     "translation": "",
     "context": "",
@@ -7619,6 +7955,13 @@
     "term": "No output device",
     "translation": "",
     "context": "audio status",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No output devices found",
+    "translation": "",
+    "context": "Audio settings empty state",
     "reference": "",
     "comment": ""
   },
@@ -7721,9 +8064,23 @@
     "comment": ""
   },
   {
+    "term": "No wallpapers found\n\nClick the folder icon below to browse",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No warnings",
     "translation": "",
     "context": "greeter doctor page empty state",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No widgets added. Click \"Add Widget\" to get started.",
+    "translation": "",
+    "context": "",
     "reference": "",
     "comment": ""
   },
@@ -7772,7 +8129,7 @@
   {
     "term": "Normal Priority",
     "translation": "",
-    "context": "",
+    "context": "notification rule urgency option",
     "reference": "",
     "comment": ""
   },
@@ -7869,6 +8226,13 @@
   },
   {
     "term": "Notification Popups",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Notification Rules",
     "translation": "",
     "context": "",
     "reference": "",
@@ -7987,6 +8351,20 @@
     "comment": ""
   },
   {
+    "term": "On",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "On-Demand",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "On-Screen Displays",
     "translation": "",
     "context": "",
@@ -8058,6 +8436,13 @@
   },
   {
     "term": "Open Notepad File",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Open a new note",
     "translation": "",
     "context": "",
     "reference": "",
@@ -8148,6 +8533,13 @@
     "comment": ""
   },
   {
+    "term": "Original: %1",
+    "translation": "",
+    "context": "Shows the original device name before renaming",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Other",
     "translation": "",
     "context": "",
@@ -8179,6 +8571,13 @@
     "term": "Output Area Full",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Output Devices",
+    "translation": "",
+    "context": "Audio settings: speaker/headphone devices",
     "reference": "",
     "comment": ""
   },
@@ -8673,6 +9072,27 @@
     "comment": ""
   },
   {
+    "term": "Popouts",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Popouts and Modals follow global Animation Speed (disable to customize independently)",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Popup Only",
+    "translation": "",
+    "context": "notification rule action option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Popup Position",
     "translation": "",
     "context": "",
@@ -8820,6 +9240,13 @@
     "comment": ""
   },
   {
+    "term": "Precipitation",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Precipitation Chance",
     "translation": "",
     "context": "",
@@ -8837,6 +9264,13 @@
     "term": "Preset Widths (%)",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Press Enter and the audio system will restart to apply the change",
+    "translation": "",
+    "context": "Audio device rename dialog hint",
     "reference": "",
     "comment": ""
   },
@@ -8871,14 +9305,14 @@
   {
     "term": "Primary",
     "translation": "",
-    "context": "color option | primary color | tile color option",
+    "context": "button color option | color option | primary color | tile color option",
     "reference": "",
     "comment": ""
   },
   {
     "term": "Primary Container",
     "translation": "",
-    "context": "tile color option",
+    "context": "button color option | tile color option",
     "reference": "",
     "comment": ""
   },
@@ -8949,6 +9383,13 @@
     "term": "Prioritize performance",
     "translation": "",
     "context": "power profile description",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Priority",
+    "translation": "",
+    "context": "",
     "reference": "",
     "comment": ""
   },
@@ -9179,7 +9620,7 @@
   {
     "term": "Refresh",
     "translation": "",
-    "context": "KDE Connect refresh button | Phone Connect refresh tooltip",
+    "context": "Phone Connect refresh tooltip",
     "reference": "",
     "comment": ""
   },
@@ -9187,6 +9628,13 @@
     "term": "Refresh Weather",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Regex",
+    "translation": "",
+    "context": "notification rule match type option",
     "reference": "",
     "comment": ""
   },
@@ -9338,6 +9786,13 @@
     "comment": ""
   },
   {
+    "term": "Reset to default name",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Resize Widget",
     "translation": "",
     "context": "",
@@ -9369,6 +9824,13 @@
     "term": "Restart the DankMaterialShell",
     "translation": "",
     "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Restarting audio system...",
+    "translation": "",
+    "context": "Loading overlay while WirePlumber restarts",
     "reference": "",
     "comment": ""
   },
@@ -9464,6 +9926,13 @@
     "comment": ""
   },
   {
+    "term": "Ripple Effects",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Root Filesystem",
     "translation": "",
     "context": "",
@@ -9549,13 +10018,6 @@
   },
   {
     "term": "Running Apps",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Running Apps Only In Current Workspace",
     "translation": "",
     "context": "",
     "reference": "",
@@ -9654,6 +10116,13 @@
   },
   {
     "term": "Saved Configurations",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Saved Note",
     "translation": "",
     "context": "",
     "reference": "",
@@ -9800,7 +10269,7 @@
     "comment": ""
   },
   {
-    "term": "Search by key combo, description, or action name.\\n\\nDefault action copies the keybind to clipboard.\\nRight-click or press Right Arrow to pin frequently used keybinds - they'll appear at the top when not searching.",
+    "term": "Search by key combo, description, or action name.\n\nDefault action copies the keybind to clipboard.\nRight-click or press Right Arrow to pin frequently used keybinds - they'll appear at the top when not searching.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -9872,7 +10341,7 @@
   {
     "term": "Secondary",
     "translation": "",
-    "context": "color option | secondary color | tile color option",
+    "context": "button color option | color option | secondary color | tile color option",
     "reference": "",
     "comment": ""
   },
@@ -10150,6 +10619,34 @@
     "comment": ""
   },
   {
+    "term": "Set Custom Device Name",
+    "translation": "",
+    "context": "Audio device rename dialog title",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Set custom name",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Set custom names for your audio input devices",
+    "translation": "",
+    "context": "Audio settings description",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Set custom names for your audio output devices",
+    "translation": "",
+    "context": "Audio settings description",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Set different wallpapers for each connected monitor",
     "translation": "",
     "context": "",
@@ -10284,6 +10781,13 @@
   },
   {
     "term": "Show",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Show 3rd Party",
     "translation": "",
     "context": "",
     "reference": "",
@@ -10444,6 +10948,13 @@
     "comment": ""
   },
   {
+    "term": "Show Material Design ripple animations on interactive elements",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Show Media Player",
     "translation": "",
     "context": "Enable media player controls on the lock screen window",
@@ -10543,6 +11054,13 @@
   },
   {
     "term": "Show Restart DMS",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Show Saved Items",
     "translation": "",
     "context": "",
     "reference": "",
@@ -10745,6 +11263,13 @@
     "comment": ""
   },
   {
+    "term": "Show on-screen display when media player status changes",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Show on-screen display when media player volume changes",
     "translation": "",
     "context": "",
@@ -10767,13 +11292,6 @@
   },
   {
     "term": "Show on-screen display when volume changes",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Show only apps running in current workspace",
     "translation": "",
     "context": "",
     "reference": "",
@@ -10888,6 +11406,13 @@
     "term": "Skip",
     "translation": "",
     "context": "greeter skip button",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Skip confirmation",
+    "translation": "",
+    "context": "",
     "reference": "",
     "comment": ""
   },
@@ -11123,6 +11648,13 @@
     "comment": ""
   },
   {
+    "term": "Summary",
+    "translation": "",
+    "context": "notification rule match field option",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Sunrise",
     "translation": "",
     "context": "",
@@ -11153,7 +11685,7 @@
   {
     "term": "Surface Variant",
     "translation": "",
-    "context": "tile color option",
+    "context": "button color option | tile color option",
     "reference": "",
     "comment": ""
   },
@@ -11194,6 +11726,13 @@
   },
   {
     "term": "Sync Mode with Portal",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Sync Popouts & Modals",
     "translation": "",
     "context": "",
     "reference": "",
@@ -11382,7 +11921,7 @@
     "comment": ""
   },
   {
-    "term": "The 'dgop' tool is required for system monitoring.\\nPlease install dgop to use this feature.",
+    "term": "The 'dgop' tool is required for system monitoring.\nPlease install dgop to use this feature.",
     "translation": "",
     "context": "dgop unavailable error message",
     "reference": "",
@@ -11452,7 +11991,7 @@
     "comment": ""
   },
   {
-    "term": "Third-party plugins are created by the community and are not officially supported by DankMaterialShell.\\n\\nThese plugins may pose security and privacy risks - install at your own risk.",
+    "term": "Third-party plugins are created by the community and are not officially supported by DankMaterialShell.\n\nThese plugins may pose security and privacy risks - install at your own risk.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -11460,6 +11999,20 @@
   },
   {
     "term": "This bind is overridden by config.kdl",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "This may take a few seconds",
+    "translation": "",
+    "context": "Loading overlay subtitle",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "This plugin does not have 'settings_write' permission.\n\nAdd \"permissions\": [\"settings_read\", \"settings_write\"] to plugin.json",
     "translation": "",
     "context": "",
     "reference": "",
@@ -11942,6 +12495,13 @@
     "comment": ""
   },
   {
+    "term": "Unknown Artist",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Unknown Config",
     "translation": "",
     "context": "",
@@ -11971,6 +12531,13 @@
   },
   {
     "term": "Unknown Network",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Unknown Title",
     "translation": "",
     "context": "",
     "reference": "",
@@ -12369,14 +12936,14 @@
     "comment": ""
   },
   {
-    "term": "VRR On-Demand",
+    "term": "VRR Fullscreen Only",
     "translation": "",
     "context": "",
     "reference": "",
     "comment": ""
   },
   {
-    "term": "VRR activates only when applications request it",
+    "term": "VRR On-Demand",
     "translation": "",
     "context": "",
     "reference": "",
@@ -12454,6 +13021,13 @@
   },
   {
     "term": "Visibility",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Visual Effects",
     "translation": "",
     "context": "",
     "reference": "",
@@ -12608,6 +13182,13 @@
   },
   {
     "term": "When enabled, apps are sorted alphabetically. When disabled, apps are sorted by usage frequency.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "When locked",
     "translation": "",
     "context": "",
     "reference": "",
@@ -13104,6 +13685,13 @@
     "comment": ""
   },
   {
+    "term": "featured",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "leave empty for default",
     "translation": "",
     "context": "",
@@ -13196,6 +13784,13 @@
   },
   {
     "term": "update dms for NM integration.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "v%1 by %2",
     "translation": "",
     "context": "",
     "reference": "",

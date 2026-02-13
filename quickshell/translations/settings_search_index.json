@@ -752,6 +752,21 @@
     "icon": "vertical_align_center"
   },
   {
+    "section": "barShadow",
+    "label": "Shadow",
+    "tabIndex": 3,
+    "category": "Dank Bar",
+    "keywords": [
+      "bar",
+      "dank",
+      "panel",
+      "shadow",
+      "statusbar",
+      "topbar"
+    ],
+    "icon": "layers"
+  },
+  {
     "section": "barSpacing",
     "label": "Spacing",
     "tabIndex": 3,
@@ -810,6 +825,27 @@
       "visible"
     ],
     "icon": "visibility_off"
+  },
+  {
+    "section": "workspaceDragReorder",
+    "label": "Drag to Reorder",
+    "tabIndex": 4,
+    "category": "Workspaces",
+    "keywords": [
+      "desktop",
+      "drag",
+      "indicators",
+      "move",
+      "reorder",
+      "sort",
+      "spaces",
+      "virtual",
+      "virtual desktops",
+      "workspace",
+      "workspaces"
+    ],
+    "description": "Drag workspace indicators to reorder them",
+    "conditionKey": "isNiri"
   },
   {
     "section": "workspaceFocusedBorderEnabled",
@@ -1630,15 +1666,19 @@
   },
   {
     "section": "_tab_8",
-    "label": "System",
+    "label": "Printers",
     "tabIndex": 8,
     "category": "System",
     "keywords": [
+      "cups",
       "linux",
       "os",
+      "print",
+      "printers",
+      "printing",
       "system"
     ],
-    "icon": "computer",
+    "icon": "print",
     "conditionKey": "cupsAvailable"
   },
   {
@@ -2232,6 +2272,30 @@
       "window"
     ],
     "description": "Width of window border (borderpx)"
+  },
+  {
+    "section": "buttonColorMode",
+    "label": "Button Color",
+    "tabIndex": 10,
+    "category": "Theme & Colors",
+    "keywords": [
+      "accent",
+      "action",
+      "appearance",
+      "button",
+      "buttons",
+      "color",
+      "colors",
+      "colour",
+      "hue",
+      "look",
+      "primary",
+      "scheme",
+      "style",
+      "theme",
+      "tint"
+    ],
+    "description": "Color for primary action buttons"
   },
   {
     "section": "colorMode",
@@ -3766,6 +3830,26 @@
     "description": "If the field is hidden, it will appear as soon as a key is pressed."
   },
   {
+    "section": "lockAtStartup",
+    "label": "Lock at startup",
+    "tabIndex": 11,
+    "category": "Lock Screen",
+    "keywords": [
+      "automatic",
+      "automatically",
+      "boot",
+      "lock",
+      "login",
+      "password",
+      "screen",
+      "security",
+      "start",
+      "starts",
+      "startup"
+    ],
+    "description": "Automatically lock the screen when DMS starts"
+  },
+  {
     "section": "lockScreenNotificationMode",
     "label": "Notification Display",
     "tabIndex": 11,
@@ -4012,6 +4096,75 @@
     "icon": "info"
   },
   {
+    "section": "popoutAnimationSpeed",
+    "label": "%1 Animation Speed",
+    "tabIndex": 14,
+    "category": "Typography & Motion",
+    "keywords": [
+      "animate",
+      "animation",
+      "animations",
+      "custom",
+      "duration",
+      "fonts",
+      "motion",
+      "popout",
+      "speed",
+      "sync",
+      "text",
+      "transition",
+      "typography"
+    ],
+    "icon": "open_in_new",
+    "description": "%1 custom animation duration"
+  },
+  {
+    "section": "modalAnimationSpeed",
+    "label": "%1 Animation Speed",
+    "tabIndex": 14,
+    "category": "Typography & Motion",
+    "keywords": [
+      "animate",
+      "animation",
+      "animations",
+      "custom",
+      "duration",
+      "fonts",
+      "modal",
+      "motion",
+      "speed",
+      "sync",
+      "text",
+      "transition",
+      "typography"
+    ],
+    "icon": "web_asset",
+    "description": "%1 custom animation duration"
+  },
+  {
+    "section": "customAnimationDuration",
+    "label": "Animation Duration",
+    "tabIndex": 14,
+    "category": "Typography & Motion",
+    "keywords": [
+      "animate",
+      "animation",
+      "animations",
+      "custom",
+      "duration",
+      "durations",
+      "fonts",
+      "globally",
+      "motion",
+      "scale",
+      "speed",
+      "text",
+      "transition",
+      "typography"
+    ],
+    "description": "Globally scale all animation durations"
+  },
+  {
     "section": "animationSpeed",
     "label": "Animation Speed",
     "tabIndex": 14,
@@ -4021,22 +4174,21 @@
       "animation",
       "animations",
       "duration",
-      "fine",
+      "durations",
       "fonts",
-      "milliseconds",
+      "globally",
       "motion",
+      "scale",
       "speed",
       "text",
-      "timing",
       "transition",
-      "tune",
       "typography"
     ],
     "icon": "animation",
-    "description": "Fine-tune animation timing in milliseconds"
+    "description": "Globally scale all animation durations"
   },
   {
-    "section": "customAnimationDuration",
+    "section": "popoutCustomAnimationDuration",
     "label": "Custom Duration",
     "tabIndex": 14,
     "category": "Typography & Motion",
@@ -4046,18 +4198,36 @@
       "animations",
       "custom",
       "duration",
-      "fine",
       "fonts",
-      "milliseconds",
+      "motion",
+      "popout",
+      "speed",
+      "text",
+      "transition",
+      "typography"
+    ],
+    "description": "%1 custom animation duration"
+  },
+  {
+    "section": "modalCustomAnimationDuration",
+    "label": "Custom Duration",
+    "tabIndex": 14,
+    "category": "Typography & Motion",
+    "keywords": [
+      "animate",
+      "animation",
+      "animations",
+      "custom",
+      "duration",
+      "fonts",
+      "modal",
       "motion",
       "speed",
       "text",
-      "timing",
       "transition",
-      "tune",
       "typography"
     ],
-    "description": "Fine-tune animation timing in milliseconds"
+    "description": "%1 custom animation duration"
   },
   {
     "section": "fontScale",
@@ -4145,6 +4315,59 @@
       "typography"
     ],
     "description": "Select the font family for UI text"
+  },
+  {
+    "section": "enableRippleEffects",
+    "label": "Ripple Effects",
+    "tabIndex": 14,
+    "category": "Typography & Motion",
+    "keywords": [
+      "animate",
+      "animation",
+      "animations",
+      "design",
+      "effect",
+      "effects",
+      "elements",
+      "feedback",
+      "fonts",
+      "interactive",
+      "material",
+      "motion",
+      "ripple",
+      "show",
+      "text",
+      "transition",
+      "typography"
+    ],
+    "icon": "radio_button_unchecked",
+    "description": "Show Material Design ripple animations on interactive elements"
+  },
+  {
+    "section": "syncComponentAnimationSpeeds",
+    "label": "Sync Popouts & Modals",
+    "tabIndex": 14,
+    "category": "Typography & Motion",
+    "keywords": [
+      "animate",
+      "animation",
+      "animations",
+      "customize",
+      "follow",
+      "fonts",
+      "global",
+      "modal",
+      "modals",
+      "motion",
+      "popout",
+      "popouts",
+      "speed",
+      "sync",
+      "text",
+      "transition",
+      "typography"
+    ],
+    "description": "Popouts and Modals follow global Animation Speed (disable to customize independently)"
   },
   {
     "section": "typography",
@@ -4751,6 +4974,28 @@
     "description": "Choose where notification popups appear on screen"
   },
   {
+    "section": "notificationRules",
+    "label": "Notification Rules",
+    "tabIndex": 17,
+    "category": "Notifications",
+    "keywords": [
+      "alert",
+      "alerts",
+      "history",
+      "ignore",
+      "messages",
+      "mute",
+      "notif",
+      "notification",
+      "notifications",
+      "priority",
+      "regex",
+      "rules",
+      "toast"
+    ],
+    "icon": "rule_settings"
+  },
+  {
     "section": "notificationTimeouts",
     "label": "Notification Timeouts",
     "tabIndex": 17,
@@ -4814,6 +5059,230 @@
     "description": "Choose where notification popups appear on screen"
   },
   {
+    "section": "osdAlwaysShowValue",
+    "label": "Always Show Percentage",
+    "tabIndex": 18,
+    "category": "On-screen Displays",
+    "keywords": [
+      "always",
+      "audio",
+      "backlight",
+      "bright",
+      "brightness",
+      "dim",
+      "display",
+      "displays",
+      "indicator",
+      "loudness",
+      "monitor",
+      "osd",
+      "output",
+      "percentage",
+      "popup",
+      "popups",
+      "screen",
+      "show",
+      "sound",
+      "speaker",
+      "values",
+      "volume"
+    ],
+    "description": "Display volume and brightness percentage values in OSD popups"
+  },
+  {
+    "section": "osdAudioOutputEnabled",
+    "label": "Audio Output Switch",
+    "tabIndex": 18,
+    "category": "On-screen Displays",
+    "keywords": [
+      "audio",
+      "cycling",
+      "devices",
+      "display",
+      "displays",
+      "indicator",
+      "monitor",
+      "osd",
+      "output",
+      "popup",
+      "screen",
+      "show",
+      "switch"
+    ],
+    "description": "Show on-screen display when cycling audio output devices"
+  },
+  {
+    "section": "osdBrightnessEnabled",
+    "label": "Brightness",
+    "tabIndex": 18,
+    "category": "On-screen Displays",
+    "keywords": [
+      "backlight",
+      "bright",
+      "brightness",
+      "changes",
+      "dim",
+      "display",
+      "displays",
+      "indicator",
+      "monitor",
+      "osd",
+      "output",
+      "popup",
+      "screen",
+      "show"
+    ],
+    "description": "Show on-screen display when brightness changes"
+  },
+  {
+    "section": "osdCapsLockEnabled",
+    "label": "Caps Lock",
+    "tabIndex": 18,
+    "category": "On-screen Displays",
+    "keywords": [
+      "caps",
+      "changes",
+      "display",
+      "displays",
+      "indicator",
+      "lock",
+      "monitor",
+      "osd",
+      "output",
+      "popup",
+      "screen",
+      "show",
+      "state"
+    ],
+    "description": "Show on-screen display when caps lock state changes"
+  },
+  {
+    "section": "osdIdleInhibitorEnabled",
+    "label": "Idle Inhibitor",
+    "tabIndex": 18,
+    "category": "On-screen Displays",
+    "keywords": [
+      "afk",
+      "changes",
+      "display",
+      "displays",
+      "idle",
+      "inactive",
+      "indicator",
+      "inhibitor",
+      "monitor",
+      "osd",
+      "output",
+      "popup",
+      "screen",
+      "screensaver",
+      "show",
+      "state",
+      "timeout"
+    ],
+    "description": "Show on-screen display when idle inhibitor state changes"
+  },
+  {
+    "section": "osdMediaPlaybackEnabled",
+    "label": "Media Playback",
+    "tabIndex": 18,
+    "category": "On-screen Displays",
+    "keywords": [
+      "audio",
+      "changes",
+      "display",
+      "displays",
+      "indicator",
+      "media",
+      "monitor",
+      "mpris",
+      "music",
+      "osd",
+      "output",
+      "playback",
+      "player",
+      "popup",
+      "screen",
+      "show",
+      "status"
+    ],
+    "description": "Show on-screen display when media player status changes"
+  },
+  {
+    "section": "osdMediaVolumeEnabled",
+    "label": "Media Volume",
+    "tabIndex": 18,
+    "category": "On-screen Displays",
+    "keywords": [
+      "audio",
+      "changes",
+      "display",
+      "displays",
+      "indicator",
+      "loudness",
+      "media",
+      "monitor",
+      "mpris",
+      "music",
+      "osd",
+      "output",
+      "playback",
+      "player",
+      "popup",
+      "screen",
+      "show",
+      "sound",
+      "speaker",
+      "volume"
+    ],
+    "description": "Show on-screen display when media player volume changes"
+  },
+  {
+    "section": "osdMicMuteEnabled",
+    "label": "Microphone Mute",
+    "tabIndex": 18,
+    "category": "On-screen Displays",
+    "keywords": [
+      "display",
+      "displays",
+      "indicator",
+      "microphone",
+      "monitor",
+      "mute",
+      "muted",
+      "osd",
+      "output",
+      "popup",
+      "screen",
+      "show",
+      "unmuted"
+    ],
+    "description": "Show on-screen display when microphone is muted/unmuted"
+  },
+  {
+    "section": "osdPosition",
+    "label": "OSD Position",
+    "tabIndex": 18,
+    "category": "On-screen Displays",
+    "keywords": [
+      "appear",
+      "choose",
+      "displays",
+      "indicator",
+      "monitor",
+      "monitors",
+      "osd",
+      "output",
+      "outputs",
+      "popup",
+      "position",
+      "screen",
+      "screens",
+      "where"
+    ],
+    "description": "Choose where on-screen displays appear on screen"
+  },
+  {
     "section": "_tab_18",
     "label": "On-screen Displays",
     "tabIndex": 18,
@@ -4856,6 +5325,57 @@
     "description": "Choose where on-screen displays appear on screen"
   },
   {
+    "section": "osdPowerProfileEnabled",
+    "label": "Power Profile",
+    "tabIndex": 18,
+    "category": "On-screen Displays",
+    "keywords": [
+      "changes",
+      "display",
+      "displays",
+      "hibernate",
+      "indicator",
+      "monitor",
+      "osd",
+      "output",
+      "popup",
+      "power",
+      "profile",
+      "reboot",
+      "restart",
+      "screen",
+      "show",
+      "shutdown",
+      "sleep",
+      "suspend"
+    ],
+    "description": "Show on-screen display when power profile changes"
+  },
+  {
+    "section": "osdVolumeEnabled",
+    "label": "Volume",
+    "tabIndex": 18,
+    "category": "On-screen Displays",
+    "keywords": [
+      "audio",
+      "changes",
+      "display",
+      "displays",
+      "indicator",
+      "loudness",
+      "monitor",
+      "osd",
+      "output",
+      "popup",
+      "screen",
+      "show",
+      "sound",
+      "speaker",
+      "volume"
+    ],
+    "description": "Show on-screen display when volume changes"
+  },
+  {
     "section": "appIdSubstitutions",
     "label": "App ID Substitutions",
     "tabIndex": 19,
@@ -4894,29 +5414,6 @@
     ],
     "icon": "apps",
     "conditionKey": "isHyprlandOrNiri"
-  },
-  {
-    "section": "runningApps",
-    "label": "Running Apps Settings",
-    "tabIndex": 19,
-    "category": "Running Apps",
-    "keywords": [
-      "active",
-      "apps",
-      "current",
-      "desktop",
-      "open",
-      "running",
-      "settings",
-      "show",
-      "taskbar",
-      "tasks",
-      "virtual",
-      "windows",
-      "workspace"
-    ],
-    "icon": "apps",
-    "description": "Show only apps running in current workspace"
   },
   {
     "section": "_tab_20",
@@ -5691,12 +6188,71 @@
     "section": "_tab_28",
     "label": "Window Rules",
     "tabIndex": 28,
-    "category": "Settings",
+    "category": "Window Rules",
     "keywords": [
+      "floating",
+      "fullscreen",
+      "matching",
+      "opacity",
       "rules",
-      "settings",
       "window"
     ],
-    "icon": "select_window"
+    "icon": "select_window",
+    "conditionKey": "isNiri"
+  },
+  {
+    "section": "audioInputDevices",
+    "label": "Input Devices",
+    "tabIndex": 29,
+    "category": "Audio",
+    "keywords": [
+      "audio",
+      "device",
+      "devices",
+      "headphones",
+      "input",
+      "microphone",
+      "pipewire",
+      "sound",
+      "speaker",
+      "volume"
+    ],
+    "icon": "mic"
+  },
+  {
+    "section": "audioOutputDevices",
+    "label": "Output Devices",
+    "tabIndex": 29,
+    "category": "Audio",
+    "keywords": [
+      "audio",
+      "device",
+      "devices",
+      "headphones",
+      "microphone",
+      "output",
+      "pipewire",
+      "sound",
+      "speaker",
+      "volume"
+    ],
+    "icon": "volume_up"
+  },
+  {
+    "section": "_tab_29",
+    "label": "System",
+    "tabIndex": 29,
+    "category": "Audio",
+    "keywords": [
+      "audio",
+      "headphones",
+      "microphone",
+      "pipewire",
+      "sound",
+      "speaker",
+      "system",
+      "volume"
+    ],
+    "icon": "computer"
   }
 ]

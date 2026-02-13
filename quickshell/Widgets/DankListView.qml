@@ -1,10 +1,12 @@
 import QtQuick
 import QtQuick.Controls
+import qs.Common
 import qs.Widgets
 
 ListView {
     id: listView
 
+    property real scrollBarTopMargin: 0
     property real mouseWheelSpeed: 60
     property real savedY: 0
     property bool justChanged: false
@@ -21,6 +23,11 @@ ListView {
     boundsMovement: Flickable.FollowBoundsBehavior
     pressDelay: 0
     flickableDirection: Flickable.VerticalFlick
+
+    add: ListViewTransitions.add
+    remove: ListViewTransitions.remove
+    displaced: ListViewTransitions.displaced
+    move: ListViewTransitions.move
 
     onMovementStarted: {
         isUserScrolling = true;
@@ -202,5 +209,6 @@ ListView {
 
     ScrollBar.vertical: DankScrollbar {
         id: vbar
+        topPadding: listView.scrollBarTopMargin
     }
 }

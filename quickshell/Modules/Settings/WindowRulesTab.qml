@@ -220,7 +220,7 @@ Item {
                 height: headerSection.implicitHeight + Theme.spacingL * 2
                 anchors.horizontalCenter: parent.horizontalCenter
                 radius: Theme.cornerRadius
-                color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                color: Theme.surfaceContainerHigh
 
                 Column {
                     id: headerSection
@@ -346,6 +346,8 @@ Item {
                             font.pixelSize: Theme.fontSizeMedium
                             font.weight: Font.Medium
                             color: Theme.warning
+                            width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         StyledText {
@@ -355,6 +357,7 @@ Item {
                             color: Theme.surfaceVariantText
                             wrapMode: Text.WordWrap
                             width: parent.width
+                            horizontalAlignment: Text.AlignLeft
                         }
                     }
 
@@ -376,7 +379,7 @@ Item {
                 height: rulesSection.implicitHeight + Theme.spacingL * 2
                 anchors.horizontalCenter: parent.horizontalCenter
                 radius: Theme.cornerRadius
-                color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                color: Theme.surfaceContainerHigh
 
                 Column {
                     id: rulesSection

@@ -12,10 +12,10 @@ Item {
     property int grade: Theme.isLightMode ? 0 : -25
     property int weight: filled ? 500 : 400
 
-    implicitWidth: icon.implicitWidth
-    implicitHeight: icon.implicitHeight
+    implicitWidth: Math.round(size)
+    implicitHeight: Math.round(size)
 
-    signal rotationCompleted()
+    signal rotationCompleted
 
     FontLoader {
         id: materialSymbolsFont
@@ -34,6 +34,14 @@ Item {
         verticalAlignment: Text.AlignVCenter
         horizontalAlignment: Text.AlignHCenter
         antialiasing: true
+
+        Behavior on color {
+            enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+            DankColorAnim {
+                duration: Theme.shorterDuration
+                easing.bezierCurve: Theme.expressiveCurves.standard
+            }
+        }
         font.variableAxes: {
             "FILL": root.fill.toFixed(1),
             "GRAD": root.grade,
@@ -64,6 +72,6 @@ Item {
     }
 
     onRotationChanged: {
-        rotationTimer.restart()
+        rotationTimer.restart();
     }
 }

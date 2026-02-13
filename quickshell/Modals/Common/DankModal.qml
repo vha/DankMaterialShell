@@ -26,7 +26,7 @@ Item {
     property bool closeOnEscapeKey: true
     property bool closeOnBackgroundClick: true
     property string animationType: "scale"
-    property int animationDuration: Theme.expressiveDurations.expressiveDefaultSpatial
+    property int animationDuration: Theme.modalAnimationDuration
     property real animationScaleCollapsed: 0.96
     property real animationOffset: Theme.spacingL
     property list<real> animationEnterCurve: Theme.expressiveCurves.expressiveDefaultSpatial
@@ -132,7 +132,7 @@ Item {
 
     Timer {
         id: closeTimer
-        interval: animationDuration + 120
+        interval: animationDuration + 50
         onTriggered: {
             if (shouldBeVisible)
                 return;
@@ -284,9 +284,8 @@ Item {
 
             Behavior on opacity {
                 enabled: root.animationsEnabled
-                NumberAnimation {
+                DankAnim {
                     duration: root.animationDuration
-                    easing.type: Easing.BezierSpline
                     easing.bezierCurve: root.shouldBeVisible ? root.animationEnterCurve : root.animationExitCurve
                 }
             }
@@ -332,27 +331,24 @@ Item {
 
             Behavior on animX {
                 enabled: root.animationsEnabled
-                NumberAnimation {
+                DankAnim {
                     duration: root.animationDuration
-                    easing.type: Easing.BezierSpline
                     easing.bezierCurve: root.shouldBeVisible ? root.animationEnterCurve : root.animationExitCurve
                 }
             }
 
             Behavior on animY {
                 enabled: root.animationsEnabled
-                NumberAnimation {
+                DankAnim {
                     duration: root.animationDuration
-                    easing.type: Easing.BezierSpline
                     easing.bezierCurve: root.shouldBeVisible ? root.animationEnterCurve : root.animationExitCurve
                 }
             }
 
             Behavior on scaleValue {
                 enabled: root.animationsEnabled
-                NumberAnimation {
+                DankAnim {
                     duration: root.animationDuration
-                    easing.type: Easing.BezierSpline
                     easing.bezierCurve: root.shouldBeVisible ? root.animationEnterCurve : root.animationExitCurve
                 }
             }

@@ -6,23 +6,19 @@ import Quickshell.Services.SystemTray
 import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.Common
+import qs.Modules.Plugins
 import qs.Services
 import qs.Widgets
 
-Item {
+BasePill {
     id: root
 
-    property bool isVertical: axis?.isVertical ?? false
-    property var axis: null
+    enableBackgroundHover: false
+    enableCursor: false
+
     property var parentWindow: null
-    property var parentScreen: null
-    property real widgetThickness: 30
-    property real barThickness: 48
-    property real barSpacing: 4
     property bool isAtBottom: false
-    property var barConfig: null
     property bool isAutoHideBar: false
-    readonly property real horizontalPadding: (barConfig?.noBackground ?? false) ? 2 : Theme.spacingS
     readonly property var hiddenTrayIds: {
         const envValue = Quickshell.env("DMS_HIDE_TRAYIDS") || "";
         return envValue ? envValue.split(",").map(id => id.trim().toLowerCase()) : [];
@@ -45,24 +41,68 @@ Item {
         return `${id}::${tooltipTitle}`;
     }
 
-    readonly property var mainBarItems: allTrayItems.filter(item => !SessionData.isHiddenTrayId(root.getTrayItemKey(item)))
-    readonly property var hiddenBarItems: allTrayItems.filter(item => SessionData.isHiddenTrayId(root.getTrayItemKey(item)))
-    readonly property bool hasHiddenItems: allTrayItems.length > mainBarItems.length
-    readonly property int calculatedSize: {
-        if (allTrayItems.length === 0)
-            return 0;
-        const itemCount = mainBarItems.length + (hasHiddenItems ? 1 : 0);
-        return itemCount * 24 + horizontalPadding * 2;
-    }
-    readonly property real visualWidth: isVertical ? widgetThickness : calculatedSize
-    readonly property real visualHeight: isVertical ? calculatedSize : widgetThickness
+    property int _trayOrderTrigger: 0
 
-    width: isVertical ? barThickness : visualWidth
-    height: isVertical ? visualHeight : barThickness
+    Connections {
+        target: SessionData
+        function onTrayItemOrderChanged() {
+            root._trayOrderTrigger++;
+        }
+    }
+
+    function sortByPreferredOrder(items, trigger) {
+        void trigger;
+        const savedOrder = SessionData.trayItemOrder || [];
+        const orderMap = new Map();
+        savedOrder.forEach((key, idx) => orderMap.set(key, idx));
+
+        return [...items].sort((a, b) => {
+            const keyA = getTrayItemKey(a);
+            const keyB = getTrayItemKey(b);
+            const orderA = orderMap.has(keyA) ? orderMap.get(keyA) : 10000 + items.indexOf(a);
+            const orderB = orderMap.has(keyB) ? orderMap.get(keyB) : 10000 + items.indexOf(b);
+            return orderA - orderB;
+        });
+    }
+
+    readonly property var allSortedTrayItems: sortByPreferredOrder(allTrayItems, _trayOrderTrigger)
+    readonly property var allSortedTrayItemKeys: allSortedTrayItems.map(item => getTrayItemKey(item))
+    readonly property var mainBarItemsRaw: allSortedTrayItems.filter(item => !SessionData.isHiddenTrayId(root.getTrayItemKey(item)))
+    readonly property var mainBarItems: mainBarItemsRaw.map((item, idx) => ({
+                key: getTrayItemKey(item),
+                item: item
+            }))
+    readonly property var hiddenBarItems: allSortedTrayItems.filter(item => SessionData.isHiddenTrayId(root.getTrayItemKey(item)))
+
+    function moveTrayItemInFullOrder(visibleFromIndex, visibleToIndex) {
+        if (visibleFromIndex === visibleToIndex || visibleFromIndex < 0 || visibleToIndex < 0)
+            return;
+
+        const fromKey = mainBarItems[visibleFromIndex]?.key ?? null;
+        const toKey = mainBarItems[visibleToIndex]?.key ?? null;
+        if (!fromKey || !toKey)
+            return;
+
+        const fullOrder = [...allSortedTrayItemKeys];
+        const fullFromIndex = fullOrder.indexOf(fromKey);
+        const fullToIndex = fullOrder.indexOf(toKey);
+        if (fullFromIndex < 0 || fullToIndex < 0)
+            return;
+
+        const movedKey = fullOrder.splice(fullFromIndex, 1)[0];
+        fullOrder.splice(fullToIndex, 0, movedKey);
+        SessionData.setTrayItemOrder(fullOrder);
+    }
+
+    property int draggedIndex: -1
+    property int dropTargetIndex: -1
+    property bool suppressShiftAnimation: false
+    readonly property bool hasHiddenItems: allTrayItems.length > mainBarItems.length
     visible: allTrayItems.length > 0
+    readonly property real trayItemSize: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground) + 6
 
     readonly property real minTooltipY: {
-        if (!parentScreen || !isVertical) {
+        if (!parentScreen || !isVerticalOrientation) {
             return 0;
         }
 
@@ -81,77 +121,17 @@ Item {
     property bool menuOpen: false
     property var currentTrayMenu: null
 
-    Item {
-        id: visualBackground
-        width: root.visualWidth
-        height: root.visualHeight
-        anchors.centerIn: parent
+    content: Component {
+        Item {
+            implicitWidth: layoutLoader.item ? layoutLoader.item.implicitWidth : 0
+            implicitHeight: layoutLoader.item ? layoutLoader.item.implicitHeight : 0
 
-        Rectangle {
-            id: outline
-            anchors.centerIn: parent
-            width: {
-                const borderWidth = (barConfig?.widgetOutlineEnabled ?? false) ? (barConfig?.widgetOutlineThickness ?? 1) : 0;
-                return parent.width + borderWidth * 2;
-            }
-            height: {
-                const borderWidth = (barConfig?.widgetOutlineEnabled ?? false) ? (barConfig?.widgetOutlineThickness ?? 1) : 0;
-                return parent.height + borderWidth * 2;
-            }
-            radius: (barConfig?.noBackground ?? false) ? 0 : Theme.cornerRadius
-            color: "transparent"
-            border.width: {
-                if (barConfig?.widgetOutlineEnabled ?? false) {
-                    return barConfig?.widgetOutlineThickness ?? 1;
-                }
-                return 0;
-            }
-            border.color: {
-                if (!(barConfig?.widgetOutlineEnabled ?? false)) {
-                    return "transparent";
-                }
-                const colorOption = barConfig?.widgetOutlineColor || "primary";
-                const opacity = barConfig?.widgetOutlineOpacity ?? 1.0;
-                switch (colorOption) {
-                case "surfaceText":
-                    return Theme.withAlpha(Theme.surfaceText, opacity);
-                case "secondary":
-                    return Theme.withAlpha(Theme.secondary, opacity);
-                case "primary":
-                    return Theme.withAlpha(Theme.primary, opacity);
-                default:
-                    return Theme.withAlpha(Theme.primary, opacity);
-                }
+            Loader {
+                id: layoutLoader
+                anchors.centerIn: parent
+                sourceComponent: root.isVerticalOrientation ? columnComp : rowComp
             }
         }
-
-        Rectangle {
-            id: background
-            anchors.fill: parent
-            radius: (barConfig?.noBackground ?? false) ? 0 : Theme.cornerRadius
-            color: {
-                if (allTrayItems.length === 0) {
-                    return "transparent";
-                }
-
-                if ((barConfig?.noBackground ?? false)) {
-                    return "transparent";
-                }
-
-                const baseColor = Theme.widgetBaseBackgroundColor;
-                const transparency = (root.barConfig && root.barConfig.widgetTransparency !== undefined) ? root.barConfig.widgetTransparency : 1.0;
-                if (Theme.widgetBackgroundHasAlpha) {
-                    return Qt.rgba(baseColor.r, baseColor.g, baseColor.b, baseColor.a * transparency);
-                }
-                return Theme.withAlpha(baseColor, transparency);
-            }
-        }
-    }
-
-    Loader {
-        id: layoutLoader
-        anchors.centerIn: parent
-        sourceComponent: root.isVertical ? columnComp : rowComp
     }
 
     Component {
@@ -160,23 +140,24 @@ Item {
             spacing: 0
 
             Repeater {
-                model: root.mainBarItems
+                model: ScriptModel {
+                    values: root.mainBarItems
+                    objectProp: "key"
+                }
 
                 delegate: Item {
                     id: delegateRoot
-                    property var trayItem: modelData
+                    property var trayItem: modelData.item
+                    property string itemKey: modelData.key
                     property string iconSource: {
                         let icon = trayItem && trayItem.icon;
                         if (typeof icon === 'string' || icon instanceof String) {
-                            if (icon === "") {
+                            if (icon === "")
                                 return "";
-                            }
                             if (icon.includes("?path=")) {
                                 const split = icon.split("?path=");
-                                if (split.length !== 2) {
+                                if (split.length !== 2)
                                     return icon;
-                                }
-
                                 const name = split[0];
                                 const path = split[1];
                                 let fileName = name.substring(name.lastIndexOf("/") + 1);
@@ -185,24 +166,75 @@ Item {
                                 }
                                 return `file://${path}/${fileName}`;
                             }
-                            if (icon.startsWith("/") && !icon.startsWith("file://")) {
+                            if (icon.startsWith("/") && !icon.startsWith("file://"))
                                 return `file://${icon}`;
-                            }
                             return icon;
                         }
                         return "";
                     }
 
-                    width: 24
+                    width: root.trayItemSize
                     height: root.barThickness
+                    z: dragHandler.dragging ? 100 : 0
+
+                    property real shiftOffset: {
+                        if (root.draggedIndex < 0)
+                            return 0;
+                        if (index === root.draggedIndex)
+                            return 0;
+                        const dragIdx = root.draggedIndex;
+                        const dropIdx = root.dropTargetIndex;
+                        const shiftAmount = root.trayItemSize;
+                        if (dropIdx < 0)
+                            return 0;
+                        if (dragIdx < dropIdx && index > dragIdx && index <= dropIdx)
+                            return -shiftAmount;
+                        if (dragIdx > dropIdx && index >= dropIdx && index < dragIdx)
+                            return shiftAmount;
+                        return 0;
+                    }
+
+                    transform: Translate {
+                        x: delegateRoot.shiftOffset
+                        Behavior on x {
+                            enabled: !root.suppressShiftAnimation
+                            NumberAnimation {
+                                duration: 150
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+                    }
+
+                    Item {
+                        id: dragHandler
+                        anchors.fill: parent
+                        property bool dragging: false
+                        property point dragStartPos: Qt.point(0, 0)
+                        property real dragAxisOffset: 0
+                        property bool longPressing: false
+
+                        Timer {
+                            id: longPressTimer
+                            interval: 400
+                            repeat: false
+                            onTriggered: dragHandler.longPressing = true
+                        }
+                    }
 
                     Rectangle {
                         id: visualContent
-                        width: 24
-                        height: 24
+                        width: root.trayItemSize
+                        height: root.trayItemSize
                         anchors.centerIn: parent
                         radius: Theme.cornerRadius
                         color: trayItemArea.containsMouse ? Theme.widgetBaseHoverColor : "transparent"
+                        border.width: dragHandler.dragging ? 2 : 0
+                        border.color: Theme.primary
+                        opacity: dragHandler.dragging ? 0.8 : 1.0
+
+                        transform: Translate {
+                            x: dragHandler.dragging ? dragHandler.dragAxisOffset : 0
+                        }
 
                         IconImage {
                             id: iconImg
@@ -221,49 +253,113 @@ Item {
                             visible: !iconImg.visible
                             text: {
                                 const itemId = trayItem?.id || "";
-                                if (!itemId) {
+                                if (!itemId)
                                     return "?";
-                                }
                                 return itemId.charAt(0).toUpperCase();
                             }
                             font.pixelSize: 10
                             color: Theme.widgetTextColor
                         }
+
+                        DankRipple {
+                            id: itemRipple
+                            cornerRadius: Theme.cornerRadius
+                        }
                     }
 
                     MouseArea {
                         id: trayItemArea
-
                         anchors.fill: parent
                         hoverEnabled: true
                         acceptedButtons: Qt.LeftButton | Qt.RightButton
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: mouse => {
+                        cursorShape: dragHandler.longPressing ? Qt.DragMoveCursor : Qt.PointingHandCursor
+
+                        onPressed: mouse => {
+                            const pos = mapToItem(visualContent, mouse.x, mouse.y);
+                            itemRipple.trigger(pos.x, pos.y);
+                            if (mouse.button === Qt.LeftButton) {
+                                dragHandler.dragStartPos = Qt.point(mouse.x, mouse.y);
+                                longPressTimer.start();
+                            }
+                        }
+
+                        onReleased: mouse => {
+                            longPressTimer.stop();
+                            const wasDragging = dragHandler.dragging;
+                            const didReorder = wasDragging && root.dropTargetIndex >= 0 && root.dropTargetIndex !== root.draggedIndex;
+
+                            if (didReorder) {
+                                root.suppressShiftAnimation = true;
+                                root.moveTrayItemInFullOrder(root.draggedIndex, root.dropTargetIndex);
+                                Qt.callLater(() => root.suppressShiftAnimation = false);
+                            }
+
+                            dragHandler.longPressing = false;
+                            dragHandler.dragging = false;
+                            dragHandler.dragAxisOffset = 0;
+                            root.draggedIndex = -1;
+                            root.dropTargetIndex = -1;
+
+                            if (wasDragging || mouse.button !== Qt.LeftButton)
+                                return;
+
                             if (!delegateRoot.trayItem)
                                 return;
-                            if (mouse.button === Qt.LeftButton && !delegateRoot.trayItem.onlyMenu) {
+                            if (!delegateRoot.trayItem.onlyMenu) {
                                 delegateRoot.trayItem.activate();
                                 return;
                             }
-
                             if (!delegateRoot.trayItem.hasMenu)
                                 return;
                             root.menuOpen = false;
-                            root.showForTrayItem(delegateRoot.trayItem, visualContent, parentScreen, root.isAtBottom, root.isVertical, root.axis);
+                            root.showForTrayItem(delegateRoot.trayItem, visualContent, parentScreen, root.isAtBottom, root.isVerticalOrientation, root.axis);
+                        }
+
+                        onPositionChanged: mouse => {
+                            if (dragHandler.longPressing && !dragHandler.dragging) {
+                                const distance = Math.abs(mouse.x - dragHandler.dragStartPos.x);
+                                if (distance > 5) {
+                                    dragHandler.dragging = true;
+                                    root.draggedIndex = index;
+                                    root.dropTargetIndex = index;
+                                }
+                            }
+                            if (!dragHandler.dragging)
+                                return;
+
+                            const axisOffset = mouse.x - dragHandler.dragStartPos.x;
+                            dragHandler.dragAxisOffset = axisOffset;
+                            const itemSize = root.trayItemSize;
+                            const slotOffset = Math.round(axisOffset / itemSize);
+                            const newTargetIndex = Math.max(0, Math.min(root.mainBarItems.length - 1, index + slotOffset));
+                            if (newTargetIndex !== root.dropTargetIndex) {
+                                root.dropTargetIndex = newTargetIndex;
+                            }
+                        }
+
+                        onClicked: mouse => {
+                            if (dragHandler.dragging)
+                                return;
+                            if (mouse.button !== Qt.RightButton)
+                                return;
+                            if (!delegateRoot.trayItem?.hasMenu)
+                                return;
+                            root.menuOpen = false;
+                            root.showForTrayItem(delegateRoot.trayItem, visualContent, parentScreen, root.isAtBottom, root.isVerticalOrientation, root.axis);
                         }
                     }
                 }
             }
 
             Item {
-                width: 24
+                width: root.trayItemSize
                 height: root.barThickness
                 visible: root.hasHiddenItems
 
                 Rectangle {
                     id: caretButton
-                    width: 24
-                    height: 24
+                    width: root.trayItemSize
+                    height: root.trayItemSize
                     anchors.centerIn: parent
                     radius: Theme.cornerRadius
                     color: caretArea.containsMouse ? Theme.widgetBaseHoverColor : "transparent"
@@ -275,11 +371,19 @@ Item {
                         color: Theme.widgetTextColor
                     }
 
+                    DankRipple {
+                        id: caretRipple
+                        cornerRadius: Theme.cornerRadius
+                    }
+
                     MouseArea {
                         id: caretArea
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
+                        onPressed: mouse => {
+                            caretRipple.trigger(mouse.x, mouse.y);
+                        }
                         onClicked: root.menuOpen = !root.menuOpen
                     }
                 }
@@ -293,23 +397,24 @@ Item {
             spacing: 0
 
             Repeater {
-                model: root.mainBarItems
+                model: ScriptModel {
+                    values: root.mainBarItems
+                    objectProp: "key"
+                }
 
                 delegate: Item {
                     id: delegateRoot
-                    property var trayItem: modelData
+                    property var trayItem: modelData.item
+                    property string itemKey: modelData.key
                     property string iconSource: {
                         let icon = trayItem && trayItem.icon;
                         if (typeof icon === 'string' || icon instanceof String) {
-                            if (icon === "") {
+                            if (icon === "")
                                 return "";
-                            }
                             if (icon.includes("?path=")) {
                                 const split = icon.split("?path=");
-                                if (split.length !== 2) {
+                                if (split.length !== 2)
                                     return icon;
-                                }
-
                                 const name = split[0];
                                 const path = split[1];
                                 let fileName = name.substring(name.lastIndexOf("/") + 1);
@@ -318,24 +423,75 @@ Item {
                                 }
                                 return `file://${path}/${fileName}`;
                             }
-                            if (icon.startsWith("/") && !icon.startsWith("file://")) {
+                            if (icon.startsWith("/") && !icon.startsWith("file://"))
                                 return `file://${icon}`;
-                            }
                             return icon;
                         }
                         return "";
                     }
 
                     width: root.barThickness
-                    height: 24
+                    height: root.trayItemSize
+                    z: dragHandler.dragging ? 100 : 0
+
+                    property real shiftOffset: {
+                        if (root.draggedIndex < 0)
+                            return 0;
+                        if (index === root.draggedIndex)
+                            return 0;
+                        const dragIdx = root.draggedIndex;
+                        const dropIdx = root.dropTargetIndex;
+                        const shiftAmount = root.trayItemSize;
+                        if (dropIdx < 0)
+                            return 0;
+                        if (dragIdx < dropIdx && index > dragIdx && index <= dropIdx)
+                            return -shiftAmount;
+                        if (dragIdx > dropIdx && index >= dropIdx && index < dragIdx)
+                            return shiftAmount;
+                        return 0;
+                    }
+
+                    transform: Translate {
+                        y: delegateRoot.shiftOffset
+                        Behavior on y {
+                            enabled: !root.suppressShiftAnimation
+                            NumberAnimation {
+                                duration: 150
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+                    }
+
+                    Item {
+                        id: dragHandler
+                        anchors.fill: parent
+                        property bool dragging: false
+                        property point dragStartPos: Qt.point(0, 0)
+                        property real dragAxisOffset: 0
+                        property bool longPressing: false
+
+                        Timer {
+                            id: longPressTimer
+                            interval: 400
+                            repeat: false
+                            onTriggered: dragHandler.longPressing = true
+                        }
+                    }
 
                     Rectangle {
                         id: visualContent
-                        width: 24
-                        height: 24
+                        width: root.trayItemSize
+                        height: root.trayItemSize
                         anchors.centerIn: parent
                         radius: Theme.cornerRadius
                         color: trayItemArea.containsMouse ? Theme.widgetBaseHoverColor : "transparent"
+                        border.width: dragHandler.dragging ? 2 : 0
+                        border.color: Theme.primary
+                        opacity: dragHandler.dragging ? 0.8 : 1.0
+
+                        transform: Translate {
+                            y: dragHandler.dragging ? dragHandler.dragAxisOffset : 0
+                        }
 
                         IconImage {
                             id: iconImg
@@ -354,35 +510,99 @@ Item {
                             visible: !iconImg.visible
                             text: {
                                 const itemId = trayItem?.id || "";
-                                if (!itemId) {
+                                if (!itemId)
                                     return "?";
-                                }
                                 return itemId.charAt(0).toUpperCase();
                             }
                             font.pixelSize: 10
                             color: Theme.widgetTextColor
                         }
+
+                        DankRipple {
+                            id: itemRipple
+                            cornerRadius: Theme.cornerRadius
+                        }
                     }
 
                     MouseArea {
                         id: trayItemArea
-
                         anchors.fill: parent
                         hoverEnabled: true
                         acceptedButtons: Qt.LeftButton | Qt.RightButton
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: mouse => {
+                        cursorShape: dragHandler.longPressing ? Qt.DragMoveCursor : Qt.PointingHandCursor
+
+                        onPressed: mouse => {
+                            const pos = mapToItem(visualContent, mouse.x, mouse.y);
+                            itemRipple.trigger(pos.x, pos.y);
+                            if (mouse.button === Qt.LeftButton) {
+                                dragHandler.dragStartPos = Qt.point(mouse.x, mouse.y);
+                                longPressTimer.start();
+                            }
+                        }
+
+                        onReleased: mouse => {
+                            longPressTimer.stop();
+                            const wasDragging = dragHandler.dragging;
+                            const didReorder = wasDragging && root.dropTargetIndex >= 0 && root.dropTargetIndex !== root.draggedIndex;
+
+                            if (didReorder) {
+                                root.suppressShiftAnimation = true;
+                                root.moveTrayItemInFullOrder(root.draggedIndex, root.dropTargetIndex);
+                                Qt.callLater(() => root.suppressShiftAnimation = false);
+                            }
+
+                            dragHandler.longPressing = false;
+                            dragHandler.dragging = false;
+                            dragHandler.dragAxisOffset = 0;
+                            root.draggedIndex = -1;
+                            root.dropTargetIndex = -1;
+
+                            if (wasDragging || mouse.button !== Qt.LeftButton)
+                                return;
+
                             if (!delegateRoot.trayItem)
                                 return;
-                            if (mouse.button === Qt.LeftButton && !delegateRoot.trayItem.onlyMenu) {
+                            if (!delegateRoot.trayItem.onlyMenu) {
                                 delegateRoot.trayItem.activate();
                                 return;
                             }
-
                             if (!delegateRoot.trayItem.hasMenu)
                                 return;
                             root.menuOpen = false;
-                            root.showForTrayItem(delegateRoot.trayItem, visualContent, parentScreen, root.isAtBottom, root.isVertical, root.axis);
+                            root.showForTrayItem(delegateRoot.trayItem, visualContent, parentScreen, root.isAtBottom, root.isVerticalOrientation, root.axis);
+                        }
+
+                        onPositionChanged: mouse => {
+                            if (dragHandler.longPressing && !dragHandler.dragging) {
+                                const distance = Math.abs(mouse.y - dragHandler.dragStartPos.y);
+                                if (distance > 5) {
+                                    dragHandler.dragging = true;
+                                    root.draggedIndex = index;
+                                    root.dropTargetIndex = index;
+                                }
+                            }
+                            if (!dragHandler.dragging)
+                                return;
+
+                            const axisOffset = mouse.y - dragHandler.dragStartPos.y;
+                            dragHandler.dragAxisOffset = axisOffset;
+                            const itemSize = root.trayItemSize;
+                            const slotOffset = Math.round(axisOffset / itemSize);
+                            const newTargetIndex = Math.max(0, Math.min(root.mainBarItems.length - 1, index + slotOffset));
+                            if (newTargetIndex !== root.dropTargetIndex) {
+                                root.dropTargetIndex = newTargetIndex;
+                            }
+                        }
+
+                        onClicked: mouse => {
+                            if (dragHandler.dragging)
+                                return;
+                            if (mouse.button !== Qt.RightButton)
+                                return;
+                            if (!delegateRoot.trayItem?.hasMenu)
+                                return;
+                            root.menuOpen = false;
+                            root.showForTrayItem(delegateRoot.trayItem, visualContent, parentScreen, root.isAtBottom, root.isVerticalOrientation, root.axis);
                         }
                     }
                 }
@@ -390,13 +610,13 @@ Item {
 
             Item {
                 width: root.barThickness
-                height: 24
+                height: root.trayItemSize
                 visible: root.hasHiddenItems
 
                 Rectangle {
                     id: caretButtonVert
-                    width: 24
-                    height: 24
+                    width: root.trayItemSize
+                    height: root.trayItemSize
                     anchors.centerIn: parent
                     radius: Theme.cornerRadius
                     color: caretAreaVert.containsMouse ? Theme.widgetBaseHoverColor : "transparent"
@@ -415,11 +635,19 @@ Item {
                         color: Theme.widgetTextColor
                     }
 
+                    DankRipple {
+                        id: caretRippleVert
+                        cornerRadius: Theme.cornerRadius
+                    }
+
                     MouseArea {
                         id: caretAreaVert
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
+                        onPressed: mouse => {
+                            caretRippleVert.trigger(mouse.x, mouse.y);
+                        }
                         onClicked: root.menuOpen = !root.menuOpen
                     }
                 }
@@ -590,7 +818,7 @@ Item {
             const relativeX = globalPos.x - screenX;
             const relativeY = globalPos.y - screenY;
 
-            if (root.isVertical) {
+            if (root.isVerticalOrientation) {
                 const edge = root.axis?.edge;
                 let targetX = edge === "left" ? root.barThickness + root.barSpacing + Theme.popupDistance : screen.width - (root.barThickness + root.barSpacing + Theme.popupDistance);
                 const adjustedY = relativeY + root.height / 2 + root.minTooltipY;
@@ -608,7 +836,7 @@ Item {
             readonly property real rawWidth: {
                 const itemCount = root.hiddenBarItems.length;
                 const cols = Math.min(5, itemCount);
-                const itemSize = 28;
+                const itemSize = root.trayItemSize + 4;
                 const spacing = 2;
                 return cols * itemSize + (cols - 1) * spacing + Theme.spacingS * 2;
             }
@@ -616,7 +844,7 @@ Item {
                 const itemCount = root.hiddenBarItems.length;
                 const cols = Math.min(5, itemCount);
                 const rows = Math.ceil(itemCount / cols);
-                const itemSize = 28;
+                const itemSize = root.trayItemSize + 4;
                 const spacing = 2;
                 return rows * itemSize + (rows - 1) * spacing + Theme.spacingS * 2;
             }
@@ -628,7 +856,7 @@ Item {
             height: alignedHeight
 
             x: Theme.snap((() => {
-                    if (root.isVertical) {
+                    if (root.isVerticalOrientation) {
                         const edge = root.axis?.edge;
                         if (edge === "left") {
                             const targetX = overflowMenu.anchorPos.x;
@@ -646,7 +874,7 @@ Item {
                 })(), overflowMenu.dpr)
 
             y: Theme.snap((() => {
-                    if (root.isVertical) {
+                    if (root.isVerticalOrientation) {
                         const top = Math.max(overflowMenu.barY, 10);
                         const bottom = overflowMenu.height - alignedHeight - 10;
                         const want = overflowMenu.anchorPos.y - alignedHeight / 2;
@@ -755,8 +983,8 @@ Item {
                             return "";
                         }
 
-                        width: 28
-                        height: 28
+                        width: root.trayItemSize + 4
+                        height: root.trayItemSize + 4
                         radius: Theme.cornerRadius
                         color: itemArea.containsMouse ? Theme.widgetBaseHoverColor : Theme.withAlpha(Theme.surfaceContainer, 0)
 
@@ -802,7 +1030,7 @@ Item {
 
                                 if (!trayItem.hasMenu)
                                     return;
-                                root.showForTrayItem(trayItem, menuContainer, parentScreen, root.isAtBottom, root.isVertical, root.axis);
+                                root.showForTrayItem(trayItem, menuContainer, parentScreen, root.isAtBottom, root.isVerticalOrientation, root.axis);
                             }
                         }
                     }

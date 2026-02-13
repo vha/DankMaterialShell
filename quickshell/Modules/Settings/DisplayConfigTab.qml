@@ -8,6 +8,9 @@ import qs.Modules.Settings.DisplayConfig
 Item {
     id: root
 
+    LayoutMirroring.enabled: I18n.isRtl
+    LayoutMirroring.childrenInherit: true
+
     property string selectedProfileId: SettingsData.getActiveDisplayProfile(CompositorService.compositor)
     property bool showNewProfileDialog: false
     property bool showDeleteConfirmDialog: false
@@ -90,7 +93,7 @@ Item {
                 width: parent.width
                 height: profileSection.implicitHeight + Theme.spacingL * 2
                 radius: Theme.cornerRadius
-                color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                color: Theme.surfaceContainerHigh
                 border.color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.2)
                 border.width: 0
                 visible: DisplayConfigState.hasOutputBackend
@@ -122,6 +125,8 @@ Item {
                                 font.pixelSize: Theme.fontSizeLarge
                                 font.weight: Font.Medium
                                 color: Theme.surfaceText
+                                width: parent.width
+                                horizontalAlignment: Text.AlignLeft
                             }
 
                             StyledText {
@@ -130,6 +135,7 @@ Item {
                                 color: Theme.surfaceVariantText
                                 wrapMode: Text.WordWrap
                                 width: parent.width
+                                horizontalAlignment: Text.AlignLeft
                             }
                         }
 
@@ -144,6 +150,7 @@ Item {
                                 text: I18n.tr("Auto")
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.surfaceVariantText
+                                horizontalAlignment: Text.AlignHCenter
                                 anchors.horizontalCenter: parent.horizontalCenter
                             }
 
@@ -273,6 +280,7 @@ Item {
                                 color: Theme.surfaceText
                                 width: parent.width
                                 wrapMode: Text.WordWrap
+                                horizontalAlignment: Text.AlignLeft
                             }
 
                             Row {
@@ -325,7 +333,7 @@ Item {
                 width: parent.width
                 height: monitorConfigSection.implicitHeight + Theme.spacingL * 2
                 radius: Theme.cornerRadius
-                color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                color: Theme.surfaceContainerHigh
                 border.color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.2)
                 border.width: 0
                 visible: DisplayConfigState.hasOutputBackend
@@ -357,6 +365,8 @@ Item {
                                 font.pixelSize: Theme.fontSizeLarge
                                 font.weight: Font.Medium
                                 color: Theme.surfaceText
+                                width: parent.width
+                                horizontalAlignment: Text.AlignLeft
                             }
 
                             StyledText {
@@ -365,6 +375,7 @@ Item {
                                 color: Theme.surfaceVariantText
                                 wrapMode: Text.WordWrap
                                 width: parent.width
+                                horizontalAlignment: Text.AlignLeft
                             }
                         }
 
@@ -378,6 +389,7 @@ Item {
                                 text: I18n.tr("Snap")
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.surfaceVariantText
+                                horizontalAlignment: Text.AlignHCenter
                                 anchors.horizontalCenter: parent.horizontalCenter
                             }
 
@@ -401,6 +413,7 @@ Item {
                                 text: I18n.tr("Config Format")
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.surfaceVariantText
+                                horizontalAlignment: Text.AlignHCenter
                                 anchors.horizontalCenter: parent.horizontalCenter
                             }
 
@@ -490,6 +503,7 @@ Item {
                     }
 
                     Row {
+                        LayoutMirroring.enabled: false
                         width: parent.width
                         spacing: Theme.spacingS
                         visible: DisplayConfigState.hasPendingChanges

@@ -67,6 +67,12 @@ Rectangle {
         return ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp"].indexOf(ext) >= 0;
     }
 
+    DankRipple {
+        id: rippleLayer
+        rippleColor: Theme.surfaceText
+        cornerRadius: root.radius
+    }
+
     Item {
         anchors.fill: parent
         anchors.margins: 4
@@ -108,15 +114,17 @@ Rectangle {
                 color: Theme.withAlpha(Theme.surfaceContainer, 0.85)
                 visible: root.item?.name?.length > 0
 
-                StyledText {
+                Text {
                     id: labelText
                     anchors.fill: parent
                     anchors.margins: Theme.spacingXS
-                    text: root.item?.name ?? ""
+                    text: root.item?._hName ?? root.item?.name ?? ""
+                    textFormat: root.item?._hRich ? Text.RichText : Text.PlainText
                     font.pixelSize: Theme.fontSizeSmall
+                    font.family: Theme.fontFamily
                     color: Theme.surfaceText
                     elide: Text.ElideRight
-                    horizontalAlignment: Text.AlignHCenter
+                    horizontalAlignment: Text.AlignLeft
                     verticalAlignment: Text.AlignVCenter
                 }
             }
@@ -170,6 +178,10 @@ Rectangle {
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
 
+        onPressed: mouse => {
+            if (mouse.button === Qt.LeftButton)
+                rippleLayer.trigger(mouse.x, mouse.y);
+        }
         onClicked: mouse => {
             if (mouse.button === Qt.RightButton) {
                 var scenePos = mapToItem(null, mouse.x, mouse.y);

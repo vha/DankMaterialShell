@@ -6,6 +6,9 @@ import qs.Widgets
 StyledRect {
     id: root
 
+    LayoutMirroring.enabled: I18n.isRtl
+    LayoutMirroring.childrenInherit: true
+
     required property string outputName
     required property var outputData
     property bool isConnected: outputData?.connected ?? false
@@ -44,12 +47,16 @@ StyledRect {
                     font.pixelSize: Theme.fontSizeMedium
                     font.weight: Font.Medium
                     color: root.isConnected ? Theme.surfaceText : Theme.surfaceVariantText
+                    width: parent.width
+                    horizontalAlignment: Text.AlignLeft
                 }
 
                 StyledText {
                     text: (root.outputData?.model ?? "") + (root.outputData?.make ? " - " + root.outputData.make : "")
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
+                    width: parent.width
+                    horizontalAlignment: Text.AlignLeft
                 }
             }
 
@@ -131,6 +138,7 @@ StyledRect {
             color: Theme.surfaceVariantText
             wrapMode: Text.WordWrap
             width: parent.width
+            horizontalAlignment: Text.AlignLeft
         }
 
         Row {
@@ -146,6 +154,8 @@ StyledRect {
                     text: I18n.tr("Scale")
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
+                    width: parent.width
+                    horizontalAlignment: Text.AlignLeft
                 }
 
                 Item {
@@ -230,6 +240,8 @@ StyledRect {
                     text: I18n.tr("Transform")
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
+                    width: parent.width
+                    horizontalAlignment: Text.AlignLeft
                 }
 
                 DankDropdown {
@@ -251,7 +263,7 @@ StyledRect {
         DankToggle {
             width: parent.width
             text: I18n.tr("Variable Refresh Rate")
-            visible: root.isConnected && !CompositorService.isDwl && (DisplayConfigState.outputs[root.outputName]?.vrr_supported ?? false)
+            visible: root.isConnected && !CompositorService.isDwl && !CompositorService.isHyprland && !CompositorService.isNiri && (DisplayConfigState.outputs[root.outputName]?.vrr_supported ?? false)
             checked: {
                 const pendingVrr = DisplayConfigState.getPendingValue(root.outputName, "vrr");
                 if (pendingVrr !== undefined)
@@ -261,13 +273,50 @@ StyledRect {
             onToggled: checked => DisplayConfigState.setPendingChange(root.outputName, "vrr", checked)
         }
 
-        DankToggle {
+        DankDropdown {
             width: parent.width
-            text: I18n.tr("VRR On-Demand")
-            description: I18n.tr("VRR activates only when applications request it")
+            text: I18n.tr("Variable Refresh Rate")
+            visible: root.isConnected && CompositorService.isHyprland && (DisplayConfigState.outputs[root.outputName]?.vrr_supported ?? false)
+            options: [I18n.tr("Off"), I18n.tr("On"), I18n.tr("Fullscreen Only")]
+            currentValue: {
+                DisplayConfigState.pendingHyprlandChanges;
+                if (DisplayConfigState.getHyprlandSetting(root.outputData, root.outputName, "vrrFullscreenOnly", false))
+                    return I18n.tr("Fullscreen Only");
+                const pendingVrr = DisplayConfigState.getPendingValue(root.outputName, "vrr");
+                const vrrEnabled = pendingVrr !== undefined ? pendingVrr : (DisplayConfigState.outputs[root.outputName]?.vrr_enabled ?? false);
+                if (vrrEnabled)
+                    return I18n.tr("On");
+                return I18n.tr("Off");
+            }
+            onValueChanged: value => {
+                const off = I18n.tr("Off");
+                const fullscreen = I18n.tr("Fullscreen Only");
+                DisplayConfigState.setPendingChange(root.outputName, "vrr", value !== off);
+                DisplayConfigState.setHyprlandSetting(root.outputData, root.outputName, "vrrFullscreenOnly", value === fullscreen || null);
+            }
+        }
+
+        DankDropdown {
+            width: parent.width
+            text: I18n.tr("Variable Refresh Rate")
             visible: root.isConnected && CompositorService.isNiri && (DisplayConfigState.outputs[root.outputName]?.vrr_supported ?? false)
-            checked: DisplayConfigState.getNiriSetting(root.outputData, root.outputName, "vrrOnDemand", false)
-            onToggled: checked => DisplayConfigState.setNiriSetting(root.outputData, root.outputName, "vrrOnDemand", checked)
+            options: [I18n.tr("Off"), I18n.tr("On"), I18n.tr("On-Demand")]
+            currentValue: {
+                DisplayConfigState.pendingNiriChanges;
+                if (DisplayConfigState.getNiriSetting(root.outputData, root.outputName, "vrrOnDemand", false))
+                    return I18n.tr("On-Demand");
+                const pendingVrr = DisplayConfigState.getPendingValue(root.outputName, "vrr");
+                const vrrEnabled = pendingVrr !== undefined ? pendingVrr : (DisplayConfigState.outputs[root.outputName]?.vrr_enabled ?? false);
+                if (!vrrEnabled)
+                    return I18n.tr("Off");
+                return I18n.tr("On");
+            }
+            onValueChanged: value => {
+                const off = I18n.tr("Off");
+                const onDemand = I18n.tr("On-Demand");
+                DisplayConfigState.setPendingChange(root.outputName, "vrr", value !== off);
+                DisplayConfigState.setNiriSetting(root.outputData, root.outputName, "vrrOnDemand", value === onDemand || null);
+            }
         }
 
         Rectangle {

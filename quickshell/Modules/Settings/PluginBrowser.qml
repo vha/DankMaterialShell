@@ -9,6 +9,7 @@ import qs.Widgets
 FloatingWindow {
     id: root
 
+    property bool disablePopupTransparency: true
     property var allPlugins: []
     property string searchQuery: ""
     property var filteredPlugins: []
@@ -47,6 +48,14 @@ FloatingWindow {
             if (name.indexOf(query) !== -1 || description.indexOf(query) !== -1 || author.indexOf(query) !== -1)
                 filtered.push(plugin);
         }
+
+        filtered.sort((a, b) => {
+            if (a.featured !== b.featured)
+                return a.featured ? -1 : 1;
+            if (a.firstParty !== b.firstParty)
+                return a.firstParty ? -1 : 1;
+            return 0;
+        });
 
         filteredPlugins = filtered;
         selectedIndex = -1;
@@ -261,7 +270,7 @@ FloatingWindow {
 
                     DankButton {
                         id: thirdPartyButton
-                        text: SessionData.showThirdPartyPlugins ? "Hide 3rd Party" : "Show 3rd Party"
+                        text: SessionData.showThirdPartyPlugins ? I18n.tr("Hide 3rd Party") : I18n.tr("Show 3rd Party")
                         iconName: SessionData.showThirdPartyPlugins ? "visibility_off" : "visibility"
                         height: 28
                         onClicked: {
@@ -323,7 +332,7 @@ FloatingWindow {
                 anchors.topMargin: Theme.spacingM
                 height: 48
                 cornerRadius: Theme.cornerRadius
-                backgroundColor: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                backgroundColor: Theme.surfaceContainerHigh
                 normalBorderColor: Theme.outlineMedium
                 focusedBorderColor: Theme.primary
                 leftIconName: "search"
@@ -369,7 +378,7 @@ FloatingWindow {
 
                             RotationAnimator on rotation {
                                 from: 0
-                                to: 360
+                                to: -360
                                 duration: 1000
                                 loops: Animation.Infinite
                                 running: root.isLoading
@@ -411,6 +420,7 @@ FloatingWindow {
                         property bool isSelected: root.keyboardNavigationActive && index === root.selectedIndex
                         property bool isInstalled: modelData.installed || false
                         property bool isFirstParty: modelData.firstParty || false
+                        property bool isFeatured: modelData.featured || false
                         property bool isCompatible: PluginService.checkPluginCompatibility(modelData.requires_dms)
                         color: isSelected ? Theme.primarySelected : Theme.withAlpha(Theme.surfaceVariant, 0.3)
                         border.color: isSelected ? Theme.primary : Theme.withAlpha(Theme.outline, 0.2)
@@ -447,6 +457,38 @@ FloatingWindow {
                                             color: Theme.surfaceText
                                             elide: Text.ElideRight
                                             anchors.verticalCenter: parent.verticalCenter
+                                        }
+
+                                        Rectangle {
+                                            height: 16
+                                            width: featuredRow.implicitWidth + Theme.spacingXS * 2
+                                            radius: 8
+                                            color: Theme.withAlpha(Theme.secondary, 0.15)
+                                            border.color: Theme.withAlpha(Theme.secondary, 0.4)
+                                            border.width: 1
+                                            visible: isFeatured
+                                            anchors.verticalCenter: parent.verticalCenter
+
+                                            Row {
+                                                id: featuredRow
+                                                anchors.centerIn: parent
+                                                spacing: 2
+
+                                                DankIcon {
+                                                    name: "star"
+                                                    size: 10
+                                                    color: Theme.secondary
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                }
+
+                                                StyledText {
+                                                    text: I18n.tr("featured")
+                                                    font.pixelSize: Theme.fontSizeSmall - 2
+                                                    color: Theme.secondary
+                                                    font.weight: Font.Medium
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                }
+                                            }
                                         }
 
                                         Rectangle {
@@ -676,6 +718,8 @@ FloatingWindow {
 
         FloatingWindow {
             id: thirdPartyConfirmModal
+
+            property bool disablePopupTransparency: true
 
             function show() {
                 visible = true;

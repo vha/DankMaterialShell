@@ -11,10 +11,12 @@ Rectangle {
     property bool enabled: true
     property bool hovered: mouseArea.containsMouse
     property bool pressed: mouseArea.pressed
-    property color backgroundColor: Theme.primary
-    property color textColor: Theme.primaryText
+    property color backgroundColor: Theme.buttonBg
+    property color textColor: Theme.buttonText
     property int buttonHeight: 40
     property int horizontalPadding: Theme.spacingL
+    property bool enableScaleAnimation: false
+    property bool enableRipple: typeof SettingsData !== "undefined" ? (SettingsData.enableRippleEffects ?? true) : true
 
     signal clicked
 
@@ -23,6 +25,15 @@ Rectangle {
     radius: Theme.cornerRadius
     color: backgroundColor
     opacity: enabled ? 1 : 0.4
+    scale: (enableScaleAnimation && pressed) ? 0.98 : 1.0
+
+    Behavior on scale {
+        enabled: enableScaleAnimation && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+        DankAnim {
+            duration: 100
+            easing.bezierCurve: Theme.expressiveCurves.standard
+        }
+    }
 
     Rectangle {
         id: stateLayer
@@ -42,6 +53,13 @@ Rectangle {
                 easing.type: Theme.standardEasing
             }
         }
+    }
+
+    DankRipple {
+        id: rippleLayer
+        rippleColor: root.textColor
+        cornerRadius: root.radius
+        enableRipple: root.enableRipple
     }
 
     Row {
@@ -72,6 +90,10 @@ Rectangle {
         hoverEnabled: true
         cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
         enabled: root.enabled
+        onPressed: mouse => {
+            if (root.enableRipple)
+                rippleLayer.trigger(mouse.x, mouse.y);
+        }
         onClicked: root.clicked()
     }
 }

@@ -3,6 +3,7 @@ package matugen
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -10,10 +11,12 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/dank16"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/lucasb-eyer/go-colorful"
 )
 
 type ColorMode string
@@ -77,6 +80,7 @@ func (c *ColorMode) GTKTheme() string {
 var (
 	matugenVersionOnce sync.Once
 	matugenSupportsCOE bool
+	matugenIsV4        bool
 )
 
 type Options struct {
@@ -250,8 +254,22 @@ func buildOnce(opts *Options) error {
 		}
 	}
 
-	refreshGTK(opts.ConfigDir, opts.Mode)
-	signalTerminals()
+	if isDMSGTKActive(opts.ConfigDir) {
+		switch opts.Mode {
+		case ColorModeLight:
+			syncAccentColor(primaryLight)
+		default:
+			syncAccentColor(primaryDark)
+		}
+		refreshGTK(opts.Mode)
+		refreshGTK4()
+	}
+
+	if !opts.ShouldSkipTemplate("qt6ct") && appExists(opts.AppChecker, []string{"qt6ct"}, nil) {
+		refreshQt6ct()
+	}
+
+	signalTerminals(opts)
 
 	return nil
 }
@@ -520,8 +538,12 @@ func checkMatugenVersion() {
 		}
 
 		matugenSupportsCOE = major > 3 || (major == 3 && minor >= 1)
+		matugenIsV4 = major >= 4
 		if matugenSupportsCOE {
 			log.Infof("Matugen %s supports --continue-on-error", versionStr)
+		}
+		if matugenIsV4 {
+			log.Infof("Matugen %s: using v4 flags", versionStr)
 		}
 	})
 }
@@ -532,6 +554,9 @@ func runMatugen(args []string) error {
 	if matugenSupportsCOE {
 		args = append([]string{"--continue-on-error"}, args...)
 	}
+	if matugenIsV4 {
+		args = append(args, "--source-color-index", "0")
+	}
 
 	cmd := exec.Command("matugen", args...)
 	cmd.Stdout = os.Stdout
@@ -540,6 +565,8 @@ func runMatugen(args []string) error {
 }
 
 func runMatugenDryRun(opts *Options) (string, error) {
+	checkMatugenVersion()
+
 	var args []string
 	switch opts.Kind {
 	case "hex":
@@ -548,6 +575,9 @@ func runMatugenDryRun(opts *Options) (string, error) {
 		args = []string{opts.Kind, opts.Value}
 	}
 	args = append(args, "-m", "dark", "-t", opts.MatugenType, "--json", "hex", "--dry-run")
+	if matugenIsV4 {
+		args = append(args, "--source-color-index", "0", "--old-json-output")
+	}
 
 	cmd := exec.Command("matugen", args...)
 	output, err := cmd.Output()
@@ -617,40 +647,73 @@ func generateDank16Variants(primaryDark, primaryLight, surface string, mode Colo
 	return dank16.GenerateVariantJSON(variantColors)
 }
 
-func refreshGTK(configDir string, mode ColorMode) {
+func isDMSGTKActive(configDir string) bool {
 	gtkCSS := filepath.Join(configDir, "gtk-3.0", "gtk.css")
 
 	info, err := os.Lstat(gtkCSS)
 	if err != nil {
-		return
+		return false
 	}
 
-	shouldRun := false
 	if info.Mode()&os.ModeSymlink != 0 {
 		target, err := os.Readlink(gtkCSS)
-		if err == nil && strings.Contains(target, "dank-colors.css") {
-			shouldRun = true
-		}
-	} else {
-		data, err := os.ReadFile(gtkCSS)
-		if err == nil && strings.Contains(string(data), "dank-colors.css") {
-			shouldRun = true
-		}
+		return err == nil && strings.Contains(target, "dank-colors.css")
 	}
 
-	if !shouldRun {
-		return
-	}
-
-	exec.Command("gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", "").Run()
-	exec.Command("gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", mode.GTKTheme()).Run()
+	data, err := os.ReadFile(gtkCSS)
+	return err == nil && strings.Contains(string(data), "dank-colors.css")
 }
 
-func signalTerminals() {
-	signalByName("kitty", syscall.SIGUSR1)
-	signalByName("ghostty", syscall.SIGUSR2)
-	signalByName(".kitty-wrapped", syscall.SIGUSR1)
-	signalByName(".ghostty-wrappe", syscall.SIGUSR2)
+func refreshGTK(mode ColorMode) {
+	if err := utils.GsettingsSet("org.gnome.desktop.interface", "gtk-theme", ""); err != nil {
+		log.Warnf("Failed to reset gtk-theme: %v", err)
+	}
+	if err := utils.GsettingsSet("org.gnome.desktop.interface", "gtk-theme", mode.GTKTheme()); err != nil {
+		log.Warnf("Failed to set gtk-theme: %v", err)
+	}
+}
+
+func refreshGTK4() {
+	output, err := utils.GsettingsGet("org.gnome.desktop.interface", "color-scheme")
+	if err != nil {
+		return
+	}
+	current := strings.Trim(output, "'")
+
+	var toggle string
+	if current == "prefer-dark" {
+		toggle = "default"
+	} else {
+		toggle = "prefer-dark"
+	}
+
+	if err := utils.GsettingsSet("org.gnome.desktop.interface", "color-scheme", toggle); err != nil {
+		log.Warnf("Failed to toggle color-scheme for GTK4 refresh: %v", err)
+		return
+	}
+	time.Sleep(50 * time.Millisecond)
+	if err := utils.GsettingsSet("org.gnome.desktop.interface", "color-scheme", current); err != nil {
+		log.Warnf("Failed to restore color-scheme for GTK4 refresh: %v", err)
+	}
+}
+
+func refreshQt6ct() {
+	confPath := filepath.Join(utils.XDGConfigHome(), "qt6ct", "qt6ct.conf")
+	now := time.Now()
+	if err := os.Chtimes(confPath, now, now); err != nil {
+		log.Warnf("Failed to touch qt6ct.conf: %v", err)
+	}
+}
+
+func signalTerminals(opts *Options) {
+	if !opts.ShouldSkipTemplate("kitty") && appExists(opts.AppChecker, []string{"kitty"}, nil) {
+		signalByName("kitty", syscall.SIGUSR1)
+		signalByName(".kitty-wrapped", syscall.SIGUSR1)
+	}
+	if !opts.ShouldSkipTemplate("ghostty") && appExists(opts.AppChecker, []string{"ghostty"}, nil) {
+		signalByName("ghostty", syscall.SIGUSR2)
+		signalByName(".ghostty-wrappe", syscall.SIGUSR2)
+	}
 }
 
 func signalByName(name string, sig syscall.Signal) {
@@ -679,8 +742,59 @@ func syncColorScheme(mode ColorMode) {
 		scheme = "default"
 	}
 
-	if err := exec.Command("gsettings", "set", "org.gnome.desktop.interface", "color-scheme", scheme).Run(); err != nil {
-		exec.Command("dconf", "write", "/org/gnome/desktop/interface/color-scheme", "'"+scheme+"'").Run()
+	if err := utils.GsettingsSet("org.gnome.desktop.interface", "color-scheme", scheme); err != nil {
+		log.Warnf("Failed to sync color-scheme: %v", err)
+	}
+}
+
+var adwaitaAccents = []struct {
+	name   string
+	colors []colorful.Color
+}{
+	{"blue", hexColors("#3f8ae5", "#438de6", "#a4caee")},
+	{"green", hexColors("#26a269", "#39ac76", "#81d5ad")},
+	{"orange", hexColors("#f17738", "#ff7800", "#ffc994")},
+	{"pink", hexColors("#e4358a", "#e64392", "#f9b3d5")},
+	{"purple", hexColors("#954ab5", "#9c46b9", "#d099d6")},
+	{"red", hexColors("#e84053", "#e01b24", "#f2a1a5")},
+	{"slate", hexColors("#557b9f", "#6a8daf", "#b4c6d6")},
+	{"teal", hexColors("#129eb0", "#2190a4", "#7bdff4")},
+	{"yellow", hexColors("#cbac10", "#d4b411", "#f5c211")},
+}
+
+func hexColors(hexes ...string) []colorful.Color {
+	out := make([]colorful.Color, len(hexes))
+	for i, h := range hexes {
+		out[i], _ = colorful.Hex(h)
+	}
+	return out
+}
+
+func closestAdwaitaAccent(primaryHex string) string {
+	c, err := colorful.Hex(primaryHex)
+	if err != nil {
+		return "blue"
+	}
+
+	best := "blue"
+	bestDist := math.MaxFloat64
+	for _, a := range adwaitaAccents {
+		for _, ref := range a.colors {
+			d := c.DistanceCIEDE2000(ref)
+			if d < bestDist {
+				bestDist = d
+				best = a.name
+			}
+		}
+	}
+	return best
+}
+
+func syncAccentColor(primaryHex string) {
+	accent := closestAdwaitaAccent(primaryHex)
+	log.Infof("Setting GNOME accent color: %s", accent)
+	if err := utils.GsettingsSet("org.gnome.desktop.interface", "accent-color", accent); err != nil {
+		log.Warnf("Failed to set accent-color: %v", err)
 	}
 }
 
