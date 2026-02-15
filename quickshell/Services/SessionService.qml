@@ -441,7 +441,9 @@ Singleton {
             if (idleInhibited && exitCode !== 0 && !nativeInhibitorAvailable) {
                 console.warn("SessionService: Inhibitor process crashed with exit code:", exitCode);
                 idleInhibited = false;
-                ToastService.showWarning("Idle inhibitor failed");
+                if (SettingsData.osdIdleInhibitorEnabled) {
+                    ToastService.showWarning("Idle inhibitor failed");
+                }
             }
         }
     }

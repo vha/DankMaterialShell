@@ -11,6 +11,7 @@ Command-line interface and daemon for shell management and system control.
 
 **dankinstall**
 Distribution-aware installer with TUI for deploying DMS and compositor configurations on Arch, Fedora, Debian, Ubuntu, openSUSE, and Gentoo.
+git
 
 ## System Integration
 
