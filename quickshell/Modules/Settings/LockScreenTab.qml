@@ -1,12 +1,68 @@
 import QtQuick
 import Quickshell
 import qs.Common
+import qs.Modals.FileBrowser
 import qs.Services
 import qs.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
     id: root
+
+    readonly property bool lockFprintToggleAvailable: SettingsData.lockFingerprintCanEnable || SettingsData.enableFprint
+    readonly property bool lockU2fToggleAvailable: SettingsData.lockU2fCanEnable || SettingsData.enableU2f
+
+    function lockFingerprintDescription() {
+        switch (SettingsData.lockFingerprintReason) {
+        case "ready":
+            return I18n.tr("Use fingerprint authentication for the lock screen.");
+        case "missing_enrollment":
+            if (SettingsData.enableFprint)
+                return I18n.tr("Enabled, but no prints are enrolled yet. Enroll fingerprints to use it.");
+            return I18n.tr("Fingerprint reader detected, but no prints are enrolled yet. You can enable this now and enroll later.");
+        case "missing_reader":
+            return SettingsData.enableFprint ? I18n.tr("Enabled, but no fingerprint reader was detected.") : I18n.tr("No fingerprint reader detected.");
+        case "missing_pam_support":
+            return I18n.tr("Not available — install fprintd and pam_fprintd.");
+        default:
+            return SettingsData.enableFprint ? I18n.tr("Enabled, but fingerprint availability could not be confirmed.") : I18n.tr("Fingerprint availability could not be confirmed.");
+        }
+    }
+
+    function lockU2fDescription() {
+        switch (SettingsData.lockU2fReason) {
+        case "ready":
+            return I18n.tr("Use a security key for lock screen authentication.", "lock screen U2F security key setting");
+        case "missing_key_registration":
+            if (SettingsData.enableU2f)
+                return I18n.tr("Enabled, but no registered security key was found yet. Register a key or update your U2F config.");
+            return I18n.tr("Security-key support was detected, but no registered key was found yet. You can enable this now and register one later.");
+        case "missing_pam_support":
+            return I18n.tr("Not available — install or configure pam_u2f.");
+        default:
+            return SettingsData.enableU2f ? I18n.tr("Enabled, but security-key availability could not be confirmed.") : I18n.tr("Security-key availability could not be confirmed.");
+        }
+    }
+
+    function refreshAuthDetection() {
+        SettingsData.refreshAuthAvailability();
+    }
+
+    Component.onCompleted: refreshAuthDetection()
+    onVisibleChanged: {
+        if (visible)
+            refreshAuthDetection();
+    }
+
+    FileBrowserModal {
+        id: videoBrowserModal
+        browserTitle: I18n.tr("Select Video or Folder")
+        browserIcon: "movie"
+        browserType: "video"
+        showHiddenFiles: false
+        fileExtensions: ["*.mp4", "*.mkv", "*.webm", "*.mov", "*.avi", "*.m4v"]
+        onFileSelected: path => SettingsData.set("lockScreenVideoPath", path)
+    }
 
     DankFlickable {
         anchors.fill: parent
@@ -161,10 +217,119 @@ Item {
                     settingKey: "enableFprint"
                     tags: ["lock", "screen", "fingerprint", "authentication", "biometric", "fprint"]
                     text: I18n.tr("Enable fingerprint authentication")
-                    description: I18n.tr("Use fingerprint reader for lock screen authentication (requires enrolled fingerprints)")
+                    description: root.lockFingerprintDescription()
+                    descriptionColor: SettingsData.lockFingerprintReason === "ready" ? Theme.surfaceVariantText : Theme.warning
                     checked: SettingsData.enableFprint
-                    visible: SettingsData.fprintdAvailable
+                    enabled: root.lockFprintToggleAvailable
                     onToggled: checked => SettingsData.set("enableFprint", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "enableU2f"
+                    tags: ["lock", "screen", "u2f", "yubikey", "security", "key", "fido", "authentication", "hardware"]
+                    text: I18n.tr("Enable security key authentication", "Enable FIDO2/U2F hardware security key for lock screen")
+                    description: root.lockU2fDescription()
+                    descriptionColor: SettingsData.lockU2fReason === "ready" ? Theme.surfaceVariantText : Theme.warning
+                    checked: SettingsData.enableU2f
+                    enabled: root.lockU2fToggleAvailable
+                    onToggled: checked => SettingsData.set("enableU2f", checked)
+                }
+
+                SettingsDropdownRow {
+                    settingKey: "u2fMode"
+                    tags: ["lock", "screen", "u2f", "yubikey", "security", "key", "mode", "factor", "second"]
+                    text: I18n.tr("Security key mode", "lock screen U2F security key mode setting")
+                    description: I18n.tr("'Alternative' lets the key unlock on its own. 'Second factor' requires password or fingerprint first, then the key.", "lock screen U2F security key mode setting")
+                    visible: SettingsData.enableU2f
+                    options: [I18n.tr("Alternative (OR)", "U2F mode option: key works as standalone unlock method"), I18n.tr("Second Factor (AND)", "U2F mode option: key required after password or fingerprint")]
+                    currentValue: SettingsData.u2fMode === "and" ? I18n.tr("Second Factor (AND)", "U2F mode option: key required after password or fingerprint") : I18n.tr("Alternative (OR)", "U2F mode option: key works as standalone unlock method")
+                    onValueChanged: value => {
+                        if (value === I18n.tr("Second Factor (AND)", "U2F mode option: key required after password or fingerprint"))
+                            SettingsData.set("u2fMode", "and");
+                        else
+                            SettingsData.set("u2fMode", "or");
+                    }
+                }
+            }
+
+            SettingsCard {
+                width: parent.width
+                iconName: "movie"
+                title: I18n.tr("Video Screensaver")
+                settingKey: "videoScreensaver"
+
+                StyledText {
+                    visible: !MultimediaService.available
+                    text: I18n.tr("QtMultimedia is not available - video screensaver requires qt multimedia services")
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.warning
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                }
+
+                SettingsToggleRow {
+                    settingKey: "lockScreenVideoEnabled"
+                    tags: ["lock", "screen", "video", "screensaver", "animation", "movie"]
+                    text: I18n.tr("Enable Video Screensaver")
+                    description: I18n.tr("Play a video when the screen locks.")
+                    enabled: MultimediaService.available
+                    checked: SettingsData.lockScreenVideoEnabled
+                    onToggled: checked => SettingsData.set("lockScreenVideoEnabled", checked)
+                }
+
+                Column {
+                    width: parent.width
+                    spacing: Theme.spacingXS
+                    visible: SettingsData.lockScreenVideoEnabled && MultimediaService.available
+
+                    StyledText {
+                        text: I18n.tr("Video Path")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                    }
+
+                    StyledText {
+                        text: I18n.tr("Path to a video file or folder containing videos")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.outlineVariant
+                        wrapMode: Text.WordWrap
+                        width: parent.width
+                    }
+
+                    Row {
+                        width: parent.width
+                        spacing: Theme.spacingS
+
+                        DankTextField {
+                            id: videoPathField
+                            width: parent.width - browseVideoButton.width - Theme.spacingS
+                            placeholderText: I18n.tr("/path/to/videos")
+                            text: SettingsData.lockScreenVideoPath
+                            backgroundColor: Theme.surfaceContainerHighest
+                            onTextChanged: {
+                                if (text !== SettingsData.lockScreenVideoPath) {
+                                    SettingsData.set("lockScreenVideoPath", text);
+                                }
+                            }
+                        }
+
+                        DankButton {
+                            id: browseVideoButton
+                            text: I18n.tr("Browse")
+                            onClicked: videoBrowserModal.open()
+                        }
+                    }
+                }
+
+                SettingsToggleRow {
+                    settingKey: "lockScreenVideoCycling"
+                    tags: ["lock", "screen", "video", "screensaver", "cycling", "random", "shuffle"]
+                    text: I18n.tr("Automatic Cycling")
+                    description: I18n.tr("Pick a different random video each time from the same folder")
+                    visible: SettingsData.lockScreenVideoEnabled && MultimediaService.available
+                    enabled: MultimediaService.available
+                    checked: SettingsData.lockScreenVideoCycling
+                    onToggled: checked => SettingsData.set("lockScreenVideoCycling", checked)
                 }
             }
 

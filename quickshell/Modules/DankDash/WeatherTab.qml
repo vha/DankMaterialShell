@@ -12,7 +12,7 @@ Item {
     LayoutMirroring.childrenInherit: true
 
     implicitWidth: 700
-    implicitHeight: root.available ? mainColumn.implicitHeight : unavailableColumn.implicitHeight + Theme.spacingXL * 2
+    implicitHeight: 410
     property bool syncing: false
     property bool showHourly: false
     property bool available: WeatherService.weather.available
@@ -241,14 +241,15 @@ Item {
                             color: Theme.primary
                             anchors.verticalCenter: parent.verticalCenter
 
-                            layer.enabled: true
+                            layer.enabled: Theme.elevationEnabled
                             layer.effect: MultiEffect {
-                                shadowEnabled: true
-                                shadowHorizontalOffset: 0
-                                shadowVerticalOffset: 4
-                                shadowBlur: 0.8
-                                shadowColor: Qt.rgba(0, 0, 0, 0.2)
-                                shadowOpacity: 0.2
+                                shadowEnabled: Theme.elevationEnabled
+                                shadowHorizontalOffset: Theme.elevationOffsetX(Theme.elevationLevel1)
+                                shadowVerticalOffset: Theme.elevationOffsetY(Theme.elevationLevel1, 1)
+                                shadowBlur: Theme.elevationEnabled ? Math.max(0, Math.min(1, (Theme.elevationLevel1 && Theme.elevationLevel1.blurPx !== undefined ? Theme.elevationLevel1.blurPx : 4) / Theme.elevationBlurMax)) : 0
+                                blurMax: Theme.elevationBlurMax
+                                shadowColor: Theme.elevationShadowColor(Theme.elevationLevel1)
+                                shadowOpacity: Theme.elevationLevel1 && Theme.elevationLevel1.alpha !== undefined ? Theme.elevationLevel1.alpha : 0.2
                             }
                         }
 
@@ -812,14 +813,14 @@ Item {
                     x: (pos?.h ?? 0) * skyBox.effectiveWidth - (moonPhase.width / 2) + skyBox.hMargin
                     y: (pos?.v ?? 0) * -(skyBox.effectiveHeight / 2) + skyBox.effectiveHeight / 2 - (moonPhase.height / 2) + skyBox.vMargin
 
-                    layer.enabled: true
+                    layer.enabled: Theme.elevationEnabled
                     layer.effect: MultiEffect {
-                        shadowEnabled: true
-                        shadowHorizontalOffset: 0
-                        shadowVerticalOffset: 4
-                        shadowBlur: 0.8
-                        shadowColor: Qt.rgba(0, 0, 0, 0.2)
-                        shadowOpacity: 0.2
+                        shadowEnabled: Theme.elevationEnabled
+                        shadowHorizontalOffset: Theme.elevationOffsetX(Theme.elevationLevel2)
+                        shadowVerticalOffset: Theme.elevationOffsetY(Theme.elevationLevel2, 4)
+                        shadowBlur: Theme.elevationEnabled ? Math.max(0, Math.min(1, (Theme.elevationLevel2 && Theme.elevationLevel2.blurPx !== undefined ? Theme.elevationLevel2.blurPx : 8) / Theme.elevationBlurMax)) : 0
+                        blurMax: Theme.elevationBlurMax
+                        shadowColor: Theme.elevationShadowColor(Theme.elevationLevel2)
                     }
                 }
 
@@ -834,20 +835,21 @@ Item {
                     x: (pos?.h ?? 0) * skyBox.effectiveWidth - (sun.width / 2) + skyBox.hMargin
                     y: (pos?.v ?? 0) * -(skyBox.effectiveHeight / 2) + skyBox.effectiveHeight / 2 - (sun.height / 2) + skyBox.vMargin
 
-                    layer.enabled: true
+                    layer.enabled: Theme.elevationEnabled
                     layer.effect: MultiEffect {
-                        shadowEnabled: true
-                        shadowHorizontalOffset: 0
-                        shadowVerticalOffset: 4
-                        shadowBlur: 0.8
-                        shadowColor: Qt.rgba(0, 0, 0, 0.2)
-                        shadowOpacity: 0.2
+                        shadowEnabled: Theme.elevationEnabled
+                        shadowHorizontalOffset: Theme.elevationOffsetX(Theme.elevationLevel2)
+                        shadowVerticalOffset: Theme.elevationOffsetY(Theme.elevationLevel2, 4)
+                        shadowBlur: Theme.elevationEnabled ? Math.max(0, Math.min(1, (Theme.elevationLevel2 && Theme.elevationLevel2.blurPx !== undefined ? Theme.elevationLevel2.blurPx : 8) / Theme.elevationBlurMax)) : 0
+                        blurMax: Theme.elevationBlurMax
+                        shadowColor: Theme.elevationShadowColor(Theme.elevationLevel2)
                     }
                 }
             }
         }
 
         Item {
+            id: chipsRow
             width: parent.width
             height: forecastChips.height
 
@@ -939,7 +941,7 @@ Item {
 
         Item {
             width: parent.width
-            height: root.showHourly ? ((hourlyLoader.item?.cardHeight ?? (Theme.fontSizeLarge * 6)) + Theme.spacingXS) : ((dailyLoader.item?.cardHeight ?? (Theme.fontSizeLarge * 6)) + Theme.spacingXS)
+            height: root.height - heroCard.height - skyDateRow.height - chipsRow.height - mainColumn.spacing * 3
 
             Loader {
                 id: dailyLoader
@@ -981,8 +983,7 @@ Item {
         id: hourlyComponent
         ListView {
             id: hourlyList
-            width: parent.width
-            height: cardHeight + Theme.spacingXS
+            anchors.fill: parent
             orientation: ListView.Horizontal
             spacing: Theme.spacingS
             clip: true
@@ -990,10 +991,8 @@ Item {
             highlightRangeMode: ListView.StrictlyEnforceRange
             highlightMoveDuration: 0
             interactive: true
-            contentHeight: cardHeight
-            contentWidth: cardWidth
 
-            property var cardHeight: Theme.fontSizeLarge * 6
+            property var cardHeight: height
             property var cardWidth: ((hourlyList.width + hourlyList.spacing) / hourlyList.visibleCount) - hourlyList.spacing
             property int initialIndex: (new Date()).getHours()
             property bool dense: !SessionData.weatherHourlyDetailed
@@ -1070,8 +1069,7 @@ Item {
         id: dailyComponent
         ListView {
             id: dailyList
-            width: parent.width
-            height: cardHeight + Theme.spacingXS
+            anchors.fill: parent
             orientation: ListView.Horizontal
             spacing: Theme.spacingS
             clip: true
@@ -1079,10 +1077,8 @@ Item {
             highlightRangeMode: ListView.StrictlyEnforceRange
             highlightMoveDuration: 0
             interactive: true
-            contentHeight: cardHeight
-            contentWidth: cardWidth
 
-            property var cardHeight: Theme.fontSizeLarge * 6
+            property var cardHeight: height
             property var cardWidth: ((dailyList.width + dailyList.spacing) / dailyList.visibleCount) - dailyList.spacing
             property int initialIndex: 0
             property bool dense: false

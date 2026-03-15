@@ -68,13 +68,14 @@ fi
 
 OBS_BASE_PROJECT="home:AvengeMedia"
 OBS_BASE="$HOME/.cache/osc-checkouts"
-AVAILABLE_PACKAGES=(dms dms-git)
+AVAILABLE_PACKAGES=(dms dms-git dms-greeter)
 
 if [[ -z "$PACKAGE" ]]; then
     echo "Available packages:"
     echo ""
     echo "  1. dms         - Stable DMS"
     echo "  2. dms-git     - Nightly DMS"
+    echo "  3. dms-greeter - DMS greeter for greetd"
     echo "  a. all"
     echo ""
     read -r -p "Select package (1-${#AVAILABLE_PACKAGES[@]}, a): " selection
@@ -101,6 +102,19 @@ if [[ ! -d "distro/debian" ]]; then
     echo "Error: Run this script from the repository root"
     exit 1
 fi
+
+# Retry wrapper for osc commands (mitigates SSL "Connection reset by peer" from api.opensuse.org)
+osc_retry() {
+    local max=3 attempt=1
+    while true; do
+        if osc "$@"; then return 0; fi
+        ((attempt >= max)) && return 1
+        echo "Retrying in $((5*attempt))s (attempt $attempt/$max)..."
+        sleep $((5*attempt))
+        ((attempt++))
+    done
+}
+
 # Parameters:
 #   $1 = PROJECT
 #   $2 = PACKAGE
@@ -141,7 +155,12 @@ check_obs_version_exists() {
             return 0
         fi
     else
-        echo "⚠️  Could not fetch OBS spec (API may be unavailable), proceeding anyway"
+        # Empty/invalid response: expected on first upload (no spec on server yet), or actual API failure
+        if [[ -z "$OBS_SPEC" ]]; then
+            echo "  No existing spec on OBS (first upload?) - proceeding"
+        else
+            echo "⚠️  Could not fetch OBS spec (API may be unavailable), proceeding anyway"
+        fi
         return 1
     fi
     return 1
@@ -166,6 +185,22 @@ update_debian_dms_service() {
     sed -i "s|/archive/refs/tags/v[0-9][^\"]*\.tar\.gz|/archive/refs/tags/v${base_version}.tar.gz|" "$service_path"
     sed -i "s|/releases/download/v[0-9][^\"]*/dms-distropkg-amd64\.gz|/releases/download/v${base_version}/dms-distropkg-amd64.gz|" "$service_path"
     sed -i "s|/releases/download/v[0-9][^\"]*/dms-distropkg-arm64\.gz|/releases/download/v${base_version}/dms-distropkg-arm64.gz|" "$service_path"
+}
+
+update_debian_dms_greeter_service() {
+    local service_path="$1"
+    if [[ -z "$service_path" || ! -f "$service_path" ]]; then
+        return 0
+    fi
+    if [[ -z "$CHANGELOG_VERSION" ]]; then
+        return 0
+    fi
+    local base_version
+    base_version=$(echo "$CHANGELOG_VERSION" | sed -E 's/^([0-9]+(\.[0-9]+)*).*/\1/')
+    if [[ -z "$base_version" ]]; then
+        return 0
+    fi
+    sed -i "s|/releases/download/v[0-9][^\"]*/dms-qml\.tar\.gz|/releases/download/v${base_version}/dms-qml.tar.gz|" "$service_path"
 }
 
 update_opensuse_git_spec() {
@@ -248,6 +283,9 @@ dms)
 dms-git)
     PROJECT="dms-git"
     ;;
+dms-greeter)
+    PROJECT="danklinux"
+    ;;
 *)
     echo "Error: Unknown package '$PACKAGE'"
     exit 1
@@ -284,8 +322,23 @@ mkdir -p "$OBS_BASE"
 if [[ ! -d "$OBS_BASE/$OBS_PROJECT/$PACKAGE" ]]; then
     echo "Checking out $OBS_PROJECT/$PACKAGE..."
     cd "$OBS_BASE"
-    osc co "$OBS_PROJECT/$PACKAGE"
+    CHECKOUT_OK=false
+    for attempt in 1 2 3; do
+        if osc co "$OBS_PROJECT/$PACKAGE"; then
+            CHECKOUT_OK=true
+            break
+        fi
+        if [[ $attempt -lt 3 ]]; then
+            echo "Checkout failed (attempt $attempt/3). Removing partial copy and retrying in $((5*attempt))s..."
+            rm -rf "${OBS_BASE:?}/${OBS_PROJECT:?}"
+            sleep $((5*attempt))
+        fi
+    done
     cd "$REPO_ROOT"
+    if [[ "$CHECKOUT_OK" != "true" ]]; then
+        echo "Error: Checkout failed after 3 attempts"
+        exit 1
+    fi
 fi
 
 WORK_DIR="$OBS_BASE/$OBS_PROJECT/$PACKAGE"
@@ -329,9 +382,11 @@ if [[ -d "distro/debian/$PACKAGE/debian" ]]; then
         echo "  - Applied rebuild suffix: $CHANGELOG_VERSION"
     fi
 
-    # Keep Debian dms _service in sync with changelog version
+    # Keep Debian _service in sync with changelog version
     if [[ "$PACKAGE" == "dms" ]] && [[ -f "distro/debian/$PACKAGE/_service" ]]; then
         update_debian_dms_service "distro/debian/$PACKAGE/_service"
+    elif [[ "$PACKAGE" == "dms-greeter" ]] && [[ -f "distro/debian/$PACKAGE/_service" ]]; then
+        update_debian_dms_greeter_service "distro/debian/$PACKAGE/_service"
     fi
 
     # Check if this version already exists in OBS
@@ -341,6 +396,12 @@ if [[ -d "distro/debian/$PACKAGE/debian" ]]; then
                 if [[ "$PACKAGE" == *"-git" ]]; then
                     echo "==> Error: This commit is already uploaded to OBS"
                     echo "    The same git commit ($(echo "$CHANGELOG_VERSION" | grep -oP '[a-f0-9]{8}' | tail -1)) already exists on OBS."
+                    if [[ -n "${GITHUB_ACTIONS:-}" ]] || [[ -n "${CI:-}" ]]; then
+                        echo "    CI run detected: skipping upload as a no-op (already up to date)."
+                        echo "    If you need to force rebuild this same commit, set REBUILD_RELEASE (e.g. 2, 3, ...)."
+                        echo "✓ Exiting gracefully (no changes needed)"
+                        exit 0
+                    fi
                     echo "    To rebuild the same commit, specify a rebuild number:"
                     echo "      ./distro/scripts/obs-upload.sh $PACKAGE 2"
                     echo "      ./distro/scripts/obs-upload.sh $PACKAGE 3"
@@ -379,6 +440,16 @@ if [[ "$UPLOAD_OPENSUSE" == true ]] && [[ -f "distro/opensuse/$PACKAGE.spec" ]];
 
     if [[ "$PACKAGE" == *"-git" ]] && [[ -n "$CHANGELOG_VERSION" ]]; then
         update_opensuse_git_spec "$WORK_DIR/$PACKAGE.spec"
+    elif [[ "$PACKAGE" == "dms-greeter" ]] && [[ -n "$CHANGELOG_VERSION" ]]; then
+        DMS_GREETER_BASE_VERSION=$(echo "$CHANGELOG_VERSION" | sed -E 's/^([0-9]+(\.[0-9]+)*).*/\1/')
+        DMS_GREETER_RELEASE=$(echo "$CHANGELOG_VERSION" | sed -E 's/.*db([0-9]+)$/\1/' || echo "1")
+        CHANGELOG_DATE=$(date '+%a %b %d %Y')
+        sed -i "s/VERSION_PLACEHOLDER/${DMS_GREETER_BASE_VERSION}/g" "$WORK_DIR/$PACKAGE.spec"
+        sed -i "s/RELEASE_PLACEHOLDER/${DMS_GREETER_RELEASE}/g" "$WORK_DIR/$PACKAGE.spec"
+        sed -i "s/CHANGELOG_DATE_PLACEHOLDER/${CHANGELOG_DATE}/g" "$WORK_DIR/$PACKAGE.spec"
+        # Explicitly set Version:/Release: in case the spec uses %{version} macro
+        sed -i "s/^Version:.*/Version:        ${DMS_GREETER_BASE_VERSION}/" "$WORK_DIR/$PACKAGE.spec"
+        sed -i "s/^Release:.*/Release:        ${DMS_GREETER_RELEASE}%{?dist}/" "$WORK_DIR/$PACKAGE.spec"
     fi
 
     if [[ -f "$WORK_DIR/.osc/$PACKAGE.spec" ]]; then
@@ -444,6 +515,24 @@ if [[ "$UPLOAD_OPENSUSE" == true ]] && [[ "$UPLOAD_DEBIAN" == false ]] && [[ -f 
         fi
     fi
 
+    # For dms-greeter: download dms-qml.tar.gz from _service URL
+    if [[ -z "${SOURCE_DIR:-}" ]] && [[ "$PACKAGE" == "dms-greeter" ]] && [[ -f "distro/debian/$PACKAGE/_service" ]]; then
+        DMS_GREETER_URL=$(grep -A 5 'name="download_url"' "distro/debian/$PACKAGE/_service" | grep "path" | sed 's/.*<param name="path">\(.*\)<\/param>.*/\1/' | head -1)
+        if [[ -n "$DMS_GREETER_URL" ]]; then
+            DMS_GREETER_FULL_URL="https://github.com${DMS_GREETER_URL}"
+            echo "    Downloading dms-greeter source from: $DMS_GREETER_FULL_URL"
+            if wget -q -O "$TEMP_DIR/dms-qml.tar.gz" "$DMS_GREETER_FULL_URL" 2>/dev/null || \
+                curl -L -f -s -o "$TEMP_DIR/dms-qml.tar.gz" "$DMS_GREETER_FULL_URL" 2>/dev/null; then
+                cd "$TEMP_DIR"
+                tar -xzf dms-qml.tar.gz
+                if [[ -f "Modules/Greetd/assets/dms-greeter" ]]; then
+                    SOURCE_DIR="$TEMP_DIR"
+                fi
+                cd "$REPO_ROOT"
+            fi
+        fi
+    fi
+
     if [[ -n "$SOURCE_DIR" && -d "$SOURCE_DIR" ]]; then
         SOURCE0=$(grep "^Source0:" "distro/opensuse/$PACKAGE.spec" | awk '{print $2}' | head -1)
 
@@ -452,6 +541,15 @@ if [[ "$UPLOAD_OPENSUSE" == true ]] && [[ "$UPLOAD_DEBIAN" == false ]] && [[ -f 
             cd "$OBS_TARBALL_DIR"
 
             case "$PACKAGE" in
+            dms-greeter)
+                EXPECTED_DIR="dms-qml"
+                echo "    Creating $SOURCE0 (directory: $EXPECTED_DIR)"
+                mkdir -p "$EXPECTED_DIR"
+                cp -a "$SOURCE_DIR"/. "$EXPECTED_DIR/"
+                tar -czf "$WORK_DIR/$SOURCE0" "$EXPECTED_DIR"
+                rm -rf "$EXPECTED_DIR"
+                echo "    Created $SOURCE0 ($(stat -c%s "$WORK_DIR/$SOURCE0" 2>/dev/null || echo 0) bytes)"
+                ;;
             dms)
                 DMS_VERSION=$(grep "^Version:" "$REPO_ROOT/distro/opensuse/$PACKAGE.spec" | sed 's/^Version:[[:space:]]*//' | head -1)
                 EXPECTED_DIR="DankMaterialShell-${DMS_VERSION}"
@@ -584,6 +682,17 @@ if [[ "$UPLOAD_DEBIAN" == true ]] && [[ -d "distro/debian/$PACKAGE/debian" ]]; t
                         if [[ -z "$SOURCE_DIR" ]]; then
                             SOURCE_DIR=$(find . -maxdepth 1 -type d ! -name "." | head -1)
                         fi
+                        # dms-qml.tar.gz extracts flat (quickshell contents, no top-level dir)
+                        # Create dms-qml wrapper so combined tarball has correct top-level dir (like dms)
+                        if [[ "$PACKAGE" == "dms-greeter" ]] && [[ -f "Modules/Greetd/assets/dms-greeter" ]]; then
+                            mkdir -p dms-qml
+                            for f in *; do
+                                if [[ -e "$f" && "$f" != "dms-qml" && "$f" != "source-archive" ]]; then
+                                    mv "$f" dms-qml/ 2>/dev/null || true
+                                fi
+                            done
+                            SOURCE_DIR="dms-qml"
+                        fi
                         if [[ -z "$SOURCE_DIR" || ! -d "$SOURCE_DIR" ]]; then
                             echo "Error: Failed to extract source archive or find source directory"
                             echo "Contents of $TEMP_DIR:"
@@ -660,6 +769,21 @@ if [[ "$UPLOAD_DEBIAN" == true ]] && [[ -d "distro/debian/$PACKAGE/debian" ]]; t
                 cd "$OBS_TARBALL_DIR"
 
                 case "$PACKAGE" in
+                dms-greeter)
+                    EXPECTED_DIR="dms-qml"
+                    echo "    Creating $SOURCE0 (directory: $EXPECTED_DIR)"
+                    mkdir -p "$EXPECTED_DIR"
+                    cp -a "$SOURCE_DIR"/. "$EXPECTED_DIR/"
+                    if [[ "$SOURCE0" == *.tar.xz ]]; then
+                        tar --sort=name --mtime='2000-01-01 00:00:00' --owner=0 --group=0 -cJf "$WORK_DIR/$SOURCE0" "$EXPECTED_DIR"
+                    elif [[ "$SOURCE0" == *.tar.bz2 ]]; then
+                        tar --sort=name --mtime='2000-01-01 00:00:00' --owner=0 --group=0 -cjf "$WORK_DIR/$SOURCE0" "$EXPECTED_DIR"
+                    else
+                        tar --sort=name --mtime='2000-01-01 00:00:00' --owner=0 --group=0 -czf "$WORK_DIR/$SOURCE0" "$EXPECTED_DIR"
+                    fi
+                    rm -rf "$EXPECTED_DIR"
+                    echo "    Created $SOURCE0 ($(stat -c%s "$WORK_DIR/$SOURCE0" 2>/dev/null || echo 0) bytes)"
+                    ;;
                 dms)
                     DMS_VERSION=$(grep "^Version:" "$REPO_ROOT/distro/opensuse/$PACKAGE.spec" | sed 's/^Version:[[:space:]]*//' | head -1)
                     EXPECTED_DIR="DankMaterialShell-${DMS_VERSION}"
@@ -709,10 +833,20 @@ if [[ "$UPLOAD_DEBIAN" == true ]] && [[ -d "distro/debian/$PACKAGE/debian" ]]; t
                 echo "  - OpenSUSE source tarballs created"
             fi
 
-            # Copy and update OpenSUSE spec file with the correct version (for -git packages)
+            # Copy and update OpenSUSE spec file with the correct version
             cp "distro/opensuse/$PACKAGE.spec" "$WORK_DIR/"
             if [[ "$PACKAGE" == *"-git" ]] && [[ -n "$CHANGELOG_VERSION" ]]; then
                 update_opensuse_git_spec "$WORK_DIR/$PACKAGE.spec"
+            elif [[ "$PACKAGE" == "dms-greeter" ]] && [[ -n "$CHANGELOG_VERSION" ]]; then
+                DMS_GREETER_BASE_VERSION=$(echo "$CHANGELOG_VERSION" | sed -E 's/^([0-9]+(\.[0-9]+)*).*/\1/')
+                DMS_GREETER_RELEASE=$(echo "$CHANGELOG_VERSION" | sed -E 's/.*db([0-9]+)$/\1/' || echo "1")
+                CHANGELOG_DATE=$(date '+%a %b %d %Y')
+                sed -i "s/VERSION_PLACEHOLDER/${DMS_GREETER_BASE_VERSION}/g" "$WORK_DIR/$PACKAGE.spec"
+                sed -i "s/RELEASE_PLACEHOLDER/${DMS_GREETER_RELEASE}/g" "$WORK_DIR/$PACKAGE.spec"
+                sed -i "s/CHANGELOG_DATE_PLACEHOLDER/${CHANGELOG_DATE}/g" "$WORK_DIR/$PACKAGE.spec"
+                # Explicitly set Version:/Release: in case the spec uses %{version} macro
+                sed -i "s/^Version:.*/Version:        ${DMS_GREETER_BASE_VERSION}/" "$WORK_DIR/$PACKAGE.spec"
+                sed -i "s/^Release:.*/Release:        ${DMS_GREETER_RELEASE}%{?dist}/" "$WORK_DIR/$PACKAGE.spec"
             fi
         fi
 
@@ -839,8 +973,48 @@ EOF
             echo "  - Quilt format detected: creating debian.tar.gz"
             tar -czf "$WORK_DIR/debian.tar.gz" -C "distro/debian/$PACKAGE" debian/
 
+            # For dms-greeter: create orig tarball so Debian build gets upstream (OBS only passes .dsc Files to Debian)
+            DSC_FILES_DEBIAN=""
+            if [[ "$PACKAGE" == "dms-greeter" ]]; then
+                UPSTREAM_VER=$(echo "$VERSION" | sed 's/-[^-]*$//')
+                ORIG_TARBALL="${PACKAGE}_${UPSTREAM_VER}.orig.tar.gz"
+                ORIG_DIR="${PACKAGE}-${UPSTREAM_VER}"
+
+                if [[ -f "distro/debian/$PACKAGE/_service" ]] && grep -q "download_url" "distro/debian/$PACKAGE/_service"; then
+                    DG_TEMP=$(mktemp -d)
+                    DMS_GREETER_PATH=$(grep -A 5 'name="download_url"' "distro/debian/$PACKAGE/_service" | grep "path" | sed 's/.*<param name="path">\(.*\)<\/param>.*/\1/' | head -1)
+                    if [[ -n "$DMS_GREETER_PATH" ]]; then
+                        DG_URL="https://github.com${DMS_GREETER_PATH}"
+                        echo "  - Downloading dms-greeter source for orig tarball: $DG_URL"
+                        if wget -q -O "$DG_TEMP/dms-qml.tar.gz" "$DG_URL" 2>/dev/null || curl -L -f -s -o "$DG_TEMP/dms-qml.tar.gz" "$DG_URL" 2>/dev/null; then
+                            ( cd "$DG_TEMP" && tar --no-same-owner -xzf dms-qml.tar.gz && mkdir -p "$ORIG_DIR" && \
+                              for f in *; do [[ "$f" != "dms-qml.tar.gz" && "$f" != "$ORIG_DIR" ]] && mv "$f" "$ORIG_DIR/"; done )
+                            if [[ -d "$DG_TEMP/$ORIG_DIR/Modules" ]] || [[ -f "$DG_TEMP/$ORIG_DIR/LICENSE" ]]; then
+                                tar --sort=name --mtime='2000-01-01 00:00:00' --owner=0 --group=0 -czf "$WORK_DIR/$ORIG_TARBALL" -C "$DG_TEMP" "$ORIG_DIR"
+                                ORIG_MD5=$(md5sum "$WORK_DIR/$ORIG_TARBALL" | cut -d' ' -f1)
+                                ORIG_SIZE=$(stat -c%s "$WORK_DIR/$ORIG_TARBALL" 2>/dev/null || stat -f%z "$WORK_DIR/$ORIG_TARBALL" 2>/dev/null)
+                                DSC_FILES_DEBIAN=" $ORIG_MD5 $ORIG_SIZE $ORIG_TARBALL
+"
+                                echo "  - Created $ORIG_TARBALL for Debian orig"
+                            fi
+                            rm -rf "$DG_TEMP"
+                        fi
+                    fi
+                fi
+            fi
+
+            DEBIAN_MD5=$(md5sum "$WORK_DIR/debian.tar.gz" | cut -d' ' -f1)
+            DEBIAN_SIZE=$(stat -c%s "$WORK_DIR/debian.tar.gz" 2>/dev/null || stat -f%z "$WORK_DIR/debian.tar.gz" 2>/dev/null)
+
             echo "  - Generating $PACKAGE.dsc for quilt format"
-            cat >"$WORK_DIR/$PACKAGE.dsc" <<EOF
+            # debtransform: DEBTRANSFORM-TAR = orig (upstream), DEBTRANSFORM-FILES-TAR = debian archive
+            DEBTRANSFORM_EXTRA=""
+            if [[ -n "$DSC_FILES_DEBIAN" ]] && [[ -n "$ORIG_TARBALL" ]]; then
+                DEBTRANSFORM_EXTRA="DEBTRANSFORM-TAR: $ORIG_TARBALL
+DEBTRANSFORM-FILES-TAR: debian.tar.gz
+"
+            fi
+            cat >"$WORK_DIR/$PACKAGE.dsc" <<DSCEOF
 Format: 3.0 (quilt)
 Source: $PACKAGE
 Binary: $PACKAGE
@@ -848,10 +1022,9 @@ Architecture: any
 Version: $VERSION
 Maintainer: Avenge Media <AvengeMedia.US@gmail.com>
 Build-Depends: debhelper-compat (= 13), wget, gzip
-DEBTRANSFORM-TAR: debian.tar.gz
-Files:
- 00000000000000000000000000000000 1 debian.tar.gz
-EOF
+${DEBTRANSFORM_EXTRA}Files:${DSC_FILES_DEBIAN}
+ $DEBIAN_MD5 $DEBIAN_SIZE debian.tar.gz
+DSCEOF
         fi
     fi
 fi
@@ -879,6 +1052,13 @@ if [[ -n "$OBS_FILES" ]]; then
     for old_file in $(echo "$OBS_FILES" | grep -oP '(?<=name=")[^"]*\.(tar\.gz|tar\.xz|tar\.bz2)(?=")' || true); do
         if [[ "$old_file" == "$KEEP_CURRENT" ]]; then
             echo "  - Keeping: $old_file"
+            continue
+        fi
+
+        # Keep current orig tarball for dms-greeter (Debian 3.0 quilt needs it)
+        UPSTREAM_VER_CLEAN=$(echo "$CHANGELOG_VERSION" | sed 's/-[^-]*$//' 2>/dev/null)
+        if [[ "$PACKAGE" == "dms-greeter" ]] && [[ "$old_file" == "${PACKAGE}_${UPSTREAM_VER_CLEAN}.orig.tar.gz" ]]; then
+            echo "  - Keeping orig tarball: $old_file"
             continue
         fi
 
@@ -912,7 +1092,7 @@ fi
 
 # Update working copy to latest revision (without expanding service files to avoid revision conflicts)
 echo "==> Updating working copy"
-if ! osc up 2>/dev/null; then
+if ! osc_retry up 2>/dev/null; then
     echo "Error: Failed to update working copy"
     exit 1
 fi
@@ -993,7 +1173,7 @@ if ! osc status 2>/dev/null | grep -qE '^[MAD]|^[?]'; then
 else
     echo "==> Committing to OBS"
     set +e
-    osc commit --skip-local-service-run -m "$MESSAGE" 2>&1 | grep -v "Git SCM package" | grep -v "apiurl\|project\|_ObsPrj\|_manifest\|git-obs"
+    osc_retry commit --skip-local-service-run -m "$MESSAGE" 2>&1 | grep -v "Git SCM package" | grep -v "apiurl\|project\|_ObsPrj\|_manifest\|git-obs"
     COMMIT_EXIT=${PIPESTATUS[0]}
     set -e
     if [[ $COMMIT_EXIT -ne 0 ]]; then

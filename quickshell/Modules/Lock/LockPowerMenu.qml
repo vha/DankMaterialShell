@@ -24,13 +24,20 @@ Rectangle {
     property real holdProgress: 0
     property bool showHoldHint: false
 
-    readonly property bool needsConfirmation: SettingsData.powerActionConfirm
-    readonly property int holdDurationMs: SettingsData.powerActionHoldDuration * 1000
+    property var powerActionConfirmOverride: undefined
+    property var powerActionHoldDurationOverride: undefined
+    property var powerMenuActionsOverride: undefined
+    property var powerMenuDefaultActionOverride: undefined
+    property var powerMenuGridLayoutOverride: undefined
+    property var requiredActions: []
+
+    readonly property bool needsConfirmation: powerActionConfirmOverride !== undefined ? powerActionConfirmOverride : SettingsData.powerActionConfirm
+    readonly property int holdDurationMs: (powerActionHoldDurationOverride !== undefined ? powerActionHoldDurationOverride : SettingsData.powerActionHoldDuration) * 1000
 
     signal closed
 
     function updateVisibleActions() {
-        const allActions = (typeof SettingsData !== "undefined" && SettingsData.powerMenuActions) ? SettingsData.powerMenuActions : ["logout", "suspend", "hibernate", "reboot", "poweroff"];
+        const allActions = powerMenuActionsOverride !== undefined ? powerMenuActionsOverride : ((typeof SettingsData !== "undefined" && SettingsData.powerMenuActions) ? SettingsData.powerMenuActions : ["logout", "suspend", "hibernate", "reboot", "poweroff"]);
         const hibernateSupported = (typeof SessionService !== "undefined" && SessionService.hibernateSupported) || false;
         let filtered = allActions.filter(action => {
             if (action === "hibernate" && !hibernateSupported)
@@ -44,9 +51,14 @@ Rectangle {
             return true;
         });
 
+        for (const action of requiredActions) {
+            if (!filtered.includes(action))
+                filtered.push(action);
+        }
+
         visibleActions = filtered;
 
-        useGridLayout = (typeof SettingsData !== "undefined" && SettingsData.powerMenuGridLayout !== undefined) ? SettingsData.powerMenuGridLayout : false;
+        useGridLayout = powerMenuGridLayoutOverride !== undefined ? powerMenuGridLayoutOverride : ((typeof SettingsData !== "undefined" && SettingsData.powerMenuGridLayout !== undefined) ? SettingsData.powerMenuGridLayout : false);
         if (!useGridLayout)
             return;
         const count = visibleActions.length;
@@ -73,7 +85,7 @@ Rectangle {
     }
 
     function getDefaultActionIndex() {
-        const defaultAction = (typeof SettingsData !== "undefined" && SettingsData.powerMenuDefaultAction) ? SettingsData.powerMenuDefaultAction : "suspend";
+        const defaultAction = powerMenuDefaultActionOverride !== undefined ? powerMenuDefaultActionOverride : ((typeof SettingsData !== "undefined" && SettingsData.powerMenuDefaultAction) ? SettingsData.powerMenuDefaultAction : "suspend");
         const index = visibleActions.indexOf(defaultAction);
         return index >= 0 ? index : 0;
     }
@@ -780,8 +792,9 @@ Rectangle {
                     }
 
                     StyledText {
-                        readonly property real totalMs: SettingsData.powerActionHoldDuration * 1000
+                        readonly property real totalMs: root.holdDurationMs
                         readonly property int remainingMs: Math.ceil(totalMs * (1 - root.holdProgress))
+                        readonly property real durationSec: root.holdDurationMs / 1000
                         text: {
                             if (root.showHoldHint)
                                 return I18n.tr("Hold longer to confirm");
@@ -792,7 +805,7 @@ Rectangle {
                             }
                             if (totalMs < 1000)
                                 return I18n.tr("Hold to confirm (%1 ms)").arg(totalMs);
-                            return I18n.tr("Hold to confirm (%1s)").arg(SettingsData.powerActionHoldDuration);
+                            return I18n.tr("Hold to confirm (%1s)").arg(durationSec);
                         }
                         font.pixelSize: Theme.fontSizeSmall
                         color: root.showHoldHint ? Theme.warning : Qt.rgba(Theme.surfaceText.r, Theme.surfaceText.g, Theme.surfaceText.b, 0.6)

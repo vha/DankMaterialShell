@@ -400,7 +400,7 @@ BasePill {
     Component.onCompleted: updateModel()
 
     visible: dockItems.length > 0
-    readonly property real iconCellSize: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground) + 6
+    readonly property real iconCellSize: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale) + 6
 
     content: Component {
         Item {
@@ -584,8 +584,7 @@ BasePill {
 
                 property string tooltipText: {
                     root._desktopEntriesUpdateTrigger;
-                    const moddedId = Paths.moddedAppId(appId);
-                    const desktopEntry = moddedId ? DesktopEntries.heuristicLookup(moddedId) : null;
+                    const desktopEntry = appId ? DesktopEntries.heuristicLookup(appId) : null;
                     const appName = appId ? Paths.getAppName(appId, desktopEntry) : "Unknown";
 
                     if (modelData.type === "grouped" && windowCount > 1) {
@@ -597,7 +596,7 @@ BasePill {
                 readonly property bool enlargeEnabled: (widgetData?.appsDockEnlargeOnHover !== undefined ? widgetData.appsDockEnlargeOnHover : SettingsData.appsDockEnlargeOnHover)
                 readonly property real enlargeScale: enlargeEnabled && mouseArea.containsMouse ? (widgetData?.appsDockEnlargePercentage !== undefined ? widgetData.appsDockEnlargePercentage : SettingsData.appsDockEnlargePercentage) / 100.0 : 1.0
                 readonly property real baseIconSizeMultiplier: (widgetData?.appsDockIconSizePercentage !== undefined ? widgetData.appsDockIconSizePercentage : SettingsData.appsDockIconSizePercentage) / 100.0
-                readonly property real effectiveIconSize: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground) * baseIconSizeMultiplier
+                readonly property real effectiveIconSize: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale) * baseIconSizeMultiplier
 
                 readonly property color activeOverlayColor: {
                     switch (SettingsData.appsDockActiveColorMode) {
@@ -690,9 +689,8 @@ BasePill {
                             if (!appItem.appId)
                                 return "";
                             if (modelData.isCoreApp)
-                                return ""; // Explicitly skip if core app to avoid flickering or wrong look ups
-                            const moddedId = Paths.moddedAppId(appItem.appId);
-                            const desktopEntry = DesktopEntries.heuristicLookup(moddedId);
+                                return "";
+                            const desktopEntry = DesktopEntries.heuristicLookup(appItem.appId);
                             return Paths.getAppIcon(appItem.appId, desktopEntry);
                         }
                         smooth: true
@@ -749,8 +747,7 @@ BasePill {
                             root._desktopEntriesUpdateTrigger;
                             if (!appItem.appId)
                                 return "?";
-                            const moddedId = Paths.moddedAppId(appItem.appId);
-                            const desktopEntry = DesktopEntries.heuristicLookup(moddedId);
+                            const desktopEntry = DesktopEntries.heuristicLookup(appItem.appId);
                             const appName = Paths.getAppName(appItem.appId, desktopEntry);
                             return appName.charAt(0).toUpperCase();
                         }
@@ -795,7 +792,7 @@ BasePill {
                         anchors.rightMargin: Theme.spacingS
                         anchors.verticalCenter: parent.verticalCenter
                         text: appItem.windowTitle || appItem.appId
-                        font.pixelSize: Theme.barTextSize(barThickness, barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(barThickness, barConfig?.fontScale, barConfig?.maximizeWidgetText)
                         color: Theme.widgetTextColor
                         elide: Text.ElideRight
                         maximumLineCount: 1

@@ -42,6 +42,24 @@ Item {
     signal viewModeChanged(string sectionId, string mode)
     signal searchQueryRequested(string query)
 
+    onActiveChanged: {
+        if (!active) {
+            sections = [];
+            flatModel = [];
+            selectedItem = null;
+            _clearModeCache();
+        }
+    }
+
+    onSearchModeChanged: {
+        if (searchMode === "apps") {
+            _loadAppCategories();
+        } else {
+            appCategory = "";
+            appCategories = [];
+        }
+    }
+
     Connections {
         target: SettingsData
         function onSortAppsAlphabeticallyChanged() {
@@ -56,8 +74,12 @@ Item {
             if (!active)
                 return;
             _clearModeCache();
-            if (!searchQuery && searchMode === "all")
+            if (searchMode === "apps") {
+                _loadAppCategories();
                 performSearch();
+            } else if (!searchQuery && searchMode === "all") {
+                performSearch();
+            }
         }
     }
 
@@ -117,13 +139,6 @@ Item {
 
     readonly property var sectionDefinitions: [
         {
-            id: "calculator",
-            title: I18n.tr("Calculator"),
-            icon: "calculate",
-            priority: 0,
-            defaultViewMode: "list"
-        },
-        {
             id: "favorites",
             title: I18n.tr("Pinned"),
             icon: "push_pin",
@@ -160,10 +175,17 @@ Item {
         }
     ]
 
+    property string fileSearchType: "all"
+    property string fileSearchExt: ""
+    property string fileSearchFolder: ""
+    property string fileSearchSort: "score"
+
     property string pluginFilter: ""
     property string activePluginName: ""
     property var activePluginCategories: []
     property string activePluginCategory: ""
+    property string appCategory: ""
+    property var appCategories: []
 
     function getSectionViewMode(sectionId) {
         if (sectionId === "browse_plugins")
@@ -344,6 +366,10 @@ Item {
         previousSearchMode = "all";
         autoSwitchedToFiles = false;
         isFileSearching = false;
+        fileSearchType = "all";
+        fileSearchExt = "";
+        fileSearchFolder = "";
+        fileSearchSort = "score";
         sections = [];
         flatModel = [];
         selectedFlatIndex = 0;
@@ -353,6 +379,8 @@ Item {
         activePluginName = "";
         activePluginCategories = [];
         activePluginCategory = "";
+        appCategory = "";
+        appCategories = [];
         pluginFilter = "";
         collapsedSections = {};
         _clearModeCache();
@@ -395,6 +423,47 @@ Item {
         activePluginCategory = categoryId;
         AppSearchService.setPluginLauncherCategory(activePluginId, categoryId);
         performSearch();
+    }
+
+    function setAppCategory(category) {
+        if (appCategory === category)
+            return;
+        appCategory = category;
+        _queryDrivenSearch = true;
+        _clearModeCache();
+        performSearch();
+    }
+
+    function _loadAppCategories() {
+        appCategories = AppSearchService.getAllCategories();
+    }
+
+    function setFileSearchType(type) {
+        if (fileSearchType === type)
+            return;
+        fileSearchType = type;
+        performFileSearch();
+    }
+
+    function setFileSearchExt(ext) {
+        if (fileSearchExt === ext)
+            return;
+        fileSearchExt = ext;
+        performFileSearch();
+    }
+
+    function setFileSearchFolder(folder) {
+        if (fileSearchFolder === folder)
+            return;
+        fileSearchFolder = folder;
+        performFileSearch();
+    }
+
+    function setFileSearchSort(sort) {
+        if (fileSearchSort === sort)
+            return;
+        fileSearchSort = sort;
+        performFileSearch();
     }
 
     function clearPluginFilter() {
@@ -553,8 +622,9 @@ Item {
         }
 
         if (searchMode === "apps") {
+            var isCategoryFiltered = appCategory && appCategory !== I18n.tr("All");
             var cachedSections = AppSearchService.getCachedDefaultSections();
-            if (cachedSections && !searchQuery) {
+            if (cachedSections && !searchQuery && !isCategoryFiltered) {
                 var modeCache = _getCachedModeData("apps");
                 if (modeCache) {
                     _applyHighlights(modeCache.sections, "");
@@ -584,9 +654,23 @@ Item {
                 return;
             }
 
-            var apps = searchApps(searchQuery);
-            for (var i = 0; i < apps.length; i++) {
-                allItems.push(apps[i]);
+            if (isCategoryFiltered) {
+                var rawApps = AppSearchService.getAppsInCategory(appCategory);
+                for (var i = 0; i < rawApps.length; i++) {
+                    allItems.push(getOrTransformApp(rawApps[i]));
+                }
+                // Also include core apps (DMS Settings etc.) that match this category
+                var allCoreApps = AppSearchService.getCoreApps("");
+                for (var i = 0; i < allCoreApps.length; i++) {
+                    var coreAppCats = AppSearchService.getCategoriesForApp(allCoreApps[i]);
+                    if (coreAppCats.indexOf(appCategory) !== -1)
+                        allItems.push(transformCoreApp(allCoreApps[i]));
+                }
+            } else {
+                var apps = searchApps(searchQuery);
+                for (var i = 0; i < apps.length; i++) {
+                    allItems.push(apps[i]);
+                }
             }
 
             var scoredItems = Scorer.scoreItems(allItems, searchQuery, getFrecencyForItem);
@@ -672,24 +756,16 @@ Item {
             return;
         }
 
-        var calculatorResult = evaluateCalculator(searchQuery);
-        if (calculatorResult) {
-            calculatorResult._preScored = 12000;
-            allItems.push(calculatorResult);
-        }
-
         var apps = searchApps(searchQuery);
         for (var i = 0; i < apps.length; i++) {
-            if (searchQuery)
-                apps[i]._preScored = 11000 - i;
             allItems.push(apps[i]);
         }
 
         if (searchMode === "all") {
             if (searchQuery && searchQuery.length >= 2) {
                 _pluginPhasePending = true;
+                _phase1Items = allItems.slice();
                 _pluginPhaseForceFirst = shouldResetSelection;
-                _phase1Items = allItems;
                 pluginPhaseTimer.restart();
                 isSearching = true;
                 searchCompleted();
@@ -833,9 +909,19 @@ Item {
         var params = {
             limit: 20,
             fuzzy: true,
-            sort: "score",
+            sort: fileSearchSort || "score",
             desc: true
         };
+
+        if (DSearchService.supportsTypeFilter) {
+            params.type = (fileSearchType && fileSearchType !== "all") ? fileSearchType : "all";
+        }
+        if (fileSearchExt) {
+            params.ext = fileSearchExt;
+        }
+        if (fileSearchFolder) {
+            params.folder = fileSearchFolder;
+        }
 
         DSearchService.search(fileQuery, params, function (response) {
             isFileSearching = false;
@@ -846,34 +932,73 @@ Item {
 
             for (var i = 0; i < hits.length; i++) {
                 var hit = hits[i];
+                var docTypes = hit.locations?.doc_type;
+                var isDir = docTypes ? !!docTypes["dir"] : false;
                 fileItems.push(transformFileResult({
                     path: hit.id || "",
-                    score: hit.score || 0
+                    score: hit.score || 0,
+                    is_dir: isDir
                 }));
             }
 
-            var fileSection = {
-                id: "files",
-                title: I18n.tr("Files"),
-                icon: "folder",
-                priority: 4,
-                items: fileItems,
-                collapsed: collapsedSections["files"] || false,
-                flatStartIndex: 0
-            };
+            var fileSections = [];
+            var showType = fileSearchType || "all";
+
+            if (showType === "all" && DSearchService.supportsTypeFilter) {
+                var onlyFiles = [];
+                var onlyDirs = [];
+                for (var j = 0; j < fileItems.length; j++) {
+                    if (fileItems[j].data?.is_dir)
+                        onlyDirs.push(fileItems[j]);
+                    else
+                        onlyFiles.push(fileItems[j]);
+                }
+                if (onlyFiles.length > 0) {
+                    fileSections.push({
+                        id: "files",
+                        title: I18n.tr("Files"),
+                        icon: "insert_drive_file",
+                        priority: 4,
+                        items: onlyFiles,
+                        collapsed: collapsedSections["files"] || false,
+                        flatStartIndex: 0
+                    });
+                }
+                if (onlyDirs.length > 0) {
+                    fileSections.push({
+                        id: "folders",
+                        title: I18n.tr("Folders"),
+                        icon: "folder",
+                        priority: 4.1,
+                        items: onlyDirs,
+                        collapsed: collapsedSections["folders"] || false,
+                        flatStartIndex: 0
+                    });
+                }
+            } else {
+                var filesIcon = showType === "dir" ? "folder" : showType === "file" ? "insert_drive_file" : "folder";
+                var filesTitle = showType === "dir" ? I18n.tr("Folders") : I18n.tr("Files");
+                if (fileItems.length > 0) {
+                    fileSections.push({
+                        id: "files",
+                        title: filesTitle,
+                        icon: filesIcon,
+                        priority: 4,
+                        items: fileItems,
+                        collapsed: collapsedSections["files"] || false,
+                        flatStartIndex: 0
+                    });
+                }
+            }
 
             var newSections;
             if (searchMode === "files") {
-                newSections = fileItems.length > 0 ? [fileSection] : [];
+                newSections = fileSections;
             } else {
                 var existingNonFile = sections.filter(function (s) {
-                    return s.id !== "files";
+                    return s.id !== "files" && s.id !== "folders";
                 });
-                if (fileItems.length > 0) {
-                    newSections = existingNonFile.concat([fileSection]);
-                } else {
-                    newSections = existingNonFile;
-                }
+                newSections = existingNonFile.concat(fileSections);
             }
             newSections.sort(function (a, b) {
                 return a.priority - b.priority;
@@ -881,9 +1006,7 @@ Item {
             _applyHighlights(newSections, searchQuery);
             flatModel = Scorer.flattenSections(newSections);
             sections = newSections;
-            if (selectedFlatIndex >= flatModel.length) {
-                selectedFlatIndex = getFirstItemIndex();
-            }
+            selectedFlatIndex = getFirstItemIndex();
             updateSelectedItem();
         });
     }
@@ -919,14 +1042,7 @@ Item {
     }
 
     function transformFileResult(file) {
-        return Transform.transformFileResult(file, I18n.tr("Open"), I18n.tr("Open folder"), I18n.tr("Copy path"));
-    }
-
-    function evaluateCalculator(query) {
-        var calc = Utils.evaluateCalculator(query);
-        if (!calc)
-            return null;
-        return Transform.createCalculatorItem(calc, query, I18n.tr("Copy"));
+        return Transform.transformFileResult(file, I18n.tr("Open"), I18n.tr("Open folder"), I18n.tr("Copy path"), I18n.tr("Open in terminal"));
     }
 
     function detectTrigger(query) {
@@ -1261,6 +1377,23 @@ Item {
         CacheData.saveLauncherCache(serializable);
     }
 
+    function _actionsFromDesktopEntry(appId) {
+        if (!appId)
+            return [];
+        var entry = DesktopEntries.heuristicLookup(appId);
+        if (!entry || !entry.actions || entry.actions.length === 0)
+            return [];
+        var result = [];
+        for (var i = 0; i < entry.actions.length; i++) {
+            result.push({
+                name: entry.actions[i].name,
+                icon: "play_arrow",
+                actionData: entry.actions[i]
+            });
+        }
+        return result;
+    }
+
     function _loadDiskCache() {
         var cached = CacheData.loadLauncherCache();
         if (!cached || !Array.isArray(cached) || cached.length === 0)
@@ -1288,8 +1421,12 @@ Item {
                     data: {
                         id: it.id
                     },
-                    actions: [],
-                    primaryAction: null,
+                    actions: _actionsFromDesktopEntry(it.id),
+                    primaryAction: it.type === "app" && !it.isCore ? {
+                        name: I18n.tr("Launch"),
+                        icon: "open_in_new",
+                        action: "launch"
+                    } : null,
                     _diskCached: true,
                     _hName: "",
                     _hSub: "",
@@ -1550,9 +1687,6 @@ Item {
         case "file":
             openFile(item.data?.path);
             break;
-        case "calculator":
-            copyToClipboard(item.name);
-            break;
         default:
             return;
         }
@@ -1575,6 +1709,9 @@ Item {
             break;
         case "copy_path":
             copyToClipboard(item.data.path);
+            break;
+        case "open_terminal":
+            openTerminal(item.data.path);
             break;
         case "copy":
             copyToClipboard(item.name);
@@ -1607,25 +1744,41 @@ Item {
         itemExecuted();
     }
 
-    function launchApp(app) {
+    function _resolveDesktopEntry(app) {
         if (!app)
+            return null;
+        if (app.command)
+            return app;
+        var id = app.id || app.execString || app.exec || "";
+        if (!id)
+            return null;
+        return DesktopEntries.heuristicLookup(id);
+    }
+
+    function launchApp(app) {
+        var entry = _resolveDesktopEntry(app);
+        if (!entry)
             return;
-        SessionService.launchDesktopEntry(app);
-        AppUsageHistoryData.addAppUsage(app);
+        SessionService.launchDesktopEntry(entry);
+        AppUsageHistoryData.addAppUsage(entry);
     }
 
     function launchAppWithNvidia(app) {
-        if (!app)
+        var entry = _resolveDesktopEntry(app);
+        if (!entry)
             return;
-        SessionService.launchDesktopEntry(app, true);
-        AppUsageHistoryData.addAppUsage(app);
+        SessionService.launchDesktopEntry(entry, true);
+        AppUsageHistoryData.addAppUsage(entry);
     }
 
     function launchAppAction(actionItem) {
-        if (!actionItem || !actionItem.parentApp || !actionItem.actionData)
+        if (!actionItem || !actionItem.actionData)
             return;
-        SessionService.launchDesktopAction(actionItem.parentApp, actionItem.actionData);
-        AppUsageHistoryData.addAppUsage(actionItem.parentApp);
+        var entry = _resolveDesktopEntry(actionItem.parentApp);
+        if (!entry)
+            return;
+        SessionService.launchDesktopAction(entry, actionItem.actionData);
+        AppUsageHistoryData.addAppUsage(entry);
     }
 
     function openFile(path) {
@@ -1639,6 +1792,16 @@ Item {
             return;
         var folder = path.substring(0, path.lastIndexOf("/"));
         Qt.openUrlExternally("file://" + folder);
+    }
+
+    function openTerminal(path) {
+        if (!path)
+            return;
+        var terminal = Quickshell.env("TERMINAL") || "xterm";
+        Quickshell.execDetached({
+            command: [terminal],
+            workingDirectory: path
+        });
     }
 
     function copyToClipboard(text) {

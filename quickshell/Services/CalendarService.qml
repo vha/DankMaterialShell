@@ -4,6 +4,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.Common
 
 Singleton {
     id: root
@@ -157,12 +158,12 @@ Singleton {
                         // Parse start and end dates using detected format
                         let startDate, endDate
                         if (event['start-date']) {
-                            startDate = Date.fromLocaleString(Qt.locale(), event['start-date'], root.khalDateFormat)
+                            startDate = Date.fromLocaleString(I18n.locale(), event['start-date'], root.khalDateFormat)
                         } else {
                             startDate = new Date()
                         }
                         if (event['end-date']) {
-                            endDate = Date.fromLocaleString(Qt.locale(), event['end-date'], root.khalDateFormat)
+                            endDate = Date.fromLocaleString(I18n.locale(), event['end-date'], root.khalDateFormat)
                         } else {
                             endDate = new Date(startDate)
                         }

@@ -333,9 +333,9 @@ Item {
             visible: SettingsData.lockScreenShowDate
             text: {
                 if (SettingsData.lockDateFormat && SettingsData.lockDateFormat.length > 0) {
-                    return systemClock.date.toLocaleDateString(Qt.locale(), SettingsData.lockDateFormat);
+                    return systemClock.date.toLocaleDateString(I18n.locale(), SettingsData.lockDateFormat);
                 }
-                return systemClock.date.toLocaleDateString(Qt.locale(), Locale.LongFormat);
+                return systemClock.date.toLocaleDateString(I18n.locale(), Locale.LongFormat);
             }
             font.pixelSize: Theme.fontSizeXLarge
             color: "white"
@@ -687,14 +687,24 @@ Item {
 
                             anchors.centerIn: parent
                             name: {
+                                if (pam.u2fPending)
+                                    return "passkey";
                                 if (pam.fprint.tries >= SettingsData.maxFprintTries)
                                     return "fingerprint_off";
                                 if (pam.fprint.active)
                                     return "fingerprint";
+                                if (pam.u2f.active)
+                                    return "passkey";
                                 return "lock";
                             }
                             size: 20
-                            color: pam.fprint.tries >= SettingsData.maxFprintTries ? Theme.error : (passwordField.activeFocus ? Theme.primary : Theme.surfaceVariantText)
+                            color: {
+                                if (pam.fprint.tries >= SettingsData.maxFprintTries)
+                                    return Theme.error;
+                                if (pam.u2fState !== "")
+                                    return Theme.tertiary;
+                                return passwordField.activeFocus ? Theme.primary : Theme.surfaceVariantText;
+                            }
                             opacity: pam.passwd.active ? 0 : 1
 
                             Behavior on opacity {
@@ -745,8 +755,7 @@ Item {
                             }
                         }
                         onAccepted: {
-                            if (!demoMode && !pam.passwd.active) {
-                                console.log("Enter pressed, starting PAM authentication");
+                            if (!demoMode && !root.unlocking && !pam.passwd.active && !pam.u2fPending) {
                                 pam.passwd.start();
                             }
                         }
@@ -755,7 +764,17 @@ Item {
                                 return;
                             }
 
+                            if (root.unlocking) {
+                                event.accepted = true;
+                                return;
+                            }
+
                             if (event.key === Qt.Key_Escape) {
+                                if (pam.u2fPending) {
+                                    pam.cancelU2fPending();
+                                    event.accepted = true;
+                                    return;
+                                }
                                 clear();
                             }
 
@@ -819,6 +838,11 @@ Item {
                             }
                             if (root.unlocking) {
                                 return "Unlocking...";
+                            }
+                            if (pam.u2fPending) {
+                                if (pam.u2fState === "insert")
+                                    return "Insert your security key...";
+                                return "Touch your security key...";
                             }
                             if (pam.passwd.active) {
                                 return "Authenticating...";
@@ -894,7 +918,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: "keyboard"
                         buttonSize: 32
-                        visible: !demoMode && !pam.passwd.active && !root.unlocking
+                        visible: !demoMode && !pam.passwd.active && !root.unlocking && !pam.u2fPending
                         enabled: visible
                         onClicked: {
                             if (keyboardController.isKeyboardActive) {
@@ -995,11 +1019,10 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: "keyboard_return"
                         buttonSize: 36
-                        visible: (demoMode || (!pam.passwd.active && !root.unlocking))
+                        visible: (demoMode || (!pam.passwd.active && !root.unlocking && !pam.u2fPending))
                         enabled: !demoMode
                         onClicked: {
-                            if (!demoMode) {
-                                console.log("Enter button clicked, starting PAM authentication");
+                            if (!demoMode && !root.unlocking && !pam.u2fPending) {
                                 pam.passwd.start();
                             }
                         }
@@ -1025,6 +1048,12 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 20
                 text: {
+                    if (pam.u2fState === "insert" && !pam.u2fPending) {
+                        return "Insert your security key...";
+                    }
+                    if (pam.u2fState === "waiting" && !pam.u2fPending) {
+                        return "Touch your security key...";
+                    }
                     if (root.pamState === "error") {
                         return "Authentication error - try again";
                     }
@@ -1036,10 +1065,10 @@ Item {
                     }
                     return "";
                 }
-                color: Theme.error
+                color: (pam.u2fState === "waiting" || pam.u2fState === "insert") ? Theme.outline : Theme.error
                 font.pixelSize: Theme.fontSizeSmall
                 horizontalAlignment: Text.AlignHCenter
-                opacity: root.pamState !== "" ? 1 : 0
+                opacity: (root.pamState !== "" || ((pam.u2fState === "waiting" || pam.u2fState === "insert") && !pam.u2fPending)) ? 1 : 0
 
                 Behavior on opacity {
                     NumberAnimation {
@@ -1065,7 +1094,7 @@ Item {
             }
 
             StyledText {
-                text: "Caps Lock is on"
+                text: I18n.tr("Caps Lock is on")
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.error
                 anchors.verticalCenter: parent.verticalCenter
@@ -1602,10 +1631,28 @@ Item {
         onStateChanged: {
             root.pamState = state;
             if (state !== "") {
+                root.unlocking = false;
                 placeholderDelay.restart();
                 passwordField.text = "";
                 root.passwordBuffer = "";
             }
+        }
+        onU2fPendingChanged: {
+            if (u2fPending) {
+                passwordField.text = "";
+                root.passwordBuffer = "";
+                if (keyboardController.isKeyboardActive)
+                    keyboardController.hide();
+            }
+        }
+    }
+
+    Connections {
+        target: pam
+
+        function onUnlockInProgressChanged() {
+            if (!pam.unlockInProgress && root.unlocking)
+                root.unlocking = false;
         }
     }
 

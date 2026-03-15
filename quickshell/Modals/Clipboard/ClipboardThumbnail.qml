@@ -31,13 +31,13 @@ Item {
         sourceSize.height: 128
 
         function tryLoadImage() {
-            if (loadQueued || entryType !== "image" || cachedImageData) {
+            if (thumbnailImage.loadQueued || entryType !== "image" || thumbnailImage.cachedImageData) {
                 return;
             }
-            loadQueued = true;
+            thumbnailImage.loadQueued = true;
             if (modal.activeImageLoads < modal.maxConcurrentLoads) {
                 modal.activeImageLoads++;
-                loadImage();
+                thumbnailImage.loadImage();
             } else {
                 retryTimer.restart();
             }
@@ -47,7 +47,7 @@ Item {
             DMSService.sendRequest("clipboard.getEntry", {
                 "id": entry.id
             }, function (response) {
-                loadQueued = false;
+                thumbnailImage.loadQueued = false;
                 if (modal.activeImageLoads > 0) {
                     modal.activeImageLoads--;
                 }
@@ -57,7 +57,7 @@ Item {
                 }
                 const data = response.result?.data;
                 if (data) {
-                    cachedImageData = data;
+                    thumbnailImage.cachedImageData = data;
                 }
             });
         }
@@ -137,23 +137,23 @@ Item {
         anchors.margins: 2
         source: thumbnailImage
         maskEnabled: true
-        maskSource: clipboardCircularMask
+        maskSource: clipboardRoundedRectangularMask
         visible: entryType === "image" && thumbnailImage.status === Image.Ready && thumbnailImage.source != ""
         maskThresholdMin: 0.5
         maskSpreadAtMin: 1
     }
 
     Item {
-        id: clipboardCircularMask
-        width: ClipboardConstants.thumbnailSize - 4
-        height: ClipboardConstants.thumbnailSize - 4
+        id: clipboardRoundedRectangularMask
+        width: ClipboardConstants.thumbnailSize
+        height: ClipboardConstants.itemHeight - 4
         layer.enabled: true
         layer.smooth: true
         visible: false
 
         Rectangle {
             anchors.fill: parent
-            radius: width / 2
+            radius: Theme.cornerRadius / 2 // Thumbnail corner radius is divided by 2 so it doesnt look weird on large corner radius (eg: 32px)
             color: "black"
             antialiasing: true
         }

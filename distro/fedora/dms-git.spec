@@ -3,6 +3,7 @@
 %global debug_package %{nil}
 %global version {{{ git_repo_version }}}
 %global pkg_summary DankMaterialShell - Material 3 inspired shell for Wayland compositors
+%global go_toolchain_version 1.25.7
 
 Name:           dms
 Epoch:          2
@@ -14,12 +15,12 @@ License:        MIT
 URL:            https://github.com/AvengeMedia/DankMaterialShell
 VCS:            {{{ git_repo_vcs }}}
 Source0:        {{{ git_repo_pack }}}
+Source1:        https://go.dev/dl/go%{go_toolchain_version}.linux-amd64.tar.gz
+Source2:        https://go.dev/dl/go%{go_toolchain_version}.linux-arm64.tar.gz
 
 BuildRequires:  git-core
 BuildRequires:  gzip
-BuildRequires:  golang >= 1.24
 BuildRequires:  make
-BuildRequires:  wget
 BuildRequires:  systemd-rpm-macros
 
 # Core requirements
@@ -28,7 +29,7 @@ Requires:       accountsservice
 Requires:       dms-cli = %{epoch}:%{version}-%{release}
 Requires:       dgop
 
-# Core utilities (Highly recommended for DMS functionality)
+# Core utilities (Recommended for DMS functionality)
 Recommends:     cava
 Recommends:     danksearch
 Recommends:     matugen
@@ -37,6 +38,7 @@ Recommends:     quickshell-git
 # Recommended system packages
 Recommends:     NetworkManager
 Recommends:     qt6-qtmultimedia
+Suggests:       cups-pk-helper
 Suggests:       qt6ct
 
 %description
@@ -64,6 +66,28 @@ Provides native DBus bindings, NetworkManager integration, and system utilities.
 # Build DMS CLI from source (core/subdirectory)
 VERSION="%{version}"
 COMMIT=$(echo "%{version}" | grep -oP '[a-f0-9]{7,}' | head -n1 || echo "unknown")
+
+# Use pinned bundled Go toolchain (deterministic across chroots)
+case "%{_arch}" in
+  x86_64)
+    GO_TARBALL="%{_sourcedir}/go%{go_toolchain_version}.linux-amd64.tar.gz"
+    ;;
+  aarch64)
+    GO_TARBALL="%{_sourcedir}/go%{go_toolchain_version}.linux-arm64.tar.gz"
+    ;;
+  *)
+    echo "Unsupported architecture for bundled Go: %{_arch}"
+    exit 1
+    ;;
+esac
+
+rm -rf .go
+tar -xzf "$GO_TARBALL"
+mv go .go
+export GOROOT="$PWD/.go"
+export PATH="$GOROOT/bin:$PATH"
+export GOTOOLCHAIN=local
+go version
 
 cd core
 make dist VERSION="$VERSION" COMMIT="$COMMIT"

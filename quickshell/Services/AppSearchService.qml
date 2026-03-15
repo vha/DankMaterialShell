@@ -196,6 +196,17 @@ Singleton {
                 defaultTrigger: "",
                 isLauncher: false
             },
+            "dms_colorpicker": {
+                id: "dms_colorpicker",
+                name: I18n.tr("Color Picker"),
+                icon: "svg+corner:" + dmsLogoPath + "|palette",
+                cornerIcon: "palette",
+                comment: "DMS",
+                action: "ipc:color-picker",
+                categories: ["Graphics", "Utility"],
+                defaultTrigger: "",
+                isLauncher: false
+            },
             "dms_settings_search": {
                 id: "dms_settings_search",
                 name: I18n.tr("Settings", "settings window title"),
@@ -333,6 +344,9 @@ Singleton {
             return true;
         case "processlist":
             PopoutService.toggleProcessListModal();
+            return true;
+        case "color-picker":
+            PopoutService.showColorPicker();
             return true;
         }
         return false;
@@ -494,7 +508,7 @@ Singleton {
                 textScore = 5000;
                 matchType = "prefix";
             } else if (wordBoundaryMatch(name, queryLower)) {
-                textScore = 1000;
+                textScore = 3000;
                 matchType = "word_boundary";
             } else if (name.includes(queryLower)) {
                 textScore = 500;
@@ -551,7 +565,7 @@ Singleton {
         }
 
         for (const result of results) {
-            const frecencyBonus = result.frecency > 0 ? Math.min(result.frecency / 10, 2000) : 0;
+            const frecencyBonus = result.frecency > 0 ? Math.min(result.frecency, 2000) : 0;
             const recencyBonus = result.daysSinceUsed < 1 ? 1500 : result.daysSinceUsed < 7 ? 1000 : result.daysSinceUsed < 30 ? 500 : 0;
 
             const finalScore = result.textScore + frecencyBonus + recencyBonus;
@@ -683,6 +697,12 @@ Singleton {
 
         const categories = new Set([I18n.tr("All")]);
         for (const app of applications) {
+            const appCategories = getCategoriesForApp(app);
+            appCategories.forEach(cat => categories.add(cat));
+        }
+
+        // Include categories from core apps (e.g. DMS Settings)
+        for (const app of coreApps) {
             const appCategories = getCategoriesForApp(app);
             appCategories.forEach(cat => categories.add(cat));
         }

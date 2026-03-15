@@ -34,6 +34,8 @@ Variants {
         property bool groupByApp: SettingsData.dockGroupByApp
         readonly property int borderThickness: SettingsData.dockBorderEnabled ? SettingsData.dockBorderThickness : 0
 
+        readonly property int hasApps: dockApps.implicitWidth > 0 || dockApps.implicitHeight > 0
+
         readonly property real widgetHeight: SettingsData.dockIconSize
         readonly property real effectiveBarHeight: widgetHeight + SettingsData.dockSpacing * 2 + 10 + borderThickness * 2
         function getBarHeight(barConfig) {
@@ -376,21 +378,27 @@ Variants {
             const screenY = dock.screen ? (dock.screen.y || 0) : 0;
             const screenHeight = dock.screen ? dock.screen.height : 0;
 
+            const gap = Theme.spacingS;
+            const bgMargin = barSpacing + SettingsData.dockMargin + 1 + dock.borderThickness;
+            const btnW = dock.hoveredButton.width;
+            const btnH = dock.hoveredButton.height;
+
             if (!dock.isVertical) {
                 const isBottom = SettingsData.dockPosition === SettingsData.Position.Bottom;
-                const globalX = buttonGlobalPos.x + dock.hoveredButton.width / 2 + adjacentLeftBarWidth;
+                const globalX = buttonGlobalPos.x + btnW / 2 + adjacentLeftBarWidth;
                 const tooltipHeight = 32;
-                const tooltipOffset = dock.effectiveBarHeight + SettingsData.dockSpacing + SettingsData.dockBottomGap + SettingsData.dockMargin + barSpacing + Theme.spacingM;
-                const screenRelativeY = isBottom ? (screenHeight - tooltipOffset - tooltipHeight) : tooltipOffset;
+                const totalFromEdge = bgMargin + dockBackground.height + dock.borderThickness + gap;
+                const screenRelativeY = isBottom ? (screenHeight - totalFromEdge - tooltipHeight) : totalFromEdge;
                 dockTooltip.show(tooltipText, globalX, screenRelativeY, dock.screen, false, false);
                 return;
             }
 
             const isLeft = SettingsData.dockPosition === SettingsData.Position.Left;
-            const tooltipOffset = dock.effectiveBarHeight + SettingsData.dockSpacing + SettingsData.dockBottomGap + SettingsData.dockMargin + barSpacing + Theme.spacingM;
-            const tooltipX = isLeft ? tooltipOffset : (dock.screen.width - tooltipOffset);
-            const screenRelativeY = buttonGlobalPos.y - screenY + dock.hoveredButton.height / 2 + adjacentTopBarHeight;
-            dockTooltip.show(tooltipText, screenX + tooltipX, screenRelativeY, dock.screen, isLeft, !isLeft);
+            const screenWidth = dock.screen ? dock.screen.width : 0;
+            const totalFromEdge = bgMargin + dockBackground.width + dock.borderThickness + gap;
+            const tooltipX = isLeft ? (screenX + totalFromEdge) : (screenX + screenWidth - totalFromEdge);
+            const screenRelativeY = buttonGlobalPos.y - screenY + btnH / 2 + adjacentTopBarHeight;
+            dockTooltip.show(tooltipText, tooltipX, screenRelativeY, dock.screen, isLeft, !isLeft);
         }
 
         Connections {
@@ -439,9 +447,8 @@ Variants {
 
                 height: {
                     if (dock.isVertical) {
-                        if (!dock.reveal)
-                            return Math.min(Math.max(dockBackground.height + 64, 200), screenHeight * 0.5);
-                        return Math.min(dockBackground.height + 8 + dock.borderThickness, maxDockHeight);
+                        // Keep the taller hit area regardless of the reveal state to prevent shrinking loop
+                        return Math.min(Math.max(dockBackground.height + 64, 200), screenHeight * 0.5);
                     }
                     return dock.reveal ? px(dock.effectiveBarHeight + SettingsData.dockSpacing + SettingsData.dockBottomGap + SettingsData.dockMargin) : 1;
                 }
@@ -449,8 +456,7 @@ Variants {
                     if (dock.isVertical) {
                         return dock.reveal ? px(dock.effectiveBarHeight + SettingsData.dockSpacing + SettingsData.dockBottomGap + SettingsData.dockMargin) : 1;
                     }
-                    if (!dock.reveal)
-                        return Math.min(Math.max(dockBackground.width + 64, 200), screenWidth * 0.5);
+                    // Keep the wider hit area regardless of the reveal state to prevent shrinking loop
                     return Math.min(dockBackground.width + 8 + dock.borderThickness, maxDockWidth);
                 }
                 anchors {
@@ -551,10 +557,10 @@ Variants {
                         layer.enabled: true
                         clip: false
 
-                        DankRectangle {
+                        Rectangle {
                             anchors.fill: parent
-                            color: Qt.rgba(Theme.surfaceContainer.r, Theme.surfaceContainer.g, Theme.surfaceContainer.b, backgroundTransparency)
-                            overlayColor: Qt.rgba(Theme.surfaceTint.r, Theme.surfaceTint.g, Theme.surfaceTint.b, 0.04)
+                            color: Theme.withAlpha(Theme.surfaceContainer, backgroundTransparency)
+                            radius: Theme.cornerRadius
                         }
                     }
 
@@ -564,7 +570,7 @@ Variants {
                         y: dockBackground.y - borderThickness
                         width: dockBackground.width + borderThickness * 2
                         height: dockBackground.height + borderThickness * 2
-                        visible: SettingsData.dockBorderEnabled
+                        visible: SettingsData.dockBorderEnabled && dock.hasApps
                         preferredRendererType: Shape.CurveRenderer
 
                         readonly property real borderThickness: Math.max(1, dock.borderThickness)

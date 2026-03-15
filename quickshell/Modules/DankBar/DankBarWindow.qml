@@ -48,10 +48,11 @@ PanelWindow {
             return;
         }
 
+        let section = "center";
         if (clockButtonRef && clockButtonRef.visualContent && dankDashPopoutLoader.item.setTriggerPosition) {
             // Calculate barPosition from axis.edge
             const barPosition = axis?.edge === "left" ? 2 : (axis?.edge === "right" ? 3 : (axis?.edge === "top" ? 0 : 1));
-            const section = clockButtonRef.section || "center";
+            section = clockButtonRef.section || "center";
 
             let triggerPos, triggerWidth;
             if (section === "center") {
@@ -80,7 +81,7 @@ PanelWindow {
             dankDashPopoutLoader.item.triggerScreen = barWindow.screen;
         }
 
-        PopoutManager.requestPopout(dankDashPopoutLoader.item, 2, (barConfig?.id ?? "default") + "-2");
+        PopoutManager.requestPopout(dankDashPopoutLoader.item, 2, (barConfig?.id ?? "default") + "-" + section + "-2");
     }
 
     readonly property var dBarLayer: {
@@ -130,38 +131,69 @@ PanelWindow {
     readonly property real _wingR: Math.max(0, wingtipsRadius)
     readonly property color _surfaceContainer: Theme.surfaceContainer
     readonly property string _barId: barConfig?.id ?? "default"
-    readonly property var _liveBarConfig: SettingsData.barConfigs.find(c => c.id === _barId) || barConfig
-    readonly property real _backgroundAlpha: _liveBarConfig?.transparency ?? 1.0
+    property real _backgroundAlpha: barConfig?.transparency ?? 1.0
     readonly property color _bgColor: Theme.withAlpha(_surfaceContainer, _backgroundAlpha)
+
+    function _updateBackgroundAlpha() {
+        const live = SettingsData.barConfigs.find(c => c.id === _barId);
+        _backgroundAlpha = (live ?? barConfig)?.transparency ?? 1.0;
+    }
     readonly property real _dpr: CompositorService.getScreenScale(barWindow.screen)
+
+    // Shadow buffer: extra window space for shadow to render beyond bar bounds
+    readonly property bool _shadowActive: (Theme.elevationEnabled && (typeof SettingsData !== "undefined" ? (SettingsData.barElevationEnabled ?? true) : false)) || (barConfig?.shadowIntensity ?? 0) > 0
+    readonly property real _shadowBuffer: {
+        if (!_shadowActive)
+            return 0;
+        const hasOverride = (barConfig?.shadowIntensity ?? 0) > 0;
+        if (hasOverride) {
+            const blur = (barConfig.shadowIntensity ?? 0) * 0.2;
+            const offset = blur * 0.5;
+            return Theme.snap(Math.max(16, blur + offset + 8), _dpr);
+        }
+        return Theme.snap(Theme.elevationRenderPadding(Theme.elevationLevel2, "top", 4, 8, 16), _dpr);
+    }
 
     property string screenName: modelData.name
 
-    readonly property bool hasMaximizedToplevel: {
-        if (!(barConfig?.maximizeDetection ?? true))
-            return false;
-        if (!CompositorService.isHyprland && !CompositorService.isNiri)
-            return false;
+    property bool hasMaximizedToplevel: false
+    property bool shouldHideForWindows: false
+
+    function _updateHasMaximizedToplevel() {
+        if (!(barConfig?.maximizeDetection ?? true)) {
+            hasMaximizedToplevel = false;
+            return;
+        }
+        if (!CompositorService.isHyprland && !CompositorService.isNiri) {
+            hasMaximizedToplevel = false;
+            return;
+        }
 
         const filtered = CompositorService.filterCurrentWorkspace(CompositorService.sortedToplevels, screenName);
         for (let i = 0; i < filtered.length; i++) {
-            if (filtered[i]?.maximized)
-                return true;
+            if (filtered[i]?.maximized) {
+                hasMaximizedToplevel = true;
+                return;
+            }
         }
-        return false;
+        hasMaximizedToplevel = false;
     }
 
-    readonly property bool shouldHideForWindows: {
-        if (!(barConfig?.showOnWindowsOpen ?? false))
-            return false;
-        if (!(barConfig?.autoHide ?? false))
-            return false;
-        if (!CompositorService.isNiri && !CompositorService.isHyprland)
-            return false;
+    function _updateShouldHideForWindows() {
+        if (!(barConfig?.showOnWindowsOpen ?? false)) {
+            shouldHideForWindows = false;
+            return;
+        }
+        if (!(barConfig?.autoHide ?? false)) {
+            shouldHideForWindows = false;
+            return;
+        }
+        if (!CompositorService.isNiri && !CompositorService.isHyprland) {
+            shouldHideForWindows = false;
+            return;
+        }
 
         if (CompositorService.isNiri) {
-            NiriService.windows;
-
             let currentWorkspaceId = null;
             for (let i = 0; i < NiriService.allWorkspaces.length; i++) {
                 const ws = NiriService.allWorkspaces[i];
@@ -171,8 +203,10 @@ PanelWindow {
                 }
             }
 
-            if (currentWorkspaceId === null)
-                return false;
+            if (currentWorkspaceId === null) {
+                shouldHideForWindows = false;
+                return;
+            }
 
             let hasTiled = false;
             let hasFloatingTouchingBar = false;
@@ -216,14 +250,12 @@ PanelWindow {
                 }
             }
 
-            if (hasTiled)
-                return true;
-
-            return hasFloatingTouchingBar;
+            shouldHideForWindows = hasTiled || hasFloatingTouchingBar;
+            return;
         }
 
         const filtered = CompositorService.filterCurrentWorkspace(CompositorService.sortedToplevels, screenName);
-        return filtered.length > 0;
+        shouldHideForWindows = filtered.length > 0;
     }
 
     property real effectiveSpacing: hasMaximizedToplevel ? 0 : (barConfig?.spacing ?? 4)
@@ -336,8 +368,8 @@ PanelWindow {
     }
 
     screen: modelData
-    implicitHeight: !isVertical ? Theme.px(effectiveBarThickness + effectiveSpacing + ((barConfig?.gothCornersEnabled ?? false) && !hasMaximizedToplevel ? _wingR : 0), _dpr) : 0
-    implicitWidth: isVertical ? Theme.px(effectiveBarThickness + effectiveSpacing + ((barConfig?.gothCornersEnabled ?? false) && !hasMaximizedToplevel ? _wingR : 0), _dpr) : 0
+    implicitHeight: !isVertical ? Theme.px(effectiveBarThickness + effectiveSpacing + ((barConfig?.gothCornersEnabled ?? false) && !hasMaximizedToplevel ? _wingR : 0), _dpr) + _shadowBuffer : 0
+    implicitWidth: isVertical ? Theme.px(effectiveBarThickness + effectiveSpacing + ((barConfig?.gothCornersEnabled ?? false) && !hasMaximizedToplevel ? _wingR : 0), _dpr) + _shadowBuffer : 0
     color: "transparent"
 
     property var nativeInhibitor: null
@@ -355,6 +387,9 @@ PanelWindow {
         }
 
         updateGpuTempConfig();
+        _updateBackgroundAlpha();
+        _updateHasMaximizedToplevel();
+        _updateShouldHideForWindows();
 
         inhibitorInitTimer.start();
     }
@@ -431,9 +466,35 @@ PanelWindow {
     Connections {
         function onBarConfigChanged() {
             barWindow.updateGpuTempConfig();
+            barWindow._updateBackgroundAlpha();
+            barWindow._updateHasMaximizedToplevel();
+            barWindow._updateShouldHideForWindows();
         }
 
         target: rootWindow
+    }
+
+    Connections {
+        target: SettingsData
+        function onBarConfigsChanged() {
+            barWindow._updateBackgroundAlpha();
+        }
+    }
+
+    Connections {
+        target: CompositorService
+        function onToplevelsChanged() {
+            barWindow._updateHasMaximizedToplevel();
+            barWindow._updateShouldHideForWindows();
+        }
+    }
+
+    Connections {
+        target: NiriService
+        function onAllWorkspacesChanged() {
+            barWindow._updateHasMaximizedToplevel();
+            barWindow._updateShouldHideForWindows();
+        }
     }
 
     Connections {
@@ -505,8 +566,9 @@ PanelWindow {
     readonly property var _leftSection: topBarContent ? (barWindow.isVertical ? topBarContent.vLeftSection : topBarContent.hLeftSection) : null
     readonly property var _centerSection: topBarContent ? (barWindow.isVertical ? topBarContent.vCenterSection : topBarContent.hCenterSection) : null
     readonly property var _rightSection: topBarContent ? (barWindow.isVertical ? topBarContent.vRightSection : topBarContent.hRightSection) : null
+    readonly property real _revealProgress: topBarSlide.x + topBarSlide.y
 
-    function sectionRect(section, isCenter) {
+    function sectionRect(section, isCenter, _dep) {
         if (!section)
             return {
                 "x": 0,
@@ -535,7 +597,7 @@ PanelWindow {
         item: clickThroughEnabled ? null : inputMask
 
         Region {
-            readonly property var r: barWindow.clickThroughEnabled ? barWindow.sectionRect(barWindow._leftSection, false) : {
+            readonly property var r: barWindow.clickThroughEnabled ? barWindow.sectionRect(barWindow._leftSection, false, barWindow._revealProgress) : {
                 "x": 0,
                 "y": 0,
                 "w": 0,
@@ -548,7 +610,7 @@ PanelWindow {
         }
 
         Region {
-            readonly property var r: barWindow.clickThroughEnabled ? barWindow.sectionRect(barWindow._centerSection, true) : {
+            readonly property var r: barWindow.clickThroughEnabled ? barWindow.sectionRect(barWindow._centerSection, true, barWindow._revealProgress) : {
                 "x": 0,
                 "y": 0,
                 "w": 0,
@@ -561,7 +623,7 @@ PanelWindow {
         }
 
         Region {
-            readonly property var r: barWindow.clickThroughEnabled ? barWindow.sectionRect(barWindow._rightSection, false) : {
+            readonly property var r: barWindow.clickThroughEnabled ? barWindow.sectionRect(barWindow._rightSection, false, barWindow._revealProgress) : {
                 "x": 0,
                 "y": 0,
                 "w": 0,
@@ -571,20 +633,28 @@ PanelWindow {
             y: r.y
             width: r.w
             height: r.h
+        }
+
+        Region {
+            readonly property bool active: barWindow.clickThroughEnabled && !inputMask.showing
+            x: active ? inputMask.x : 0
+            y: active ? inputMask.y : 0
+            width: active ? inputMask.width : 0
+            height: active ? inputMask.height : 0
         }
     }
 
     Item {
         id: topBarCore
         anchors.fill: parent
-        layer.enabled: true
+        layer.enabled: false
 
         property bool autoHide: barConfig?.autoHide ?? false
         property bool revealSticky: false
 
         Timer {
             id: revealHold
-            interval: barConfig?.autoHideDelay ?? 250
+            interval: barWindow.clickThroughEnabled ? Math.max((barConfig?.autoHideDelay ?? 250) * 6, 1500) : (barConfig?.autoHideDelay ?? 250)
             repeat: false
             onTriggered: {
                 if (!topBarMouseArea.containsMouse && !topBarCore.hasActivePopout) {
@@ -642,7 +712,6 @@ PanelWindow {
         Connections {
             function onBarConfigChanged() {
                 topBarCore.autoHide = barConfig?.autoHide ?? false;
-                revealHold.interval = barConfig?.autoHideDelay ?? 250;
             }
 
             target: rootWindow

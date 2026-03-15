@@ -8,6 +8,7 @@
 let
   inherit (lib) types;
   cfg = config.programs.dank-material-shell.greeter;
+  cfgDms = config.programs.dank-material-shell;
 
   inherit (config.services.greetd.settings.default_session) user;
 
@@ -23,19 +24,20 @@ let
       lib.makeBinPath [
         cfg.quickshell.package
         compositorPackage
+        pkgs.glib  # provides gdbus, used by the fprintd hardware probe in GreeterContent.qml
       ]
     }
     ${
       lib.escapeShellArgs (
         [
           "sh"
-          "${../../quickshell/Modules/Greetd/assets/dms-greeter}"
+          "${cfg.package}/share/quickshell/dms/Modules/Greetd/assets/dms-greeter"
           "--cache-dir"
           cacheDir
           "--command"
           cfg.compositor.name
           "-p"
-          "${dmsPkgs.dms-shell}/share/quickshell/dms"
+          "${cfg.package}/share/quickshell/dms"
         ]
         ++ lib.optionals (cfg.compositor.customConfig != "") [
           "-C"
@@ -65,12 +67,30 @@ in
 
   options.programs.dank-material-shell.greeter = {
     enable = lib.mkEnableOption "DankMaterialShell greeter";
+    package = lib.mkOption {
+      type = types.package;
+      default = if cfgDms.enable or false then cfgDms.package else dmsPkgs.dms-shell;
+      defaultText = lib.literalExpression ''
+        if config.programs.dank-material-shell.enable
+        then config.programs.dank-material-shell.package
+        else built from source;
+      '';
+      description = ''
+        The DankMaterialShell package to use for the greeter.
+
+        Defaults to the package from `programs.dank-material-shell` if it is enabled,
+        otherwise defaults to building from source.
+      '';
+    };
     compositor.name = lib.mkOption {
       type = types.enum [
         "niri"
         "hyprland"
         "sway"
         "labwc"
+        "mango"
+        "scroll"
+        "miracle"
       ];
       description = "Compositor to run greeter in";
     };
@@ -176,7 +196,9 @@ in
       fi
 
       if [ -f settings.json ]; then
-          if cp "$(${jq} -r '.customThemeFile' settings.json)" custom-theme.json; then
+          theme_file="$(${jq} -r '.customThemeFile // empty' settings.json)"
+          if [ -f "$theme_file" ] && [ -r "$theme_file" ]; then
+              cp "$theme_file" custom-theme.json
               mv settings.json settings.orig.json
               ${jq} '.customThemeFile = "${cacheDir}/custom-theme.json"' settings.orig.json > settings.json
           fi

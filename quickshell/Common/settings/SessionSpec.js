@@ -75,7 +75,16 @@ var SPEC = {
 
     vpnLastConnected: { def: "" },
 
-    deviceMaxVolumes: { def: {} }
+    deviceMaxVolumes: { def: {} },
+    hiddenOutputDeviceNames: { def: [] },
+    hiddenInputDeviceNames: { def: [] },
+
+    locale: { def: "", onChange: "updateLocale" },
+    timeLocale: { def: "" },
+
+    launcherLastMode: { def: "all" },
+    appDrawerLastMode: { def: "apps" },
+    niriOverviewLastMode: { def: "apps" }
 };
 
 function getValidKeys() {

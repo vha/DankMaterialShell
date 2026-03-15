@@ -14,6 +14,7 @@ Item {
     property bool isNiri: CompositorService.isNiri
     property bool isSway: CompositorService.isSway
     property bool isScroll: CompositorService.isScroll
+    property bool isMiracle: CompositorService.isMiracle
     property bool isDwl: CompositorService.isDwl
     property bool isLabwc: CompositorService.isLabwc
 
@@ -24,6 +25,8 @@ Item {
             return "sway";
         if (isScroll)
             return "scroll";
+        if (isMiracle)
+            return "miracle";
         if (isDwl)
             return "mangowc";
         if (isLabwc)
@@ -38,6 +41,8 @@ Item {
             return "/assets/sway.svg";
         if (isScroll)
             return "/assets/sway.svg";
+        if (isMiracle)
+            return "/assets/miraclewm.svg";
         if (isDwl)
             return "/assets/mango.png";
         if (isLabwc)
@@ -52,6 +57,8 @@ Item {
             return "https://swaywm.org";
         if (isScroll)
             return "https://github.com/dawsers/scroll";
+        if (isMiracle)
+            return "https://github.com/miracle-wm-org/miracle-wm";
         if (isDwl)
             return "https://github.com/DreamMaoMao/mangowc";
         if (isLabwc)
@@ -66,6 +73,8 @@ Item {
             return "Sway Website";
         if (isScroll)
             return "Scroll Github";
+        if (isMiracle)
+            return "Miracle WM GitHub";
         if (isDwl)
             return "mangowc GitHub";
         if (isLabwc)
@@ -98,9 +107,9 @@ Item {
     property string ircUrl: "https://web.libera.chat/gamja/?channels=#labwc"
     property string ircTooltip: "LabWC IRC Channel"
 
-    property bool showMatrix: isNiri && !isHyprland && !isSway && !isScroll && !isDwl && !isLabwc
+    property bool showMatrix: isNiri && !isHyprland && !isSway && !isScroll && !isMiracle && !isDwl && !isLabwc
     property bool showCompositorDiscord: isHyprland || isDwl
-    property bool showReddit: isNiri && !isHyprland && !isSway && !isScroll && !isDwl && !isLabwc
+    property bool showReddit: isNiri && !isHyprland && !isSway && !isScroll && !isMiracle && !isDwl && !isLabwc
     property bool showIrc: isLabwc
 
     DankFlickable {
@@ -869,12 +878,17 @@ Item {
         x: hoveredButton ? hoveredButton.mapToItem(aboutTab, hoveredButton.width / 2, 0).x - width / 2 : 0
         y: hoveredButton ? communityIcons.mapToItem(aboutTab, 0, 0).y - height - 8 : 0
 
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowOpacity: 0.15
-            shadowVerticalOffset: 2
-            shadowBlur: 0.5
+        ElevationShadow {
+            anchors.fill: parent
+            z: -1
+            level: Theme.elevationLevel1
+            fallbackOffset: 1
+            targetRadius: communityTooltip.radius
+            targetColor: communityTooltip.color
+            borderColor: communityTooltip.border.color
+            borderWidth: communityTooltip.border.width
+            shadowOpacity: Theme.elevationLevel1 && Theme.elevationLevel1.alpha !== undefined ? Theme.elevationLevel1.alpha : 0.2
+            shadowEnabled: Theme.elevationEnabled
         }
 
         StyledText {

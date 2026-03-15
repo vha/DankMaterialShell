@@ -10,6 +10,45 @@ BasePill {
     property bool isActive: false
     readonly property bool hasUpdates: SystemUpdateService.updateCount > 0
     readonly property bool isChecking: SystemUpdateService.isChecking
+    readonly property bool shouldHide: SettingsData.updaterHideWidget && !hasUpdates && !isChecking && !SystemUpdateService.hasError
+
+    opacity: shouldHide ? 0 : 1
+
+    states: [
+        State {
+            name: "hidden_horizontal"
+            when: root.shouldHide && !isVerticalOrientation
+            PropertyChanges {
+                target: root
+                width: 0
+            }
+        },
+        State {
+            name: "hidden_vertical"
+            when: root.shouldHide && isVerticalOrientation
+            PropertyChanges {
+                target: root
+                height: 0
+            }
+        }
+    ]
+
+    transitions: [
+        Transition {
+            NumberAnimation {
+                properties: "width,height"
+                duration: Theme.shortDuration
+                easing.type: Theme.standardEasing
+            }
+        }
+    ]
+
+    Behavior on opacity {
+        NumberAnimation {
+            duration: Theme.shortDuration
+            easing.type: Theme.standardEasing
+        }
+    }
 
     Ref {
         service: SystemUpdateService
@@ -33,7 +72,7 @@ BasePill {
                         return "system_update_alt";
                     return "check_circle";
                 }
-                size: Theme.barIconSize(root.barThickness, -4, root.barConfig?.noBackground)
+                size: Theme.barIconSize(root.barThickness, -4, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                 color: {
                     if (SystemUpdateService.hasError)
                         return Theme.error;
@@ -67,8 +106,8 @@ BasePill {
                 color: Theme.error
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.rightMargin: (barConfig?.noBackground ?? false) ? 0 : 6
-                anchors.topMargin: (barConfig?.noBackground ?? false) ? 0 : 6
+                anchors.rightMargin: (barConfig?.removeWidgetPadding ?? false) ? 0 : 6
+                anchors.topMargin: (barConfig?.removeWidgetPadding ?? false) ? 0 : 6
                 visible: root.isVerticalOrientation && root.hasUpdates && !root.isChecking
             }
 
@@ -90,7 +129,7 @@ BasePill {
                             return "system_update_alt";
                         return "check_circle";
                     }
-                    size: Theme.barIconSize(root.barThickness, -4, root.barConfig?.noBackground)
+                    size: Theme.barIconSize(root.barThickness, -4, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                     color: {
                         if (SystemUpdateService.hasError)
                             return Theme.error;
@@ -121,7 +160,7 @@ BasePill {
                     id: countText
                     anchors.verticalCenter: parent.verticalCenter
                     text: SystemUpdateService.updateCount.toString()
-                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     color: Theme.widgetTextColor
                     visible: root.hasUpdates && !root.isChecking
                 }
@@ -138,8 +177,9 @@ BasePill {
             if (popoutTarget && popoutTarget.setTriggerPosition) {
                 const globalPos = root.visualContent.mapToItem(null, 0, 0);
                 const currentScreen = parentScreen || Screen;
-                const pos = SettingsData.getPopupTriggerPosition(globalPos, currentScreen, barThickness, root.visualWidth);
-                popoutTarget.setTriggerPosition(pos.x, pos.y, pos.width, section, currentScreen);
+                const barPosition = root.axis?.edge === "left" ? 2 : (root.axis?.edge === "right" ? 3 : (root.axis?.edge === "top" ? 0 : 1));
+                const pos = SettingsData.getPopupTriggerPosition(globalPos, currentScreen, barThickness, root.visualWidth, root.barSpacing, barPosition, root.barConfig);
+                popoutTarget.setTriggerPosition(pos.x, pos.y, pos.width, section, currentScreen, barPosition, barThickness, root.barSpacing, root.barConfig);
             }
             root.clicked();
         }

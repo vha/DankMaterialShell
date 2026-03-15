@@ -1,10 +1,8 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import qs.Common
 import qs.Services
-import qs.Widgets
 
 PanelWindow {
     id: root
@@ -29,6 +27,10 @@ PanelWindow {
     function show() {
         if (SessionData.suppressOSD)
             return;
+        if (shouldBeVisible) {
+            hideTimer.restart();
+            return;
+        }
         OSDManager.showOSD(root);
         closeTimer.stop();
         shouldBeVisible = true;
@@ -66,7 +68,43 @@ PanelWindow {
 
     screen: modelData
     visible: false
-    WlrLayershell.layer: WlrLayershell.Overlay
+
+    Connections {
+        target: Quickshell
+        function onScreensChanged() {
+            if (!root.visible && !root.shouldBeVisible)
+                return;
+            const currentScreenName = root.screen?.name;
+            if (!currentScreenName) {
+                root.hide();
+                return;
+            }
+            for (let i = 0; i < Quickshell.screens.length; i++) {
+                if (Quickshell.screens[i].name === currentScreenName)
+                    return;
+            }
+            root.shouldBeVisible = false;
+            root.visible = false;
+            hideTimer.stop();
+            closeTimer.stop();
+            osdHidden();
+        }
+    }
+
+    WlrLayershell.layer: {
+        switch (Quickshell.env("DMS_OSD_LAYER")) {
+        case "bottom":
+            console.warn("DankOSD: 'bottom' layer is not valid for OSDs. Defaulting to 'overlay' layer.");
+            return WlrLayershell.Overlay;
+        case "background":
+            console.warn("DankOSD: 'background' layer is not valid for OSDs. Defaulting to 'overlay' layer.");
+            return WlrLayershell.Overlay;
+        case "top":
+            return WlrLayershell.Top;
+        default:
+            return WlrLayershell.Overlay;
+        }
+    }
     WlrLayershell.exclusiveZone: -1
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     color: "transparent"
@@ -218,49 +256,32 @@ PanelWindow {
         scale: shouldBeVisible ? 1 : 0.9
 
         property bool childHovered: false
-        property real shadowBlurPx: 10
-        property real shadowSpreadPx: 0
-        property real shadowBaseAlpha: 0.60
         readonly property real popupSurfaceAlpha: SettingsData.popupTransparency
-        readonly property real effectiveShadowAlpha: Math.max(0, Math.min(1, shadowBaseAlpha * popupSurfaceAlpha * osdContainer.opacity))
 
-        DankRectangle {
+        Rectangle {
             id: background
             anchors.fill: parent
             radius: Theme.cornerRadius
             color: Theme.withAlpha(Theme.surfaceContainer, osdContainer.popupSurfaceAlpha)
+            border.color: Theme.outlineMedium
+            border.width: 1
             z: -1
         }
 
-        Item {
+        ElevationShadow {
             id: bgShadowLayer
             anchors.fill: parent
             visible: osdContainer.popupSurfaceAlpha >= 0.95
-            layer.enabled: Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1"
-            layer.smooth: false
+            z: -1
+            level: Theme.elevationLevel3
+            fallbackOffset: 6
+            targetRadius: Theme.cornerRadius
+            targetColor: Theme.surfaceContainer
+            borderColor: Theme.outlineMedium
+            borderWidth: 1
+            shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1"
             layer.textureSize: Qt.size(Math.round(width * root.dpr), Math.round(height * root.dpr))
             layer.textureMirroring: ShaderEffectSource.MirrorVertically
-
-            readonly property int blurMax: 64
-
-            layer.effect: MultiEffect {
-                id: shadowFx
-                autoPaddingEnabled: true
-                shadowEnabled: true
-                blurEnabled: false
-                maskEnabled: false
-                shadowBlur: Math.max(0, Math.min(1, osdContainer.shadowBlurPx / bgShadowLayer.blurMax))
-                shadowScale: 1 + (2 * osdContainer.shadowSpreadPx) / Math.max(1, Math.min(bgShadowLayer.width, bgShadowLayer.height))
-                shadowColor: {
-                    const baseColor = Theme.isLightMode ? Qt.rgba(0, 0, 0, 1) : Theme.surfaceContainerHighest;
-                    return Theme.withAlpha(baseColor, osdContainer.effectiveShadowAlpha);
-                }
-            }
-
-            DankRectangle {
-                anchors.fill: parent
-                radius: Theme.cornerRadius
-            }
         }
 
         MouseArea {

@@ -14,7 +14,7 @@ import "settings/SettingsStore.js" as Store
 Singleton {
     id: root
 
-    readonly property int settingsConfigVersion: 5
+    readonly property int settingsConfigVersion: 6
 
     readonly property bool isGreeterMode: Quickshell.env("DMS_RUN_GREETER") === "1" || Quickshell.env("DMS_RUN_GREETER") === "true"
 
@@ -60,6 +60,7 @@ Singleton {
     property bool _hasLoaded: false
     property bool _isReadOnly: false
     property bool _hasUnsavedChanges: false
+    property bool _selfWrite: false
     property var _loadedSettingsSnapshot: null
     property var pluginSettings: ({})
     property var builtInPluginSettings: ({})
@@ -78,6 +79,8 @@ Singleton {
         builtInPluginSettings = updated;
         saveSettings();
     }
+
+    property bool clipboardEnterToPaste: false
 
     property var launcherPluginVisibility: ({})
 
@@ -146,6 +149,7 @@ Singleton {
     property int mangoLayoutRadiusOverride: -1
     property int mangoLayoutBorderSize: -1
 
+    property int firstDayOfWeek: -1
     property bool use24HourClock: true
     property bool showSeconds: false
     property bool padHours12Hour: false
@@ -162,6 +166,24 @@ Singleton {
     property int modalCustomAnimationDuration: 150
     property bool enableRippleEffects: true
     onEnableRippleEffectsChanged: saveSettings()
+    property bool m3ElevationEnabled: true
+    onM3ElevationEnabledChanged: saveSettings()
+    property int m3ElevationIntensity: 12
+    onM3ElevationIntensityChanged: saveSettings()
+    property int m3ElevationOpacity: 30
+    onM3ElevationOpacityChanged: saveSettings()
+    property string m3ElevationColorMode: "default"
+    onM3ElevationColorModeChanged: saveSettings()
+    property string m3ElevationLightDirection: "top"
+    onM3ElevationLightDirectionChanged: saveSettings()
+    property string m3ElevationCustomColor: "#000000"
+    onM3ElevationCustomColorChanged: saveSettings()
+    property bool modalElevationEnabled: true
+    onModalElevationEnabledChanged: saveSettings()
+    property bool popoutElevationEnabled: true
+    onPopoutElevationEnabledChanged: saveSettings()
+    property bool barElevationEnabled: true
+    onBarElevationEnabledChanged: saveSettings()
     property string wallpaperFillMode: "Fill"
     property bool blurredWallpaperLayer: false
     property bool blurWallpaperOnOverview: false
@@ -258,6 +280,7 @@ Singleton {
     property bool showOccupiedWorkspacesOnly: false
     property bool reverseScrolling: false
     property bool dwlShowAllTags: false
+    property bool workspaceActiveAppHighlightEnabled: false
     property string workspaceColorMode: "default"
     property string workspaceOccupiedColorMode: "none"
     property string workspaceUnfocusedColorMode: "default"
@@ -291,6 +314,17 @@ Singleton {
     property string centeringMode: "index"
     property string clockDateFormat: ""
     property string lockDateFormat: ""
+    property bool greeterRememberLastSession: true
+    property bool greeterRememberLastUser: true
+    property bool greeterEnableFprint: false
+    property bool greeterEnableU2f: false
+    property string greeterWallpaperPath: ""
+    property bool greeterUse24HourClock: true
+    property bool greeterShowSeconds: false
+    property bool greeterPadHours12Hour: false
+    property string greeterLockDateFormat: ""
+    property string greeterFontFamily: ""
+    property string greeterWallpaperFillMode: ""
     property int mediaSize: 1
 
     property string appLauncherViewMode: "list"
@@ -312,6 +346,7 @@ Singleton {
     property int dankLauncherV2BorderThickness: 2
     property string dankLauncherV2BorderColor: "primary"
     property bool dankLauncherV2ShowFooter: true
+    property bool dankLauncherV2UnloadOnClose: false
 
     property string _legacyWeatherLocation: "New York, NY"
     property string _legacyWeatherCoordinates: "40.7128,-74.0060"
@@ -433,18 +468,25 @@ Singleton {
     property bool matugenTemplateGhostty: true
     property bool matugenTemplateKitty: true
     property bool matugenTemplateFoot: true
-    property bool matugenTemplateNeovim: true
+    property bool matugenTemplateNeovim: false
     property bool matugenTemplateAlacritty: true
     property bool matugenTemplateWezterm: true
     property bool matugenTemplateDgop: true
     property bool matugenTemplateKcolorscheme: true
     property bool matugenTemplateVscode: true
     property bool matugenTemplateEmacs: true
+    property bool matugenTemplateZed: true
+
+    property var matugenTemplateNeovimSettings: ({
+        "dark": { "baseTheme": "github_dark", "harmony": 0.5 },
+        "light": { "baseTheme": "github_light", "harmony": 0.5 }
+    })
 
     property bool showDock: false
     property bool dockAutoHide: false
     property bool dockSmartAutoHide: false
     property bool dockGroupByApp: false
+    property bool dockRestoreSpecialWorkspaceOnClick: false
     property bool dockOpenOnOverview: false
     property int dockPosition: SettingsData.Position.Bottom
     property real dockSpacing: 4
@@ -469,6 +511,8 @@ Singleton {
     property bool dockShowOverflowBadge: true
 
     property bool notificationOverlayEnabled: false
+    property bool notificationPopupShadowEnabled: true
+    property bool notificationPopupPrivacyMode: false
     property int overviewRows: 2
     property int overviewColumns: 5
     property real overviewScale: 0.16
@@ -488,9 +532,29 @@ Singleton {
     property bool enableFprint: false
     property int maxFprintTries: 15
     property bool fprintdAvailable: false
+    property bool lockFingerprintCanEnable: false
+    property bool lockFingerprintReady: false
+    property string lockFingerprintReason: "probe_failed"
+    property bool greeterFingerprintCanEnable: false
+    property bool greeterFingerprintReady: false
+    property string greeterFingerprintReason: "probe_failed"
+    property string greeterFingerprintSource: "none"
+    property bool enableU2f: false
+    property string u2fMode: "or"
+    property bool u2fAvailable: false
+    property bool lockU2fCanEnable: false
+    property bool lockU2fReady: false
+    property string lockU2fReason: "probe_failed"
+    property bool greeterU2fCanEnable: false
+    property bool greeterU2fReady: false
+    property string greeterU2fReason: "probe_failed"
+    property string greeterU2fSource: "none"
     property string lockScreenActiveMonitor: "all"
     property string lockScreenInactiveColor: "#000000"
     property int lockScreenNotificationMode: 0
+    property bool lockScreenVideoEnabled: false
+    property string lockScreenVideoPath: ""
+    property bool lockScreenVideoCycling: false
     property bool hideBrightnessSlider: false
 
     property int notificationTimeoutLow: 5000
@@ -498,6 +562,8 @@ Singleton {
     property int notificationTimeoutCritical: 0
     property bool notificationCompactMode: false
     property int notificationPopupPosition: SettingsData.Position.Top
+    property int notificationAnimationSpeed: SettingsData.AnimationSpeed.Short
+    property int notificationCustomAnimationDuration: 400
     property bool notificationHistoryEnabled: true
     property int notificationHistoryMaxCount: 50
     property int notificationHistoryMaxAgeDays: 7
@@ -505,12 +571,13 @@ Singleton {
     property bool notificationHistorySaveNormal: true
     property bool notificationHistorySaveCritical: true
     property var notificationRules: []
+    property bool notificationFocusedMonitor: false
 
     property bool osdAlwaysShowValue: false
     property int osdPosition: SettingsData.Position.BottomCenter
     property bool osdVolumeEnabled: true
     property bool osdMediaVolumeEnabled: true
-    property bool osdMediaPlaybackEnabled: true
+    property bool osdMediaPlaybackEnabled: false
     property bool osdBrightnessEnabled: true
     property bool osdIdleInhibitorEnabled: true
     property bool osdMicMuteEnabled: true
@@ -567,6 +634,10 @@ Singleton {
             "widgetTransparency": 1.0,
             "squareCorners": false,
             "noBackground": false,
+            "maximizeWidgetIcons": false,
+            "maximizeWidgetText": false,
+            "removeWidgetPadding": false,
+            "widgetPadding": 8,
             "gothCornersEnabled": false,
             "gothCornerRadiusOverride": false,
             "gothCornerRadiusValue": 12,
@@ -579,6 +650,7 @@ Singleton {
             "widgetOutlineOpacity": 1.0,
             "widgetOutlineThickness": 1,
             "fontScale": 1.0,
+            "iconScale": 1.0,
             "autoHide": false,
             "autoHideDelay": 250,
             "showOnWindowsOpen": false,
@@ -592,7 +664,7 @@ Singleton {
             "scrollYBehavior": "workspace",
             "shadowIntensity": 0,
             "shadowOpacity": 60,
-            "shadowColorMode": "text",
+            "shadowColorMode": "default",
             "shadowCustomColor": "#000000",
             "clickThrough": false
         }
@@ -966,12 +1038,19 @@ Singleton {
     signal widgetDataChanged
     signal workspaceIconsUpdated
 
+    function refreshAuthAvailability() {
+        if (isGreeterMode)
+            return;
+        Processes.settingsRoot = root;
+        Processes.detectAuthCapabilities();
+    }
+
     Component.onCompleted: {
         if (!isGreeterMode) {
             Processes.settingsRoot = root;
             loadSettings();
             initializeListModels();
-            Processes.detectFprintd();
+            refreshAuthAvailability();
             Processes.checkPluginSettings();
         }
     }
@@ -1010,6 +1089,43 @@ Singleton {
     function applyStoredIconTheme() {
         updateGtkIconTheme();
         updateQtIconTheme();
+        updateCosmicIconTheme();
+    }
+
+    function updateCosmicIconTheme() {
+        let cosmicThemeName = (iconTheme === "System Default") ? systemDefaultIconTheme : iconTheme;
+        if (!cosmicThemeName || cosmicThemeName === "System Default") {
+            const detectScript = `if command -v gsettings >/dev/null 2>&1; then
+            gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | sed "s/'//g"
+            elif command -v dconf >/dev/null 2>&1; then
+            dconf read /org/gnome/desktop/interface/icon-theme 2>/dev/null | sed "s/'//g"
+            fi`;
+
+            Proc.runCommand("detectCosmicIconTheme", ["sh", "-c", detectScript], (output, exitCode) => {
+                if (exitCode !== 0)
+                    return;
+                const detected = (output || "").trim();
+                if (!detected || detected === "System Default")
+                    return;
+                const detectedEscaped = detected.replace(/'/g, "'\\''");
+                const writeScript = `mkdir -p ${_configDir}/cosmic/com.system76.CosmicTk/v1
+                printf '"%s"\\n' '${detectedEscaped}' > ${_configDir}/cosmic/com.system76.CosmicTk/v1/icon_theme 2>/dev/null || true`;
+                Quickshell.execDetached(["sh", "-lc", writeScript]);
+            });
+            return;
+        }
+
+        const cosmicThemeNameEscaped = cosmicThemeName.replace(/'/g, "'\\''");
+        const script = `mkdir -p ${_configDir}/cosmic/com.system76.CosmicTk/v1
+        printf '"%s"\\n' '${cosmicThemeNameEscaped}' > ${_configDir}/cosmic/com.system76.CosmicTk/v1/icon_theme 2>/dev/null || true`;
+        Quickshell.execDetached(["sh", "-lc", script]);
+    }
+
+    function updateCosmicThemeMode(isLightMode) {
+        const isDark = isLightMode ? "false" : "true";
+        const script = `mkdir -p ${_configDir}/cosmic/com.system76.CosmicTheme.Mode/v1
+        printf '%s\\n' ${isDark} > ${_configDir}/cosmic/com.system76.CosmicTheme.Mode/v1/is_dark 2>/dev/null || true`;
+        Quickshell.execDetached(["sh", "-lc", script]);
     }
 
     function updateGtkIconTheme() {
@@ -1174,10 +1290,47 @@ Singleton {
         return JSON.stringify(Store.toJson(root), null, 2);
     }
 
+    function _resetPluginSettings() {
+        _pluginParseError = false;
+        pluginSettings = {};
+    }
+
+    function _pluginSettingsErrorCode(error) {
+        if (typeof error === "number")
+            return error;
+        if (error && typeof error === "object") {
+            if (typeof error.code === "number")
+                return error.code;
+            if (typeof error.errno === "number")
+                return error.errno;
+        }
+
+        const msg = String(error || "").trim();
+        if (/^\d+$/.test(msg))
+            return Number(msg);
+
+        return -1;
+    }
+
+    function _isMissingPluginSettingsError(error) {
+        if (_pluginSettingsErrorCode(error) === 2)
+            return true;
+
+        const msg = String(error || "").toLowerCase();
+        return msg.indexOf("file does not exist") !== -1
+                || msg.indexOf("no such file") !== -1
+                || msg.indexOf("enoent") !== -1;
+    }
+
     function loadPluginSettings() {
-        _pluginSettingsLoading = true;
-        parsePluginSettings(pluginSettingsFile.text());
-        _pluginSettingsLoading = false;
+        try {
+            parsePluginSettings(pluginSettingsFile.text());
+        } catch (e) {
+            const msg = e.message || String(e);
+            if (!_isMissingPluginSettingsError(e))
+                console.warn("SettingsData: Failed to load plugin_settings.json. Error:", msg);
+            _resetPluginSettings();
+        }
     }
 
     function parsePluginSettings(content) {
@@ -1203,6 +1356,7 @@ Singleton {
     function saveSettings() {
         if (_loading || _parseError || !_hasLoaded)
             return;
+        _selfWrite = true;
         settingsFile.setText(JSON.stringify(Store.toJson(root), null, 2));
         if (_isReadOnly)
             _checkSettingsWritable();
@@ -1816,6 +1970,7 @@ Singleton {
         iconTheme = themeName;
         updateGtkIconTheme();
         updateQtIconTheme();
+        updateCosmicIconTheme();
         saveSettings();
         if (typeof Theme !== "undefined" && Theme.currentTheme === Theme.dynamic)
             Theme.generateSystemThemesFromCurrentTheme();
@@ -2138,6 +2293,9 @@ Singleton {
         saveSettings();
     }
 
+    property bool _pendingExpandNotificationRules: false
+    property int _pendingNotificationRuleIndex: -1
+
     function addNotificationRule() {
         var rules = JSON.parse(JSON.stringify(notificationRules || []));
         rules.push({
@@ -2145,11 +2303,95 @@ Singleton {
             field: "appName",
             pattern: "",
             matchType: "contains",
+            action: "default",
+            urgency: "default"
+        });
+        notificationRules = rules;
+        saveSettings();
+    }
+
+    function addNotificationRuleForNotification(appName, desktopEntry) {
+        var rules = JSON.parse(JSON.stringify(notificationRules || []));
+        var pattern = (desktopEntry && desktopEntry !== "") ? desktopEntry : (appName || "");
+        var field = (desktopEntry && desktopEntry !== "") ? "desktopEntry" : "appName";
+        var rule = {
+            enabled: true,
+            field: pattern ? field : "appName",
+            pattern: pattern || "",
+            matchType: pattern ? "exact" : "contains",
+            action: "default",
+            urgency: "default"
+        };
+        rules.push(rule);
+        notificationRules = rules;
+        saveSettings();
+        var index = rules.length - 1;
+        _pendingExpandNotificationRules = true;
+        _pendingNotificationRuleIndex = index;
+        return index;
+    }
+
+    function addMuteRuleForApp(appName, desktopEntry) {
+        var rules = JSON.parse(JSON.stringify(notificationRules || []));
+        var pattern = (desktopEntry && desktopEntry !== "") ? desktopEntry : (appName || "");
+        var field = (desktopEntry && desktopEntry !== "") ? "desktopEntry" : "appName";
+        if (pattern === "")
+            return;
+        rules.push({
+            enabled: true,
+            field: field,
+            pattern: pattern,
+            matchType: "exact",
             action: "mute",
             urgency: "default"
         });
         notificationRules = rules;
         saveSettings();
+    }
+
+    function isAppMuted(appName, desktopEntry) {
+        const rules = notificationRules || [];
+        const pat = (desktopEntry && desktopEntry !== "" ? desktopEntry : appName || "").toString().toLowerCase();
+        if (!pat)
+            return false;
+        for (let i = 0; i < rules.length; i++) {
+            const r = rules[i];
+            if ((r.action || "").toString().toLowerCase() !== "mute" || r.enabled === false)
+                continue;
+            const field = (r.field || "appName").toString().toLowerCase();
+            const rulePat = (r.pattern || "").toString().toLowerCase();
+            if (!rulePat)
+                continue;
+            const useDesktop = field === "desktopentry";
+            const matches = (useDesktop && desktopEntry) ? (desktopEntry.toString().toLowerCase() === rulePat) : (appName && appName.toString().toLowerCase() === rulePat);
+            if (matches)
+                return true;
+            if (rulePat === pat)
+                return true;
+        }
+        return false;
+    }
+
+    function removeMuteRuleForApp(appName, desktopEntry) {
+        var rules = JSON.parse(JSON.stringify(notificationRules || []));
+        const app = (appName || "").toString().toLowerCase();
+        const desktop = (desktopEntry || "").toString().toLowerCase();
+        if (!app && !desktop)
+            return;
+        for (let i = rules.length - 1; i >= 0; i--) {
+            const r = rules[i];
+            if ((r.action || "").toString().toLowerCase() !== "mute")
+                continue;
+            const rulePat = (r.pattern || "").toString().toLowerCase();
+            if (!rulePat)
+                continue;
+            if (rulePat === app || rulePat === desktop) {
+                rules.splice(i, 1);
+                notificationRules = rules;
+                saveSettings();
+                return;
+            }
+        }
     }
 
     function updateNotificationRule(index, ruleData) {
@@ -2236,10 +2478,16 @@ Singleton {
             if ((existing.dark && typeof existing.dark === "object") || (existing.light && typeof existing.light === "object")) {
                 perMode = existing;
             } else if (typeof existing.flavor === "string") {
-                perMode.dark = {flavor: existing.flavor, accent: existing.accent || ""};
+                perMode.dark = {
+                    flavor: existing.flavor,
+                    accent: existing.accent || ""
+                };
             }
         }
-        perMode[mode || "dark"] = {flavor: flavor, accent: accent};
+        perMode[mode || "dark"] = {
+            flavor: flavor,
+            accent: accent
+        };
         variants[themeId] = perMode;
         registryThemeVariants = variants;
         saveSettings();
@@ -2440,6 +2688,13 @@ Singleton {
 
     property alias settingsFile: settingsFile
 
+    Timer {
+        id: settingsFileReloadDebounce
+        interval: 50
+        onTriggered: settingsFile.reload()
+        repeat: false
+    }
+
     FileView {
         id: settingsFile
 
@@ -2447,7 +2702,14 @@ Singleton {
         blockLoading: true
         blockWrites: true
         atomicWrites: true
-        watchChanges: !isGreeterMode
+        watchChanges: true
+        onFileChanged: {
+            if (_selfWrite) {
+                _selfWrite = false;
+                return;
+            }
+            settingsFileReloadDebounce.restart();
+        }
         onLoaded: {
             if (isGreeterMode)
                 return;
@@ -2504,6 +2766,7 @@ Singleton {
         blockLoading: true
         blockWrites: true
         atomicWrites: true
+        printErrors: false
         watchChanges: !isGreeterMode
         onLoaded: {
             if (!isGreeterMode) {
@@ -2512,7 +2775,10 @@ Singleton {
         }
         onLoadFailed: error => {
             if (!isGreeterMode) {
-                pluginSettings = {};
+                const msg = String(error || "");
+                if (!_isMissingPluginSettingsError(error))
+                    console.warn("SettingsData: Failed to load plugin_settings.json. Error:", msg);
+                _resetPluginSettings();
             }
         }
     }

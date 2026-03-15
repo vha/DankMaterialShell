@@ -8,12 +8,71 @@ DankPopout {
 
     layerNamespace: "dms:app-launcher"
 
+    readonly property real screenWidth: screen?.width ?? 1920
+    readonly property real screenHeight: screen?.height ?? 1080
+
+    property string _pendingMode: ""
+    property string _pendingQuery: ""
+
     function show() {
         open();
     }
 
-    popupWidth: 560
-    popupHeight: 640
+    function openWithMode(mode) {
+        _pendingMode = mode || "";
+        open();
+    }
+
+    function toggleWithMode(mode) {
+        if (shouldBeVisible) {
+            close();
+            return;
+        }
+        openWithMode(mode);
+    }
+
+    function openWithQuery(query) {
+        _pendingQuery = query || "";
+        open();
+    }
+
+    function toggleWithQuery(query) {
+        if (shouldBeVisible) {
+            close();
+            return;
+        }
+        openWithQuery(query);
+    }
+
+    readonly property int _baseWidth: {
+        switch (SettingsData.dankLauncherV2Size) {
+        case "micro":
+            return 500;
+        case "medium":
+            return 720;
+        case "large":
+            return 860;
+        default:
+            return 620;
+        }
+    }
+
+    readonly property int _baseHeight: {
+        switch (SettingsData.dankLauncherV2Size) {
+        case "micro":
+            return 480;
+        case "medium":
+            return 720;
+        case "large":
+            return 860;
+        default:
+            return 600;
+        }
+    }
+
+    popupWidth: Math.min(_baseWidth, screenWidth - 100)
+    popupHeight: Math.min(_baseHeight, screenHeight - 100)
+
     triggerWidth: 40
     positioning: ""
     contentHandlesKeys: contentLoader.item?.launcherContent?.editMode ?? false
@@ -30,18 +89,37 @@ DankPopout {
         var lc = contentLoader.item?.launcherContent;
         if (!lc)
             return;
+
+        const query = _pendingQuery;
+        const mode = _pendingMode || SessionData.appDrawerLastMode || "apps";
+        _pendingMode = "";
+        _pendingQuery = "";
+
         if (lc.searchField) {
-            lc.searchField.text = "";
+            lc.searchField.text = query;
             lc.searchField.forceActiveFocus();
         }
         if (lc.controller) {
-            lc.controller.searchMode = "apps";
+            lc.controller.searchMode = mode;
             lc.controller.pluginFilter = "";
             lc.controller.searchQuery = "";
-            lc.controller.performSearch();
+            if (query) {
+                lc.controller.setSearchQuery(query);
+            } else {
+                lc.controller.performSearch();
+            }
         }
         lc.resetScroll?.();
         lc.actionPanel?.hide();
+    }
+
+    Connections {
+        target: contentLoader.item?.launcherContent?.controller ?? null
+        function onModeChanged(mode) {
+            if (contentLoader.item.launcherContent.controller.autoSwitchedToFiles)
+                return;
+            SessionData.setAppDrawerLastMode(mode);
+        }
     }
 
     content: Component {
@@ -54,9 +132,6 @@ DankPopout {
             property alias launcherContent: launcherContent
 
             color: "transparent"
-            radius: Theme.cornerRadius
-            antialiasing: true
-            smooth: true
 
             QtObject {
                 id: modalAdapter
@@ -65,35 +140,6 @@ DankPopout {
 
                 function hide() {
                     appDrawerPopout.close();
-                }
-            }
-
-            Repeater {
-                model: [
-                    {
-                        "margin": -3,
-                        "color": Qt.rgba(0, 0, 0, 0.05),
-                        "z": -3
-                    },
-                    {
-                        "margin": -2,
-                        "color": Qt.rgba(0, 0, 0, 0.08),
-                        "z": -2
-                    },
-                    {
-                        "margin": 0,
-                        "color": Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.12),
-                        "z": -1
-                    }
-                ]
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.margins: modelData.margin
-                    color: "transparent"
-                    radius: parent.radius + Math.abs(modelData.margin)
-                    border.color: modelData.color
-                    border.width: 0
-                    z: modelData.z
                 }
             }
 

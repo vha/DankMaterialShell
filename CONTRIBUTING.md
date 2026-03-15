@@ -22,7 +22,7 @@ nix develop
 
 This will provide:
 
-- Go 1.24 toolchain (go, gopls, delve, go-tools) and GNU Make
+- Go 1.25+ toolchain (go, gopls, delve, go-tools) and GNU Make
 - Quickshell and required QML packages
 - Properly configured QML2_IMPORT_PATH
 
@@ -86,7 +86,9 @@ touch .qmlls.ini
 
 4. Restart dms to generate the `.qmlls.ini` file
 
-5. Make your changes, test, and open a pull request.
+5. Run `make lint-qml` from the repo root to lint QML entrypoints (requires the `.qmlls.ini` generated above). The script needs the **Qt 6** `qmllint`; it checks `qmllint6`, Fedora's `qmllint-qt6`, `/usr/lib/qt6/bin/qmllint`, then `qmllint` in `PATH`. If your Qt 6 binary lives elsewhere, set `QMLLINT=/path/to/qmllint`.
+
+6. Make your changes, test, and open a pull request.
 
 ### I18n/Localization
 

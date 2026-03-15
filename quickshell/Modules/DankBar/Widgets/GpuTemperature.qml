@@ -104,7 +104,7 @@ BasePill {
 
                 DankIcon {
                     name: "auto_awesome_mosaic"
-                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                     color: {
                         if (root.displayTemp > 80) {
                             return Theme.tempDanger;
@@ -127,7 +127,7 @@ BasePill {
 
                         return Math.round(root.displayTemp).toString();
                     }
-                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     color: Theme.widgetTextColor
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
@@ -142,7 +142,7 @@ BasePill {
                 DankIcon {
                     id: gpuTempIcon
                     name: "auto_awesome_mosaic"
-                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                     color: {
                         if (root.displayTemp > 80) {
                             return Theme.tempDanger;
@@ -167,16 +167,9 @@ BasePill {
                     width: implicitWidth
                     height: implicitHeight
 
-                    Behavior on width {
-                        NumberAnimation {
-                            duration: Theme.shortDuration
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-
                     StyledTextMetrics {
                         id: gpuTempBaseline
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         text: "88°"
                     }
 
@@ -189,7 +182,7 @@ BasePill {
 
                             return Math.round(root.displayTemp) + "°";
                         }
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: Theme.widgetTextColor
 
                         anchors.fill: parent

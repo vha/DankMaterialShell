@@ -340,7 +340,9 @@ Item {
                                     if (devices.length === 0)
                                         return I18n.tr("No adapters");
                                     if (connected === 0)
-                                        return I18n.tr("%1 adapter(s), none connected").arg(devices.length);
+                                        return devices.length === 1
+                                            ? I18n.tr("%1 adapter, none connected").arg(devices.length)
+                                            : I18n.tr("%1 adapters, none connected").arg(devices.length);
                                     return I18n.tr("%1 connected").arg(connected);
                                 }
                                 font.pixelSize: Theme.fontSizeSmall
@@ -1282,6 +1284,15 @@ Item {
                                                 }
 
                                                 DankActionButton {
+                                                    iconName: "qr_code"
+                                                    buttonSize: 28
+                                                    visible: modelData.secured && modelData.saved
+                                                    onClicked: {
+                                                        PopoutService.showWifiQRCodeModal(modelData.ssid);
+                                                    }
+                                                }
+
+                                                DankActionButton {
                                                     iconName: isPinned ? "push_pin" : "push_pin"
                                                     buttonSize: 28
                                                     iconColor: isPinned ? Theme.primary : Theme.surfaceVariantText
@@ -1924,11 +1935,6 @@ Item {
                                                             label: I18n.tr("Auth Type"),
                                                             value: data["connection-type"]
                                                         });
-                                                    fields.push({
-                                                        label: I18n.tr("Autoconnect"),
-                                                        value: configData.autoconnect ? I18n.tr("Yes") : I18n.tr("No")
-                                                    });
-
                                                     return fields;
                                                 }
 
@@ -1964,6 +1970,16 @@ Item {
                                                         }
                                                     }
                                                 }
+                                            }
+                                        }
+
+                                        DankToggle {
+                                            width: parent.width
+                                            text: I18n.tr("Autoconnect")
+                                            checked: configData ? (configData.autoconnect || false) : false
+                                            visible: !VPNService.configLoading && configData !== null
+                                            onToggled: checked => {
+                                                VPNService.updateConfig(modelData.uuid, {autoconnect: checked});
                                             }
                                         }
 

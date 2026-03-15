@@ -61,6 +61,7 @@ func (d *DebianDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 	dependencies = append(dependencies, d.detectGit())
 	dependencies = append(dependencies, d.detectWindowManager(wm))
 	dependencies = append(dependencies, d.detectQuickshell())
+	dependencies = append(dependencies, d.detectDMSGreeter())
 	dependencies = append(dependencies, d.detectXDGPortal())
 	dependencies = append(dependencies, d.detectAccountsService())
 
@@ -86,10 +87,30 @@ func (d *DebianDistribution) detectAccountsService() deps.Dependency {
 	return d.detectPackage("accountsservice", "D-Bus interface for user account query and manipulation", d.packageInstalled("accountsservice"))
 }
 
+func (d *DebianDistribution) detectDMSGreeter() deps.Dependency {
+	return d.detectOptionalPackage("dms-greeter", "DankMaterialShell greetd greeter", d.packageInstalled("dms-greeter"))
+}
+
 func (d *DebianDistribution) packageInstalled(pkg string) bool {
-	cmd := exec.Command("dpkg", "-l", pkg)
-	err := cmd.Run()
-	return err == nil
+	return debianPackageInstalledPrecisely(pkg)
+}
+
+func debianPackageInstalledPrecisely(pkg string) bool {
+	cmd := exec.Command("dpkg-query", "-W", "-f=${db:Status-Status}", pkg)
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(output)) == "installed"
+}
+
+func containsString(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
 }
 
 func (d *DebianDistribution) GetPackageMapping(wm deps.WindowManager) map[string]PackageMapping {
@@ -108,6 +129,7 @@ func (d *DebianDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 		// DMS packages from OBS with variant support
 		"dms (DankMaterialShell)": d.getDmsMapping(variants["dms (DankMaterialShell)"]),
 		"quickshell":              d.getQuickshellMapping(variants["quickshell"]),
+		"dms-greeter":             {Name: "dms-greeter", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
 		"matugen":                 {Name: "matugen", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
 		"dgop":                    {Name: "dgop", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
 		"ghostty":                 {Name: "ghostty", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
@@ -188,12 +210,12 @@ func (d *DebianDistribution) InstallPrerequisites(ctx context.Context, sudoPassw
 		Step:        "Installing development dependencies...",
 		IsComplete:  false,
 		NeedsSudo:   true,
-		CommandInfo: "sudo apt-get install -y curl wget git cmake ninja-build pkg-config libxcb-cursor-dev libglib2.0-dev libpolkit-agent-1-dev",
+		CommandInfo: "sudo apt-get install -y curl wget git cmake ninja-build pkg-config gnupg libxcb-cursor-dev libglib2.0-dev libpolkit-agent-1-dev",
 		LogOutput:   "Installing additional development tools",
 	}
 
 	devToolsCmd := ExecSudoCommand(ctx, sudoPassword,
-		"DEBIAN_FRONTEND=noninteractive apt-get install -y curl wget git cmake ninja-build pkg-config libxcb-cursor-dev libglib2.0-dev libpolkit-agent-1-dev libjpeg-dev libpugixml-dev")
+		"DEBIAN_FRONTEND=noninteractive apt-get install -y curl wget git cmake ninja-build pkg-config gnupg libxcb-cursor-dev libglib2.0-dev libpolkit-agent-1-dev libjpeg-dev libpugixml-dev")
 	if err := d.runWithProgress(devToolsCmd, progressChan, PhasePrerequisites, 0.10, 0.12); err != nil {
 		return fmt.Errorf("failed to install development tools: %w", err)
 	}
@@ -373,6 +395,14 @@ func (d *DebianDistribution) extractPackageNames(packages []PackageMapping) []st
 	return names
 }
 
+func (d *DebianDistribution) aptInstallArgs(packages []string, minimal bool) []string {
+	args := []string{"DEBIAN_FRONTEND=noninteractive", "apt-get", "install", "-y"}
+	if minimal {
+		args = append(args, "--no-install-recommends")
+	}
+	return append(args, packages...)
+}
+
 func (d *DebianDistribution) enableOBSRepos(ctx context.Context, obsPkgs []PackageMapping, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
 	enabledRepos := make(map[string]bool)
 
@@ -430,7 +460,7 @@ func (d *DebianDistribution) enableOBSRepos(ctx context.Context, obsPkgs []Packa
 			}
 
 			// Add repository
-			repoLine := fmt.Sprintf("deb [signed-by=%s, arch=%s] %s/ /", keyringPath, runtime.GOARCH, baseURL)
+			repoLine := fmt.Sprintf("deb [signed-by=%s arch=%s] %s/ /", keyringPath, runtime.GOARCH, baseURL)
 
 			progressChan <- InstallProgressMsg{
 				Phase:       PhaseSystemPackages,
@@ -476,20 +506,46 @@ func (d *DebianDistribution) installAPTPackages(ctx context.Context, packages []
 
 	d.log(fmt.Sprintf("Installing APT packages: %s", strings.Join(packages, ", ")))
 
-	args := []string{"DEBIAN_FRONTEND=noninteractive", "apt-get", "install", "-y"}
-	args = append(args, packages...)
+	groups := orderedMinimalInstallGroups(packages)
+	totalGroups := len(groups)
 
-	progressChan <- InstallProgressMsg{
-		Phase:       PhaseSystemPackages,
-		Progress:    0.40,
-		Step:        "Installing system packages...",
-		IsComplete:  false,
-		NeedsSudo:   true,
-		CommandInfo: fmt.Sprintf("sudo %s", strings.Join(args, " ")),
+	groupIndex := 0
+	installGroup := func(groupPackages []string, minimal bool) error {
+		if len(groupPackages) == 0 {
+			return nil
+		}
+
+		groupIndex++
+		startProgress := 0.40
+		endProgress := 0.60
+		if totalGroups > 1 {
+			if groupIndex == 1 {
+				endProgress = 0.50
+			} else {
+				startProgress = 0.50
+			}
+		}
+
+		args := d.aptInstallArgs(groupPackages, minimal)
+		progressChan <- InstallProgressMsg{
+			Phase:       PhaseSystemPackages,
+			Progress:    startProgress,
+			Step:        "Installing system packages...",
+			IsComplete:  false,
+			NeedsSudo:   true,
+			CommandInfo: fmt.Sprintf("sudo %s", strings.Join(args, " ")),
+		}
+
+		cmd := ExecSudoCommand(ctx, sudoPassword, strings.Join(args, " "))
+		return d.runWithProgress(cmd, progressChan, PhaseSystemPackages, startProgress, endProgress)
 	}
 
-	cmd := ExecSudoCommand(ctx, sudoPassword, strings.Join(args, " "))
-	return d.runWithProgress(cmd, progressChan, PhaseSystemPackages, 0.40, 0.60)
+	for _, group := range groups {
+		if err := installGroup(group.packages, group.minimal); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (d *DebianDistribution) installBuildDependencies(ctx context.Context, manualPkgs []string, sudoPassword string, progressChan chan<- InstallProgressMsg) error {

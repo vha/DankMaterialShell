@@ -34,51 +34,51 @@ Rectangle {
 
     readonly property var timeoutOptions: [
         {
-            "text": "Never",
+            "text": I18n.tr("Never"),
             "value": 0
         },
         {
-            "text": "1 second",
+            "text": I18n.tr("1 second"),
             "value": 1000
         },
         {
-            "text": "3 seconds",
+            "text": I18n.tr("3 seconds"),
             "value": 3000
         },
         {
-            "text": "5 seconds",
+            "text": I18n.tr("5 seconds"),
             "value": 5000
         },
         {
-            "text": "8 seconds",
+            "text": I18n.tr("8 seconds"),
             "value": 8000
         },
         {
-            "text": "10 seconds",
+            "text": I18n.tr("10 seconds"),
             "value": 10000
         },
         {
-            "text": "15 seconds",
+            "text": I18n.tr("15 seconds"),
             "value": 15000
         },
         {
-            "text": "30 seconds",
+            "text": I18n.tr("30 seconds"),
             "value": 30000
         },
         {
-            "text": "1 minute",
+            "text": I18n.tr("1 minute"),
             "value": 60000
         },
         {
-            "text": "2 minutes",
+            "text": I18n.tr("2 minutes"),
             "value": 120000
         },
         {
-            "text": "5 minutes",
+            "text": I18n.tr("5 minutes"),
             "value": 300000
         },
         {
-            "text": "10 minutes",
+            "text": I18n.tr("10 minutes"),
             "value": 600000
         }
     ]
@@ -259,6 +259,50 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 checked: SettingsData.notificationOverlayEnabled
                 onToggled: toggled => SettingsData.set("notificationOverlayEnabled", toggled)
+            }
+        }
+
+        Item {
+            width: parent.width
+            height: Math.max(privacyRow.implicitHeight, privacyToggle.implicitHeight) + Theme.spacingS
+
+            Row {
+                id: privacyRow
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: Theme.spacingM
+
+                DankIcon {
+                    name: "privacy_tip"
+                    size: Theme.iconSizeSmall
+                    color: SettingsData.notificationPopupPrivacyMode ? Theme.primary : Theme.surfaceText
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Column {
+                    spacing: 2
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    StyledText {
+                        text: I18n.tr("Privacy Mode")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceText
+                    }
+
+                    StyledText {
+                        text: I18n.tr("Hide notification content until expanded")
+                        font.pixelSize: Theme.fontSizeSmall - 1
+                        color: Theme.surfaceVariantText
+                    }
+                }
+            }
+
+            DankToggle {
+                id: privacyToggle
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                checked: SettingsData.notificationPopupPrivacyMode
+                onToggled: toggled => SettingsData.set("notificationPopupPrivacyMode", toggled)
             }
         }
 

@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import Quickshell
 import QtCore
+import qs.Services
 
 Singleton {
     id: root
@@ -70,17 +71,50 @@ Singleton {
         return appId;
     }
 
+    function resolveIconPath(iconName: string): string {
+        if (!iconName) return "";
+        const moddedId = moddedAppId(iconName);
+        if (moddedId !== iconName) {
+            if (moddedId.startsWith("~") || moddedId.startsWith("/"))
+                return toFileUrl(expandTilde(moddedId));
+            if (moddedId.startsWith("file://"))
+                return moddedId;
+            return Quickshell.iconPath(moddedId, true);
+        }
+        return Quickshell.iconPath(iconName, true) || DesktopService.resolveIconPath(iconName);
+    }
+
+    function resolveIconUrl(iconName: string): string {
+        if (!iconName) return "";
+        const moddedId = moddedAppId(iconName);
+        if (moddedId !== iconName) {
+            if (moddedId.startsWith("~") || moddedId.startsWith("/"))
+                return toFileUrl(expandTilde(moddedId));
+            if (moddedId.startsWith("file://"))
+                return moddedId;
+            return "image://icon/" + moddedId;
+        }
+        return "image://icon/" + iconName;
+    }
+
     function getAppIcon(appId: string, desktopEntry: var): string {
         if (appId === "org.quickshell") {
             return Qt.resolvedUrl("../assets/danklogo.svg");
         }
 
         const moddedId = moddedAppId(appId);
-        if (moddedId !== appId) {
-            return Quickshell.iconPath(moddedId, true);
+        if (moddedId !== appId)
+            return resolveIconPath(appId);
+
+        if (desktopEntry && desktopEntry.icon) {
+            return Quickshell.iconPath(desktopEntry.icon, true);
         }
 
-        return desktopEntry && desktopEntry.icon ? Quickshell.iconPath(desktopEntry.icon, true) : "";
+        const icon = Quickshell.iconPath(appId, true);
+        if (icon && icon !== "")
+            return icon;
+
+        return DesktopService.resolveIconPath(appId);
     }
 
     function getAppName(appId: string, desktopEntry: var): string {

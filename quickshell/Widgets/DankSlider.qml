@@ -16,6 +16,7 @@ Item {
     property bool showValue: true
     property bool isDragging: false
     property bool wheelEnabled: true
+    property bool centerMinimum: false
     property real valueOverride: -1
     property bool alwaysShowValue: false
     readonly property bool containsMouse: sliderMouseArea.containsMouse
@@ -30,6 +31,8 @@ Item {
 
     function updateValueFromPosition(x) {
         let ratio = Math.max(0, Math.min(1, (x - sliderHandle.width / 2) / (sliderTrack.width - sliderHandle.width)));
+        if (centerMinimum)
+            ratio = Math.max(0, (ratio - 0.5) * 2);
         let rawValue = minimum + ratio * (maximum - minimum);
         let newValue = step > 1 ? Math.round(rawValue / step) * step : Math.round(rawValue);
         newValue = Math.max(minimum, Math.min(maximum, newValue));
@@ -70,7 +73,9 @@ Item {
                 height: parent.height
                 radius: Theme.cornerRadius
                 width: {
-                    const ratio = (slider.value - slider.minimum) / (slider.maximum - slider.minimum);
+                    const range = slider.maximum - slider.minimum;
+                    const rawRatio = range === 0 ? 0 : (slider.value - slider.minimum) / range;
+                    const ratio = slider.centerMinimum ? (0.5 + rawRatio * 0.5) : rawRatio;
                     const travel = sliderTrack.width - sliderHandle.width;
                     const center = (travel * ratio) + sliderHandle.width / 2;
                     return Math.max(0, Math.min(sliderTrack.width, center));
@@ -87,7 +92,9 @@ Item {
                 height: 24
                 radius: Theme.cornerRadius
                 x: {
-                    const ratio = (slider.value - slider.minimum) / (slider.maximum - slider.minimum);
+                    const range = slider.maximum - slider.minimum;
+                    const rawRatio = range === 0 ? 0 : (slider.value - slider.minimum) / range;
+                    const ratio = slider.centerMinimum ? (0.5 + rawRatio * 0.5) : rawRatio;
                     const travel = sliderTrack.width - width;
                     return Math.max(0, Math.min(travel, travel * ratio));
                 }
@@ -232,7 +239,7 @@ Item {
             StyledRect {
                 id: valueTooltip
 
-                width: tooltipText.contentWidth + Theme.spacingS * 2
+                width: tooltipText.reservedWidth + Theme.spacingS * 2
                 height: tooltipText.contentHeight + Theme.spacingXS * 2
                 radius: Theme.cornerRadius
                 color: Theme.surfaceContainer
@@ -244,10 +251,22 @@ Item {
                 visible: slider.alwaysShowValue ? slider.showValue : ((sliderMouseArea.containsMouse && slider.showValue) || (slider.isDragging && slider.showValue))
                 opacity: visible ? 1 : 0
 
-                StyledText {
+                NumericText {
                     id: tooltipText
 
                     text: (slider.valueOverride >= 0 ? Math.round(slider.valueOverride) : slider.value) + slider.unit
+                    reserveText: {
+                        let widest = "";
+                        const samples = [slider.minimum, slider.maximum];
+                        if (slider.valueOverride >= 0)
+                            samples.push(slider.valueOverride);
+                        for (let i = 0; i < samples.length; i++) {
+                            const candidate = Math.round(samples[i]) + slider.unit;
+                            if (candidate.length > widest.length)
+                                widest = candidate;
+                        }
+                        return widest;
+                    }
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceText
                     font.weight: Font.Medium

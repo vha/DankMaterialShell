@@ -135,18 +135,16 @@ BasePill {
         }
     }
     readonly property int windowCount: _groupByApp ? (groupedWindows?.length || 0) : (sortedToplevels?.length || 0)
-    readonly property real iconCellSize: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground) + 6
+    readonly property real iconCellSize: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale) + 6
 
     readonly property string focusedAppId: {
-        const toplevels = CompositorService.sortedToplevels;
-        if (!toplevels)
+        if (!sortedToplevels || sortedToplevels.length === 0)
             return "";
-        let result = "";
-        for (let i = 0; i < toplevels.length; i++) {
-            if (toplevels[i].activated)
-                result = toplevels[i].appId || "";
+        for (let i = 0; i < sortedToplevels.length; i++) {
+            if (sortedToplevels[i].activated)
+                return sortedToplevels[i].appId || "";
         }
-        return result;
+        return "";
     }
 
     visible: windowCount > 0
@@ -155,6 +153,7 @@ BasePill {
     property real touchpadThreshold: 500
 
     onWheel: function (wheelEvent) {
+        wheelEvent.accepted = true;
         const deltaY = wheelEvent.angleDelta.y;
         const isMouseWheel = Math.abs(deltaY) >= 120 && (Math.abs(deltaY) % 120) === 0;
 
@@ -242,14 +241,17 @@ BasePill {
                     property var toplevelData: isGrouped ? (modelData.windows.length > 0 ? modelData.windows[0].toplevel : null) : modelData
                     property bool isFocused: isGrouped ? (root.focusedAppId === appId) : (toplevelData ? toplevelData.activated : false)
                     property string appId: isGrouped ? modelData.appId : (modelData.appId || "")
+                    readonly property string effectiveAppId: {
+                        root._appIdSubstitutionsTrigger;
+                        return Paths.moddedAppId(appId);
+                    }
                     property string windowTitle: toplevelData ? (toplevelData.title || "(Unnamed)") : "(Unnamed)"
                     property var toplevelObject: toplevelData
                     property int windowCount: isGrouped ? modelData.windows.length : 1
                     property string tooltipText: {
                         root._desktopEntriesUpdateTrigger;
-                        const moddedId = Paths.moddedAppId(appId);
-                        const desktopEntry = moddedId ? DesktopEntries.heuristicLookup(moddedId) : null;
-                        const appName = appId ? Paths.getAppName(appId, desktopEntry) : "Unknown";
+                        const desktopEntry = effectiveAppId ? DesktopEntries.heuristicLookup(effectiveAppId) : null;
+                        const appName = effectiveAppId ? Paths.getAppName(effectiveAppId, desktopEntry) : "Unknown";
 
                         if (isGrouped && windowCount > 1) {
                             return appName + " (" + windowCount + " windows)";
@@ -278,18 +280,17 @@ BasePill {
                         IconImage {
                             id: iconImg
                             anchors.left: parent.left
-                            anchors.leftMargin: (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode) ? Math.round((parent.width - Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)) / 2) : Theme.spacingXS
+                            anchors.leftMargin: (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode) ? Math.round((parent.width - Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)) / 2) : Theme.spacingXS
                             anchors.verticalCenter: parent.verticalCenter
-                            width: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
-                            height: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                            width: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
+                            height: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                             source: {
                                 root._desktopEntriesUpdateTrigger;
                                 root._appIdSubstitutionsTrigger;
-                                if (!appId)
+                                if (!effectiveAppId)
                                     return "";
-                                const moddedId = Paths.moddedAppId(appId);
-                                const desktopEntry = DesktopEntries.heuristicLookup(moddedId);
-                                return Paths.getAppIcon(appId, desktopEntry);
+                                const desktopEntry = DesktopEntries.heuristicLookup(effectiveAppId);
+                                return Paths.getAppIcon(effectiveAppId, desktopEntry);
                             }
                             smooth: true
                             mipmap: true
@@ -307,25 +308,23 @@ BasePill {
 
                         DankIcon {
                             anchors.left: parent.left
-                            anchors.leftMargin: (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode) ? Math.round((parent.width - Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)) / 2) : Theme.spacingXS
+                            anchors.leftMargin: (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode) ? Math.round((parent.width - Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)) / 2) : Theme.spacingXS
                             anchors.verticalCenter: parent.verticalCenter
-                            size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                            size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                             name: "sports_esports"
                             color: Theme.widgetTextColor
-                            visible: !iconImg.visible && Paths.isSteamApp(appId)
+                            visible: !iconImg.visible && Paths.isSteamApp(effectiveAppId)
                         }
 
                         Text {
                             anchors.centerIn: parent
-                            visible: !iconImg.visible && !Paths.isSteamApp(appId)
+                            visible: !iconImg.visible && !Paths.isSteamApp(effectiveAppId)
                             text: {
                                 root._desktopEntriesUpdateTrigger;
-                                if (!appId)
+                                if (!effectiveAppId)
                                     return "?";
-
-                                const moddedId = Paths.moddedAppId(appId);
-                                const desktopEntry = DesktopEntries.heuristicLookup(moddedId);
-                                const appName = Paths.getAppName(appId, desktopEntry);
+                                const desktopEntry = DesktopEntries.heuristicLookup(effectiveAppId);
+                                const appName = Paths.getAppName(effectiveAppId, desktopEntry);
                                 return appName.charAt(0).toUpperCase();
                             }
                             font.pixelSize: 10
@@ -360,7 +359,7 @@ BasePill {
                             anchors.verticalCenter: parent.verticalCenter
                             visible: !(widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode)
                             text: windowTitle
-                            font.pixelSize: Theme.barTextSize(barThickness, barConfig?.fontScale)
+                            font.pixelSize: Theme.barTextSize(barThickness, barConfig?.fontScale, barConfig?.maximizeWidgetText)
                             color: Theme.widgetTextColor
                             elide: Text.ElideRight
                             maximumLineCount: 1
@@ -497,14 +496,17 @@ BasePill {
                     property var toplevelData: isGrouped ? (modelData.windows.length > 0 ? modelData.windows[0].toplevel : null) : modelData
                     property bool isFocused: isGrouped ? (root.focusedAppId === appId) : (toplevelData ? toplevelData.activated : false)
                     property string appId: isGrouped ? modelData.appId : (modelData.appId || "")
+                    readonly property string effectiveAppId: {
+                        root._appIdSubstitutionsTrigger;
+                        return Paths.moddedAppId(appId);
+                    }
                     property string windowTitle: toplevelData ? (toplevelData.title || "(Unnamed)") : "(Unnamed)"
                     property var toplevelObject: toplevelData
                     property int windowCount: isGrouped ? modelData.windows.length : 1
                     property string tooltipText: {
                         root._desktopEntriesUpdateTrigger;
-                        const moddedId = Paths.moddedAppId(appId);
-                        const desktopEntry = moddedId ? DesktopEntries.heuristicLookup(moddedId) : null;
-                        const appName = appId ? Paths.getAppName(appId, desktopEntry) : "Unknown";
+                        const desktopEntry = effectiveAppId ? DesktopEntries.heuristicLookup(effectiveAppId) : null;
+                        const appName = effectiveAppId ? Paths.getAppName(effectiveAppId, desktopEntry) : "Unknown";
 
                         if (isGrouped && windowCount > 1) {
                             return appName + " (" + windowCount + " windows)";
@@ -532,18 +534,17 @@ BasePill {
                         IconImage {
                             id: iconImg
                             anchors.left: parent.left
-                            anchors.leftMargin: (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode) ? Math.round((parent.width - Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)) / 2) : Theme.spacingXS
+                            anchors.leftMargin: (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode) ? Math.round((parent.width - Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)) / 2) : Theme.spacingXS
                             anchors.verticalCenter: parent.verticalCenter
-                            width: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
-                            height: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                            width: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
+                            height: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                             source: {
                                 root._desktopEntriesUpdateTrigger;
                                 root._appIdSubstitutionsTrigger;
-                                if (!appId)
+                                if (!effectiveAppId)
                                     return "";
-                                const moddedId = Paths.moddedAppId(appId);
-                                const desktopEntry = DesktopEntries.heuristicLookup(moddedId);
-                                return Paths.getAppIcon(appId, desktopEntry);
+                                const desktopEntry = DesktopEntries.heuristicLookup(effectiveAppId);
+                                return Paths.getAppIcon(effectiveAppId, desktopEntry);
                             }
                             smooth: true
                             mipmap: true
@@ -561,25 +562,23 @@ BasePill {
 
                         DankIcon {
                             anchors.left: parent.left
-                            anchors.leftMargin: (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode) ? Math.round((parent.width - Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)) / 2) : Theme.spacingXS
+                            anchors.leftMargin: (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode) ? Math.round((parent.width - Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)) / 2) : Theme.spacingXS
                             anchors.verticalCenter: parent.verticalCenter
-                            size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                            size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                             name: "sports_esports"
                             color: Theme.widgetTextColor
-                            visible: !iconImg.visible && Paths.isSteamApp(appId)
+                            visible: !iconImg.visible && Paths.isSteamApp(effectiveAppId)
                         }
 
                         Text {
                             anchors.centerIn: parent
-                            visible: !iconImg.visible && !Paths.isSteamApp(appId)
+                            visible: !iconImg.visible && !Paths.isSteamApp(effectiveAppId)
                             text: {
                                 root._desktopEntriesUpdateTrigger;
-                                if (!appId)
+                                if (!effectiveAppId)
                                     return "?";
-
-                                const moddedId = Paths.moddedAppId(appId);
-                                const desktopEntry = DesktopEntries.heuristicLookup(moddedId);
-                                const appName = Paths.getAppName(appId, desktopEntry);
+                                const desktopEntry = DesktopEntries.heuristicLookup(effectiveAppId);
+                                const appName = Paths.getAppName(effectiveAppId, desktopEntry);
                                 return appName.charAt(0).toUpperCase();
                             }
                             font.pixelSize: 10
@@ -614,7 +613,7 @@ BasePill {
                             anchors.verticalCenter: parent.verticalCenter
                             visible: !(widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode)
                             text: windowTitle
-                            font.pixelSize: Theme.barTextSize(barThickness, barConfig?.fontScale)
+                            font.pixelSize: Theme.barTextSize(barThickness, barConfig?.fontScale, barConfig?.maximizeWidgetText)
                             color: Theme.widgetTextColor
                             elide: Text.ElideRight
                             maximumLineCount: 1

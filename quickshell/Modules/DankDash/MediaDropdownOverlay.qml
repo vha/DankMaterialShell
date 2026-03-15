@@ -26,7 +26,14 @@ Item {
     property bool usePlayerVolume: activePlayer && activePlayer.volumeSupported && !__isChromeBrowser
     property real currentVolume: usePlayerVolume ? activePlayer.volume : (AudioService.sink?.audio?.volume ?? 0)
     property bool volumeAvailable: (activePlayer && activePlayer.volumeSupported && !__isChromeBrowser) || (AudioService.sink && AudioService.sink.audio)
-    property var availableDevices: Pipewire.nodes.values.filter(node => node.audio && node.isSink && !node.isStream)
+    property var availableDevices: {
+        const hidden = SessionData.hiddenOutputDeviceNames ?? [];
+        return Pipewire.nodes.values.filter(node => {
+            if (!node.audio || !node.isSink || node.isStream)
+                return false;
+            return !hidden.includes(node.name);
+        });
+    }
 
     signal closeRequested
     signal deviceSelected(var device)
@@ -82,14 +89,18 @@ Item {
             }
         }
 
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowHorizontalOffset: 0
-            shadowVerticalOffset: 8
-            shadowBlur: 1.0
-            shadowColor: Qt.rgba(0, 0, 0, 0.4)
-            shadowOpacity: 0.7
+        ElevationShadow {
+            id: volumeShadowLayer
+            anchors.fill: parent
+            z: -1
+            level: Theme.elevationLevel2
+            fallbackOffset: 4
+            targetRadius: volumePanel.radius
+            targetColor: volumePanel.color
+            borderColor: volumePanel.border.color
+            borderWidth: volumePanel.border.width
+            shadowOpacity: Theme.elevationLevel2 && Theme.elevationLevel2.alpha !== undefined ? Theme.elevationLevel2.alpha : 0.25
+            shadowEnabled: Theme.elevationEnabled
         }
 
         MouseArea {
@@ -216,14 +227,18 @@ Item {
             }
         }
 
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowHorizontalOffset: 0
-            shadowVerticalOffset: 8
-            shadowBlur: 1.0
-            shadowColor: Qt.rgba(0, 0, 0, 0.4)
-            shadowOpacity: 0.7
+        ElevationShadow {
+            id: audioDevicesShadowLayer
+            anchors.fill: parent
+            z: -1
+            level: Theme.elevationLevel2
+            fallbackOffset: 4
+            targetRadius: audioDevicesPanel.radius
+            targetColor: audioDevicesPanel.color
+            borderColor: audioDevicesPanel.border.color
+            borderWidth: audioDevicesPanel.border.width
+            shadowOpacity: Theme.elevationLevel2 && Theme.elevationLevel2.alpha !== undefined ? Theme.elevationLevel2.alpha : 0.25
+            shadowEnabled: Theme.elevationEnabled
         }
 
         Column {
@@ -366,14 +381,18 @@ Item {
             }
         }
 
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowHorizontalOffset: 0
-            shadowVerticalOffset: 8
-            shadowBlur: 1.0
-            shadowColor: Qt.rgba(0, 0, 0, 0.4)
-            shadowOpacity: 0.7
+        ElevationShadow {
+            id: playersShadowLayer
+            anchors.fill: parent
+            z: -1
+            level: Theme.elevationLevel2
+            fallbackOffset: 4
+            targetRadius: playersPanel.radius
+            targetColor: playersPanel.color
+            borderColor: playersPanel.border.color
+            borderWidth: playersPanel.border.width
+            shadowOpacity: Theme.elevationLevel2 && Theme.elevationLevel2.alpha !== undefined ? Theme.elevationLevel2.alpha : 0.25
+            shadowEnabled: Theme.elevationEnabled
         }
 
         Column {

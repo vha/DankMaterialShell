@@ -48,11 +48,6 @@ DankPopout {
 
             implicitHeight: contentColumn.implicitHeight + Theme.spacingL * 2
             color: "transparent"
-            radius: Theme.cornerRadius
-            border.color: Theme.outlineMedium
-            border.width: 0
-            antialiasing: true
-            smooth: true
             focus: true
             Component.onCompleted: {
                 if (root.shouldBeVisible) {
@@ -76,35 +71,6 @@ DankPopout {
                 }
 
                 target: root
-            }
-
-            Rectangle {
-                anchors.fill: parent
-                anchors.margins: -3
-                color: "transparent"
-                radius: parent.radius + 3
-                border.color: Qt.rgba(0, 0, 0, 0.05)
-                border.width: 0
-                z: -3
-            }
-
-            Rectangle {
-                anchors.fill: parent
-                anchors.margins: -2
-                color: "transparent"
-                radius: parent.radius + 2
-                border.color: Theme.shadowMedium
-                border.width: 0
-                z: -2
-            }
-
-            Rectangle {
-                anchors.fill: parent
-                color: "transparent"
-                border.color: Theme.outlineStrong
-                border.width: 0
-                radius: parent.radius
-                z: -1
             }
 
             Column {
@@ -201,9 +167,22 @@ DankPopout {
                     }
 
                     Column {
+                        id: headerInfoColumn
                         spacing: Theme.spacingXS
                         anchors.verticalCenter: parent.verticalCenter
                         width: parent.width - Theme.iconSizeLarge - 32 - Theme.spacingM * 2
+                        readonly property string timeInfoText: {
+                            if (!BatteryService.batteryAvailable)
+                                return "Power profile management available";
+                            const time = BatteryService.formatTimeRemaining();
+                            if (time !== "Unknown") {
+                                return BatteryService.isCharging ? `Time until full: ${time}` : `Time remaining: ${time}`;
+                            }
+                            return "";
+                        }
+                        readonly property bool showPowerRate: BatteryService.batteryAvailable && Math.abs(BatteryService.changeRate) > 0.05
+                        readonly property bool isOnAC: BatteryService.batteryAvailable && (BatteryService.isCharging || BatteryService.isPluggedIn)
+                        readonly property bool isDischarging: BatteryService.batteryAvailable && !BatteryService.isCharging && !BatteryService.isPluggedIn
 
                         Row {
                             spacing: Theme.spacingS
@@ -241,21 +220,35 @@ DankPopout {
                             }
                         }
 
-                        StyledText {
-                            text: {
-                                if (!BatteryService.batteryAvailable)
-                                    return "Power profile management available";
-                                const time = BatteryService.formatTimeRemaining();
-                                if (time !== "Unknown") {
-                                    return BatteryService.isCharging ? `Time until full: ${time}` : `Time remaining: ${time}`;
-                                }
-                                return "";
-                            }
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.surfaceTextMedium
-                            visible: text.length > 0
-                            elide: Text.ElideRight
+                        Row {
                             width: parent.width
+                            spacing: Theme.spacingS
+                            visible: headerInfoColumn.timeInfoText.length > 0
+
+                            StyledText {
+                                id: powerRateText
+                                text: `${headerInfoColumn.isOnAC ? "+" : (headerInfoColumn.isDischarging ? "-" : "")}${Math.abs(BatteryService.changeRate).toFixed(1)}W`
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: {
+                                    if (headerInfoColumn.isOnAC) {
+                                        return Theme.primary;
+                                    }
+                                    if (headerInfoColumn.isDischarging) {
+                                        return Theme.warning;
+                                    }
+                                    return Theme.surfaceTextMedium;
+                                }
+                                font.weight: Font.Medium
+                                visible: headerInfoColumn.showPowerRate
+                            }
+
+                            StyledText {
+                                text: headerInfoColumn.timeInfoText
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceTextMedium
+                                elide: Text.ElideRight
+                                width: parent.width - (powerRateText.visible ? (powerRateText.implicitWidth + parent.spacing) : 0)
+                            }
                         }
                     }
 

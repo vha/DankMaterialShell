@@ -6,6 +6,9 @@ COMPOSITOR=""
 COMPOSITOR_CONFIG=""
 DMS_PATH="dms-greeter"
 CACHE_DIR="/var/cache/dms-greeter"
+REMEMBER_LAST_SESSION=""
+REMEMBER_LAST_USER=""
+DEBUG_MODE=0
 
 show_help() {
     cat << EOF
@@ -14,7 +17,7 @@ dms-greeter - DankMaterialShell greeter launcher
 Usage: dms-greeter --command COMPOSITOR [OPTIONS]
 
 Required:
-    --command COMPOSITOR    Compositor to use (niri, hyprland, sway, scroll, mangowc, or labwc)
+    --command COMPOSITOR    Compositor to use (niri, hyprland, sway, scroll, miracle, mango, or labwc)
 
 Options:
     -C, --config PATH       Custom compositor config file
@@ -22,6 +25,15 @@ Options:
                            (default: dms-greeter)
     --cache-dir PATH        Cache directory for greeter data
                            (default: /var/cache/dms-greeter)
+    --remember-last-session BOOL
+                           Persist selected session to greeter memory
+                           (BOOL: true/false, default: from settings.json)
+    --remember-last-user BOOL
+                           Persist last successful username to greeter memory
+                           (BOOL: true/false, default: from settings.json)
+    --no-save-session      Alias for --remember-last-session false
+    --no-save-username     Alias for --remember-last-user false
+    --debug                Enable verbose startup logging to stderr
     -h, --help             Show this help message
 
 Examples:
@@ -30,9 +42,53 @@ Examples:
     dms-greeter --command sway -p /home/user/.config/quickshell/custom-dms
     dms-greeter --command scroll -p /home/user/.config/quickshell/custom-dms
     dms-greeter --command niri --cache-dir /tmp/dmsgreeter
-    dms-greeter --command mangowc
+    dms-greeter --command niri --no-save-session --no-save-username
+    dms-greeter --command mango
     dms-greeter --command labwc
 EOF
+}
+
+require_command() {
+    local cmd="$1"
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "Error: required command '$cmd' was not found in PATH" >&2
+        exit 1
+    fi
+}
+
+normalize_bool_flag() {
+    local flag_name="$1"
+    local value="$2"
+    local normalized="${value,,}"
+
+    case "$normalized" in
+        1|true|yes|on)
+            echo "1"
+            ;;
+        0|false|no|off)
+            echo "0"
+            ;;
+        *)
+            echo "Error: $flag_name must be true/false (or 1/0, yes/no, on/off)" >&2
+            exit 1
+            ;;
+    esac
+}
+
+exec_compositor() {
+    local log_tag="$1"
+    shift
+
+    if [[ "$DEBUG_MODE" == "1" ]]; then
+        exec "$@"
+    fi
+
+    if command -v systemd-cat >/dev/null 2>&1; then
+        exec "$@" > >(systemd-cat -t "dms-greeter/$log_tag" -p info) 2>&1
+    fi
+
+    local log_file="$CACHE_DIR/$log_tag.log"
+    exec "$@" >> "$log_file" 2>&1
 }
 
 while [[ $# -gt 0 ]]; do
@@ -52,6 +108,26 @@ while [[ $# -gt 0 ]]; do
         --cache-dir)
             CACHE_DIR="$2"
             shift 2
+            ;;
+        --remember-last-session)
+            REMEMBER_LAST_SESSION="$2"
+            shift 2
+            ;;
+        --remember-last-user)
+            REMEMBER_LAST_USER="$2"
+            shift 2
+            ;;
+        --no-save-session)
+            REMEMBER_LAST_SESSION="0"
+            shift
+            ;;
+        --no-save-username)
+            REMEMBER_LAST_USER="0"
+            shift
+            ;;
+        --debug)
+            DEBUG_MODE=1
+            shift
             ;;
         -h|--help)
             show_help
@@ -103,18 +179,91 @@ export QT_QPA_PLATFORM=wayland
 export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 export EGL_PLATFORM=gbm
 export DMS_RUN_GREETER=1
+
+ensure_cache_tree() {
+    local base="$1"
+    mkdir -p "$base/.local/state" "$base/.local/state/wireplumber" "$base/.local/share" "$base/.cache"
+}
+
+if ! ensure_cache_tree "$CACHE_DIR" 2>/dev/null; then
+    FALLBACK_CACHE_DIR="/tmp/dms-greeter-${UID:-$(id -u)}"
+    echo "Warning: cache directory '$CACHE_DIR' is not writable; falling back to '$FALLBACK_CACHE_DIR'" >&2
+    CACHE_DIR="$FALLBACK_CACHE_DIR"
+    if ! ensure_cache_tree "$CACHE_DIR"; then
+        echo "Error: failed to initialize fallback cache directory '$CACHE_DIR'" >&2
+        exit 1
+    fi
+fi
+
 export DMS_GREET_CFG_DIR="$CACHE_DIR"
 
-mkdir -p "$CACHE_DIR"
+if [[ -n "$REMEMBER_LAST_SESSION" ]]; then
+    DMS_GREET_REMEMBER_LAST_SESSION=$(normalize_bool_flag "--remember-last-session" "$REMEMBER_LAST_SESSION")
+    export DMS_GREET_REMEMBER_LAST_SESSION
+    if [[ "$DMS_GREET_REMEMBER_LAST_SESSION" == "1" ]]; then
+        DMS_SAVE_SESSION=true
+    else
+        DMS_SAVE_SESSION=false
+    fi
+    export DMS_SAVE_SESSION
+fi
 
-QS_CMD="qs"
+if [[ -n "$REMEMBER_LAST_USER" ]]; then
+    DMS_GREET_REMEMBER_LAST_USER=$(normalize_bool_flag "--remember-last-user" "$REMEMBER_LAST_USER")
+    export DMS_GREET_REMEMBER_LAST_USER
+    if [[ "$DMS_GREET_REMEMBER_LAST_USER" == "1" ]]; then
+        DMS_SAVE_USERNAME=true
+    else
+        DMS_SAVE_USERNAME=false
+    fi
+    export DMS_SAVE_USERNAME
+fi
+
+export HOME="$CACHE_DIR"
+export XDG_STATE_HOME="$CACHE_DIR/.local/state"
+export XDG_DATA_HOME="$CACHE_DIR/.local/share"
+export XDG_CACHE_HOME="$CACHE_DIR/.cache"
+
+# Propagate correct XDG dirs into the systemd user session so socket-activated
+# services (e.g. wireplumber) don't inherit HOME=/ from /etc/passwd.
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl --user set-environment \
+        HOME="$CACHE_DIR" \
+        XDG_STATE_HOME="$CACHE_DIR/.local/state" \
+        XDG_DATA_HOME="$CACHE_DIR/.local/share" \
+        XDG_CACHE_HOME="$CACHE_DIR/.cache" 2>/dev/null || true
+    if systemctl --user is-active --quiet wireplumber.service 2>/dev/null; then
+        systemctl --user restart wireplumber.service 2>/dev/null || true
+    fi
+fi
+
+# Keep greeter VT clean by default; callers can override via env or --debug.
+if [[ -z "${RUST_LOG:-}" ]]; then
+    export RUST_LOG=warn
+fi
+if [[ -z "${NIRI_LOG:-}" ]]; then
+    export NIRI_LOG=warn
+fi
+
+if command -v qs >/dev/null 2>&1; then
+    QS_BIN="qs"
+elif command -v quickshell >/dev/null 2>&1; then
+    QS_BIN="quickshell"
+else
+    echo "Error: neither 'qs' nor 'quickshell' was found in PATH" >&2
+    exit 1
+fi
+
+QS_CMD="$QS_BIN"
 if [[ "$DMS_PATH" == /* ]]; then
-    QS_CMD="qs -p $DMS_PATH"
+    QS_CMD="$QS_BIN -p $DMS_PATH"
 else
     RESOLVED_PATH=$(locate_dms_config "$DMS_PATH")
     if [[ $? -eq 0 && -n "$RESOLVED_PATH" ]]; then
-        echo "Located DMS config at: $RESOLVED_PATH" >&2
-        QS_CMD="qs -p $RESOLVED_PATH"
+        if [[ "$DEBUG_MODE" == "1" ]]; then
+            echo "Located DMS config at: $RESOLVED_PATH" >&2
+        fi
+        QS_CMD="$QS_BIN -p $RESOLVED_PATH"
     else
         echo "Error: Could not find DMS config '$DMS_PATH' (shell.qml) in any valid config path" >&2
         exit 1
@@ -123,6 +272,7 @@ fi
 
 case "$COMPOSITOR" in
     niri)
+        require_command "niri"
         if [[ -z "$COMPOSITOR_CONFIG" ]]; then
             TEMP_CONFIG=$(mktemp)
 			# base/default config
@@ -133,6 +283,10 @@ hotkey-overlay {
 
 environment {
     DMS_RUN_GREETER "1"
+    HOME "$CACHE_DIR"
+    XDG_STATE_HOME "$CACHE_DIR/.local/state"
+    XDG_DATA_HOME "$CACHE_DIR/.local/share"
+    XDG_CACHE_HOME "$CACHE_DIR/.cache"
 }
 
 debug {
@@ -174,19 +328,28 @@ NIRI_EOF
 spawn-at-startup "sh" "-c" "$QS_CMD; niri msg action quit --skip-confirmation"
 NIRI_EOF
             COMPOSITOR_CONFIG="$TEMP_CONFIG"
-        exec niri -c "$COMPOSITOR_CONFIG"
+        exec_compositor "niri" niri -c "$COMPOSITOR_CONFIG"
         ;;
 
     hyprland)
+        if ! command -v start-hyprland >/dev/null 2>&1 && ! command -v Hyprland >/dev/null 2>&1; then
+            echo "Error: neither 'start-hyprland' nor 'Hyprland' was found in PATH" >&2
+            exit 1
+        fi
         if [[ -z "$COMPOSITOR_CONFIG" ]]; then
             TEMP_CONFIG=$(mktemp)
             cat > "$TEMP_CONFIG" << HYPRLAND_EOF
 env = DMS_RUN_GREETER,1
+env = HOME,$CACHE_DIR
+env = XDG_STATE_HOME,$CACHE_DIR/.local/state
+env = XDG_DATA_HOME,$CACHE_DIR/.local/share
+env = XDG_CACHE_HOME,$CACHE_DIR/.cache
 
 misc {
     disable_hyprland_logo = true
 }
 
+exec-once = systemctl --user import-environment HOME XDG_STATE_HOME XDG_DATA_HOME XDG_CACHE_HOME 2>/dev/null || true
 exec-once = sh -c "$QS_CMD; hyprctl dispatch exit"
 HYPRLAND_EOF
             COMPOSITOR_CONFIG="$TEMP_CONFIG"
@@ -195,21 +358,28 @@ HYPRLAND_EOF
             cat "$COMPOSITOR_CONFIG" > "$TEMP_CONFIG"
             cat >> "$TEMP_CONFIG" << HYPRLAND_EOF
 
+env = HOME,$CACHE_DIR
+env = XDG_STATE_HOME,$CACHE_DIR/.local/state
+env = XDG_DATA_HOME,$CACHE_DIR/.local/share
+env = XDG_CACHE_HOME,$CACHE_DIR/.cache
+exec-once = systemctl --user import-environment HOME XDG_STATE_HOME XDG_DATA_HOME XDG_CACHE_HOME 2>/dev/null || true
 exec-once = sh -c "$QS_CMD; hyprctl dispatch exit"
 HYPRLAND_EOF
             COMPOSITOR_CONFIG="$TEMP_CONFIG"
         fi
         if command -v start-hyprland >/dev/null 2>&1; then
-            exec start-hyprland -- --config "$COMPOSITOR_CONFIG"
+            exec_compositor "hyprland" start-hyprland -- --config "$COMPOSITOR_CONFIG"
         else
-            exec Hyprland -c "$COMPOSITOR_CONFIG"
+            exec_compositor "hyprland" Hyprland -c "$COMPOSITOR_CONFIG"
         fi
         ;;
 
     sway)
+        require_command "sway"
         if [[ -z "$COMPOSITOR_CONFIG" ]]; then
             TEMP_CONFIG=$(mktemp)
             cat > "$TEMP_CONFIG" << SWAY_EOF
+exec --no-startup-id dbus-update-activation-environment --systemd HOME XDG_STATE_HOME XDG_DATA_HOME XDG_CACHE_HOME
 exec "$QS_CMD; swaymsg exit"
 SWAY_EOF
             COMPOSITOR_CONFIG="$TEMP_CONFIG"
@@ -218,17 +388,20 @@ SWAY_EOF
             cat "$COMPOSITOR_CONFIG" > "$TEMP_CONFIG"
             cat >> "$TEMP_CONFIG" << SWAY_EOF
 
+exec --no-startup-id dbus-update-activation-environment --systemd HOME XDG_STATE_HOME XDG_DATA_HOME XDG_CACHE_HOME
 exec "$QS_CMD; swaymsg exit"
 SWAY_EOF
             COMPOSITOR_CONFIG="$TEMP_CONFIG"
         fi
-        exec sway --unsupported-gpu -c "$COMPOSITOR_CONFIG"
+        exec_compositor "sway" sway --unsupported-gpu -c "$COMPOSITOR_CONFIG"
         ;;
 
     scroll)
+        require_command "scroll"
         if [[ -z "$COMPOSITOR_CONFIG" ]]; then
             TEMP_CONFIG=$(mktemp)
             cat > "$TEMP_CONFIG" << SCROLL_EOF
+exec --no-startup-id dbus-update-activation-environment --systemd HOME XDG_STATE_HOME XDG_DATA_HOME XDG_CACHE_HOME
 exec "$QS_CMD; scrollmsg exit"
 SCROLL_EOF
             COMPOSITOR_CONFIG="$TEMP_CONFIG"
@@ -237,33 +410,55 @@ SCROLL_EOF
             cat "$COMPOSITOR_CONFIG" > "$TEMP_CONFIG"
             cat >> "$TEMP_CONFIG" << SCROLL_EOF
 
+exec --no-startup-id dbus-update-activation-environment --systemd HOME XDG_STATE_HOME XDG_DATA_HOME XDG_CACHE_HOME
 exec "$QS_CMD; scrollmsg exit"
 SCROLL_EOF
             COMPOSITOR_CONFIG="$TEMP_CONFIG"
         fi
-        exec scroll -c "$COMPOSITOR_CONFIG"
+        exec_compositor "scroll" scroll -c "$COMPOSITOR_CONFIG"
         ;;
 
+    miracle|miracle-wm)
+        require_command "miracle-wm"
+        if [[ -z "$COMPOSITOR_CONFIG" ]]; then
+            TEMP_CONFIG=$(mktemp)
+            cat > "$TEMP_CONFIG" << MIRACLE_EOF
+exec "$QS_CMD; miraclemsg exit"
+MIRACLE_EOF
+            COMPOSITOR_CONFIG="$TEMP_CONFIG"
+        else
+            TEMP_CONFIG=$(mktemp)
+            cat "$COMPOSITOR_CONFIG" > "$TEMP_CONFIG"
+            cat >> "$TEMP_CONFIG" << MIRACLE_EOF
+
+exec "$QS_CMD; miraclemsg exit"
+MIRACLE_EOF
+            COMPOSITOR_CONFIG="$TEMP_CONFIG"
+        fi
+        exec_compositor "miracle" miracle-wm -c "$COMPOSITOR_CONFIG"
+        ;;
 
     labwc)
+        require_command "labwc"
         if [[ -n "$COMPOSITOR_CONFIG" ]]; then
-            exec labwc --config "$COMPOSITOR_CONFIG" --session "$QS_CMD"
+            exec_compositor "labwc" labwc --config "$COMPOSITOR_CONFIG" --session "$QS_CMD"
         else
-            exec labwc --session "$QS_CMD"
+            exec_compositor "labwc" labwc --session "$QS_CMD"
         fi
         ;;
 
-    mangowc)
+    mango|mangowc)
+        require_command "mango"
         if [[ -n "$COMPOSITOR_CONFIG" ]]; then
-            exec mango -c "$COMPOSITOR_CONFIG" -s "$QS_CMD && mmsg -d quit"
+            exec_compositor "mango" mango -c "$COMPOSITOR_CONFIG" -s "$QS_CMD && mmsg -d quit"
         else
-            exec mango -s "$QS_CMD && mmsg -d quit"
+            exec_compositor "mango" mango -s "$QS_CMD && mmsg -d quit"
         fi
         ;;
 
     *)
         echo "Error: Unsupported compositor: $COMPOSITOR" >&2
-        echo "Supported compositors: niri, hyprland, sway, scroll, mangowc, labwc" >&2
+        echo "Supported compositors: niri, hyprland, sway, scroll, miracle, mango, labwc" >&2
         exit 1
         ;;
 esac

@@ -1,7 +1,6 @@
 import "../Common/fzf.js" as Fzf
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Effects
 import Quickshell
 import qs.Common
 import qs.Widgets
@@ -54,6 +53,10 @@ Item {
     property bool usePopupTransparency: !checkParentDisablesTransparency()
 
     signal valueChanged(string value)
+
+    function closeDropdownMenu() {
+        dropdownMenu.close();
+    }
 
     width: compactMode ? dropdownWidth : parent.width
     implicitHeight: compactMode ? 40 : Math.max(60, labelColumn.implicitHeight + Theme.spacingM)
@@ -118,7 +121,12 @@ Item {
                     dropdownMenu.close();
                     return;
                 }
+
                 dropdownMenu.open();
+
+                let currentIndex = root.options.indexOf(root.currentValue);
+                listView.positionViewAtIndex(currentIndex, ListView.Beginning);
+
                 const pos = dropdown.mapToItem(Overlay.overlay, 0, 0);
                 const popupW = dropdownMenu.width;
                 const popupH = dropdownMenu.height;
@@ -232,7 +240,14 @@ Item {
 
         parent: Overlay.overlay
         width: root.popupWidth === -1 ? undefined : (root.popupWidth > 0 ? root.popupWidth : (dropdown.width + root.popupWidthOffset))
-        height: Math.min(root.maxPopupHeight, (root.enableFuzzySearch ? 54 : 0) + Math.min(filteredOptions.length, 10) * 36 + 16)
+        height: {
+            let h = root.enableFuzzySearch ? 54 : 0;
+            if (root.options.length === 0 && root.emptyText !== "")
+                h += 32;
+            else
+                h += Math.min(filteredOptions.length, 10) * 36;
+            return Math.min(root.maxPopupHeight, h + 16);
+        }
         padding: 0
         modal: true
         dim: false
@@ -243,6 +258,8 @@ Item {
         }
 
         contentItem: Rectangle {
+            id: contentSurface
+
             LayoutMirroring.enabled: I18n.isRtl
             LayoutMirroring.childrenInherit: true
             color: Qt.rgba(Theme.surfaceContainer.r, Theme.surfaceContainer.g, Theme.surfaceContainer.b, 1)
@@ -250,12 +267,17 @@ Item {
             border.width: 2
             radius: Theme.cornerRadius
 
-            layer.enabled: true
-            layer.effect: MultiEffect {
-                shadowEnabled: true
-                shadowBlur: 0.4
-                shadowColor: Theme.shadowStrong
-                shadowVerticalOffset: 4
+            ElevationShadow {
+                id: shadowLayer
+                anchors.fill: parent
+                z: -1
+                level: Theme.elevationLevel2
+                fallbackOffset: 4
+                targetRadius: contentSurface.radius
+                targetColor: contentSurface.color
+                borderColor: contentSurface.border.color
+                borderWidth: contentSurface.border.width
+                shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled
             }
 
             Column {
@@ -409,7 +431,7 @@ Item {
                             onClicked: {
                                 root.currentValue = delegateRoot.modelData;
                                 root.valueChanged(delegateRoot.modelData);
-                                dropdownMenu.close();
+                                root.closeDropdownMenu();
                             }
                         }
                     }

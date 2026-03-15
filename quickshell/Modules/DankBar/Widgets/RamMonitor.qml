@@ -14,6 +14,7 @@ BasePill {
     property var widgetData: null
     property bool minimumWidth: (widgetData && widgetData.minimumWidth !== undefined) ? widgetData.minimumWidth : true
     property bool showSwap: (widgetData && widgetData.showSwap !== undefined) ? widgetData.showSwap : false
+    property bool showInGb: (widgetData && widgetData.showInGb !== undefined) ? widgetData.showInGb : false
     readonly property real swapUsage: DgopService.totalSwapKB > 0 ? (DgopService.usedSwapKB / DgopService.totalSwapKB) * 100 : 0
 
     signal ramClicked
@@ -38,7 +39,7 @@ BasePill {
 
                 DankIcon {
                     name: "developer_board"
-                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                     color: {
                         if (DgopService.memoryUsage > 90) {
                             return Theme.tempDanger;
@@ -59,9 +60,13 @@ BasePill {
                             return "--";
                         }
 
+                        if (root.showInGb) {
+                            return (DgopService.usedMemoryMB / 1024).toFixed(1);
+                        }
+
                         return DgopService.memoryUsage.toFixed(0);
                     }
-                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     color: Theme.widgetTextColor
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
@@ -69,7 +74,7 @@ BasePill {
                 StyledText {
                     visible: root.showSwap && DgopService.totalSwapKB > 0
                     text: root.swapUsage.toFixed(0)
-                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     color: Theme.surfaceVariantText
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
@@ -84,7 +89,7 @@ BasePill {
                 DankIcon {
                     id: ramIcon
                     name: "developer_board"
-                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                     color: {
                         if (DgopService.memoryUsage > 90) {
                             return Theme.tempDanger;
@@ -109,24 +114,18 @@ BasePill {
                     width: implicitWidth
                     height: implicitHeight
 
-                    Behavior on width {
-                        NumberAnimation {
-                            duration: Theme.shortDuration
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-
                     StyledTextMetrics {
                         id: ramBaseline
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         text: {
+                            let baseText = root.showInGb ? "88.8 GB" : "88%";
                             if (!root.showSwap) {
-                                return "88%";
+                                return baseText;
                             }
                             if (root.swapUsage < 10) {
-                                return "88% · 0%";
+                                return baseText + " · 0%";
                             }
-                            return "88% · 88%";
+                            return baseText + " · 88%";
                         }
                     }
 
@@ -134,16 +133,22 @@ BasePill {
                         id: ramText
                         text: {
                             if (DgopService.memoryUsage === undefined || DgopService.memoryUsage === null || DgopService.memoryUsage === 0) {
-                                return "--%";
+                                return root.showInGb ? "-- GB" : "--%";
                             }
 
-                            let ramText = DgopService.memoryUsage.toFixed(0) + "%";
+                            let ramText = "";
+                            if (root.showInGb) {
+                                ramText = (DgopService.usedMemoryMB / 1024).toFixed(1) + " GB";
+                            } else {
+                                ramText = DgopService.memoryUsage.toFixed(0) + "%";
+                            }
+
                             if (root.showSwap && DgopService.totalSwapKB > 0) {
                                 return ramText + " · " + root.swapUsage.toFixed(0) + "%";
                             }
                             return ramText;
                         }
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: Theme.widgetTextColor
 
                         anchors.fill: parent

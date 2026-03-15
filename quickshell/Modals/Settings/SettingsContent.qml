@@ -242,6 +242,21 @@ FocusScope {
         }
 
         Loader {
+            id: greeterLoader
+            anchors.fill: parent
+            active: root.currentIndex === 31
+            visible: active
+            focus: active
+
+            sourceComponent: GreeterTab {}
+
+            onActiveChanged: {
+                if (active && item)
+                    Qt.callLater(() => item.forceActiveFocus());
+            }
+        }
+
+        Loader {
             id: pluginsLoader
             anchors.fill: parent
             active: root.currentIndex === 12
@@ -467,6 +482,21 @@ FocusScope {
             focus: active
 
             sourceComponent: AudioTab {}
+
+            onActiveChanged: {
+                if (active && item)
+                    Qt.callLater(() => item.forceActiveFocus());
+            }
+        }
+
+        Loader {
+            id: localeLoader
+            anchors.fill: parent
+            active: root.currentIndex === 30
+            visible: active
+            focus: active
+
+            sourceComponent: LocaleTab {}
 
             onActiveChanged: {
                 if (active && item)

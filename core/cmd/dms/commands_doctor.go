@@ -649,6 +649,120 @@ func checkI2CAvailability() checkResult {
 	return checkResult{catOptionalFeatures, "I2C/DDC", statusOK, fmt.Sprintf("%d monitor(s) detected", len(devices)), "External monitor brightness control", doctorDocsURL + "#optional-features"}
 }
 
+func checkImageFormatPlugins() []checkResult {
+	url := doctorDocsURL + "#optional-features"
+
+	pluginDirs := findQtPluginDirs()
+	if len(pluginDirs) == 0 {
+		return []checkResult{
+			{catOptionalFeatures, "qt6-imageformats", statusInfo, "Cannot detect (plugin dir not found)", "WebP, TIFF, JP2 support", url},
+			{catOptionalFeatures, "kimageformats", statusInfo, "Cannot detect (plugin dir not found)", "AVIF, HEIF, JXL support", url},
+		}
+	}
+
+	type pluginCheck struct {
+		name    string
+		desc    string
+		plugins []struct{ file, format string }
+	}
+
+	checks := []pluginCheck{
+		{
+			name: "qt6-imageformats",
+			desc: "WebP, TIFF, GIF, JP2 support",
+			plugins: []struct{ file, format string }{
+				{"libqwebp.so", "WebP"},
+				{"libqtiff.so", "TIFF"},
+				{"libqgif.so", "GIF"},
+				{"libqjp2.so", "JP2"},
+				{"libqicns.so", "ICNS"},
+			},
+		},
+		{
+			name: "kimageformats",
+			desc: "AVIF, HEIF, JXL support",
+			plugins: []struct{ file, format string }{
+				{"kimg_avif.so", "AVIF"},
+				{"kimg_heif.so", "HEIF"},
+				{"kimg_jxl.so", "JXL"},
+				{"kimg_exr.so", "EXR"},
+			},
+		},
+	}
+
+	var results []checkResult
+	for _, c := range checks {
+		var found []string
+		var foundDirs []string
+		for _, pluginDir := range pluginDirs {
+			imageFormatsDir := filepath.Join(pluginDir, "imageformats")
+			for _, p := range c.plugins {
+				if _, err := os.Stat(filepath.Join(imageFormatsDir, p.file)); err == nil {
+					if !slices.Contains(found, p.format) {
+						found = append(found, p.format)
+					}
+					if !slices.Contains(foundDirs, imageFormatsDir) {
+						foundDirs = append(foundDirs, imageFormatsDir)
+					}
+				}
+			}
+		}
+
+		var result checkResult
+		switch {
+		case len(found) == 0:
+			result = checkResult{catOptionalFeatures, c.name, statusWarn, "Not installed", c.desc, url}
+		default:
+			details := ""
+			if doctorVerbose {
+				details = fmt.Sprintf("Formats: %s (%s)", strings.Join(found, ", "), strings.Join(foundDirs, ":"))
+			}
+			result = checkResult{catOptionalFeatures, c.name, statusOK, fmt.Sprintf("Installed (%d formats)", len(found)), details, url}
+		}
+		results = append(results, result)
+	}
+
+	return results
+}
+
+func findQtPluginDirs() []string {
+	var dirs []string
+
+	addDir := func(dir string) {
+		if dir != "" {
+			if _, err := os.Stat(filepath.Join(dir, "imageformats")); err == nil {
+				dirs = append(dirs, dir)
+			}
+		}
+	}
+
+	// Check all paths in QT_PLUGIN_PATH env var (used by NixOS and custom setups)
+	if envPath := os.Getenv("QT_PLUGIN_PATH"); envPath != "" {
+		for dir := range strings.SplitSeq(envPath, ":") {
+			addDir(dir)
+		}
+	}
+
+	// Try qtpaths
+	for _, cmd := range []string{"qtpaths6", "qtpaths"} {
+		if output, err := exec.Command(cmd, "-query", "QT_INSTALL_PLUGINS").Output(); err == nil {
+			addDir(strings.TrimSpace(string(output)))
+		}
+	}
+
+	// Fallback: common distro paths
+	for _, dir := range []string{
+		"/usr/lib/qt6/plugins",
+		"/usr/lib64/qt6/plugins",
+		"/usr/lib/x86_64-linux-gnu/qt6/plugins",
+		"/usr/lib/aarch64-linux-gnu/qt6/plugins",
+	} {
+		addDir(dir)
+	}
+
+	return dirs
+}
+
 func detectNetworkBackend(stackResult *network.DetectResult) string {
 	switch stackResult.Backend {
 	case network.BackendNetworkManager:
@@ -689,7 +803,21 @@ func checkOptionalDependencies() []checkResult {
 	logindStatus, logindMsg := getOptionalDBusStatus("org.freedesktop.login1")
 	results = append(results, checkResult{catOptionalFeatures, "logind", logindStatus, logindMsg, "Session management", optionalFeaturesURL})
 
+	cupsPkHelperBus := "org.opensuse.CupsPkHelper.Mechanism"
+	var cupsPkStatus status
+	var cupsPkMsg string
+	switch {
+	case utils.IsDBusServiceAvailable(cupsPkHelperBus):
+		cupsPkStatus, cupsPkMsg = statusOK, "Running"
+	case utils.IsDBusServiceActivatable(cupsPkHelperBus):
+		cupsPkStatus, cupsPkMsg = statusOK, "Available"
+	default:
+		cupsPkStatus, cupsPkMsg = statusWarn, "Not available (install cups-pk-helper)"
+	}
+	results = append(results, checkResult{catOptionalFeatures, "cups-pk-helper", cupsPkStatus, cupsPkMsg, "Printer management", optionalFeaturesURL})
+
 	results = append(results, checkI2CAvailability())
+	results = append(results, checkImageFormatPlugins()...)
 
 	terminals := []string{"ghostty", "kitty", "alacritty", "foot", "wezterm"}
 	if idx := slices.IndexFunc(terminals, utils.CommandExists); idx >= 0 {
@@ -951,14 +1079,14 @@ func formatResultsPlain(results []checkResult) string {
 			if currentCategory != -1 {
 				sb.WriteString("\n")
 			}
-			sb.WriteString(fmt.Sprintf("**%s**\n", r.category.String()))
+			fmt.Fprintf(&sb, "**%s**\n", r.category.String())
 			currentCategory = r.category
 		}
 
-		sb.WriteString(fmt.Sprintf("- [%s] %s: %s\n", r.status, r.name, r.message))
+		fmt.Fprintf(&sb, "- [%s] %s: %s\n", r.status, r.name, r.message)
 
 		if doctorVerbose && r.details != "" {
-			sb.WriteString(fmt.Sprintf("  - %s\n", r.details))
+			fmt.Fprintf(&sb, "  - %s\n", r.details)
 		}
 	}
 
@@ -968,8 +1096,8 @@ func formatResultsPlain(results []checkResult) string {
 	}
 
 	sb.WriteString("\n---\n")
-	sb.WriteString(fmt.Sprintf("**Summary:** %d error(s), %d warning(s), %d ok\n",
-		ds.ErrorCount(), ds.WarningCount(), ds.OKCount()))
+	fmt.Fprintf(&sb, "**Summary:** %d error(s), %d warning(s), %d ok\n",
+		ds.ErrorCount(), ds.WarningCount(), ds.OKCount())
 
 	return sb.String()
 }

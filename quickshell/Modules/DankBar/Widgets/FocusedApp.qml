@@ -189,7 +189,7 @@ BasePill {
                             return "";
                         return Paths.getAppName(activeWindow.appId, activeDesktopEntry);
                     }
-                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     color: Theme.widgetTextColor
                     anchors.verticalCenter: parent.verticalCenter
                     elide: Text.ElideRight
@@ -200,7 +200,7 @@ BasePill {
 
                 StyledText {
                     text: "•"
-                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     color: Theme.outlineButton
                     anchors.verticalCenter: parent.verticalCenter
                     visible: !compactMode && appText.text && titleText.text
@@ -211,21 +211,22 @@ BasePill {
                     text: {
                         const title = activeWindow && activeWindow.title ? activeWindow.title : "";
                         const appName = appText.text;
+
+                        if (compactMode && title === appName) {
+                            return title;
+                        }
+
                         if (!title || !appName) {
                             return title;
                         }
 
-                        if (title.endsWith(" - " + appName)) {
-                            return title.substring(0, title.length - (" - " + appName).length);
-                        }
-
                         if (title.endsWith(appName)) {
-                            return title.substring(0, title.length - appName.length).replace(/ - $/, "");
+                            return title.substring(0, title.length - appName.length).replace(/ (-|—) $/, "");
                         }
 
                         return title;
                     }
-                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     color: Theme.widgetTextColor
                     anchors.verticalCenter: parent.verticalCenter
                     elide: Text.ElideRight

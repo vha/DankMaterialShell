@@ -36,7 +36,7 @@ BasePill {
 
                 DankIcon {
                     name: "device_thermostat"
-                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                     color: {
                         if (DgopService.cpuTemperature > 85) {
                             return Theme.tempDanger;
@@ -59,7 +59,7 @@ BasePill {
 
                         return Math.round(DgopService.cpuTemperature).toString();
                     }
-                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                    font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     color: Theme.widgetTextColor
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
@@ -74,7 +74,7 @@ BasePill {
                 DankIcon {
                     id: cpuTempIcon
                     name: "device_thermostat"
-                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                    size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                     color: {
                         if (DgopService.cpuTemperature > 85) {
                             return Theme.tempDanger;
@@ -99,16 +99,9 @@ BasePill {
                     width: implicitWidth
                     height: implicitHeight
 
-                    Behavior on width {
-                        NumberAnimation {
-                            duration: Theme.shortDuration
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-
                     StyledTextMetrics {
                         id: tempBaseline
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         text: "88°"
                     }
 
@@ -121,7 +114,7 @@ BasePill {
 
                             return Math.round(DgopService.cpuTemperature) + "°";
                         }
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: Theme.widgetTextColor
 
                         anchors.fill: parent

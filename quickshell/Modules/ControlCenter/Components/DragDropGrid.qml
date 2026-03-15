@@ -31,10 +31,25 @@ Column {
 
     spacing: editMode ? Theme.spacingL : Theme.spacingS
 
+    property real maxPopoutHeight: 9999
     property var currentRowWidgets: []
     property real currentRowWidth: 0
     property int expandedRowIndex: -1
     property var colorPickerModal: null
+
+    readonly property real _maxDetailHeight: {
+        const rows = layoutResult.rows;
+        let totalRowHeight = 0;
+        for (let i = 0; i < rows.length; i++) {
+            const sliderOnly = rows[i].every(w => {
+                const id = w.id || "";
+                return id === "volumeSlider" || id === "brightnessSlider" || id === "inputVolumeSlider";
+            });
+            totalRowHeight += sliderOnly ? 36 : 60;
+        }
+        const rowSpacing = Math.max(0, rows.length - 1) * spacing;
+        return Math.max(100, maxPopoutHeight - totalRowHeight - rowSpacing);
+    }
 
     function calculateRowsAndWidgets() {
         return LayoutUtils.calculateRowsAndWidgets(root, expandedSection, expandedWidgetIndex);
@@ -163,6 +178,7 @@ Column {
             DetailHost {
                 id: detailHost
                 width: parent.width
+                maxAvailableHeight: root._maxDetailHeight
                 height: active ? (getDetailHeight(root.expandedSection) + Theme.spacingS) : 0
                 property bool active: {
                     if (root.expandedSection === "")
@@ -945,22 +961,31 @@ Column {
                 }
             }
 
-            Component.onCompleted: {
-                Qt.callLater(() => {
-                    const pluginComponent = PluginService.pluginWidgetComponents[pluginId];
-                    if (pluginComponent) {
-                        const instance = pluginComponent.createObject(null, {
-                            "pluginId": pluginId,
-                            "pluginService": PluginService,
-                            "visible": false,
-                            "width": 0,
-                            "height": 0
-                        });
-                        if (instance) {
-                            pluginInstance = instance;
-                        }
+            function tryCreatePluginInstance() {
+                const pluginComponent = PluginService.pluginWidgetComponents[pluginId];
+                if (!pluginComponent)
+                    return false;
+                try {
+                    const instance = pluginComponent.createObject(null, {
+                        "pluginId": pluginId,
+                        "pluginService": PluginService,
+                        "visible": false,
+                        "width": 0,
+                        "height": 0
+                    });
+                    if (instance) {
+                        pluginInstance = instance;
+                        return true;
                     }
-                });
+                } catch (e) {
+                    console.warn("DragDropGrid: stale plugin component for", pluginId, "- reloading");
+                    PluginService.reloadPlugin(pluginId);
+                }
+                return false;
+            }
+
+            Component.onCompleted: {
+                Qt.callLater(() => tryCreatePluginInstance());
             }
 
             Connections {
@@ -969,6 +994,11 @@ Column {
                     if (changedPluginId === pluginId && pluginInstance) {
                         pluginInstance.loadPluginData();
                     }
+                }
+                function onPluginLoaded(loadedPluginId) {
+                    if (loadedPluginId !== pluginId || pluginInstance)
+                        return;
+                    Qt.callLater(() => tryCreatePluginInstance());
                 }
             }
 

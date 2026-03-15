@@ -21,7 +21,9 @@ Singleton {
     property bool _isReadOnly: false
     property bool _hasUnsavedChanges: false
     property var _loadedSessionSnapshot: null
-    readonly property var _hooks: ({})
+    readonly property var _hooks: ({
+            "updateLocale": updateLocale
+        })
     readonly property string _stateUrl: StandardPaths.writableLocation(StandardPaths.GenericStateLocation)
     readonly property string _stateDir: Paths.strip(_stateUrl)
 
@@ -123,6 +125,15 @@ Singleton {
     property string vpnLastConnected: ""
 
     property var deviceMaxVolumes: ({})
+    property var hiddenOutputDeviceNames: []
+    property var hiddenInputDeviceNames: []
+
+    property string locale: ""
+    property string timeLocale: ""
+
+    property string launcherLastMode: "all"
+    property string appDrawerLastMode: "apps"
+    property string niriOverviewLastMode: "apps"
 
     Component.onCompleted: {
         if (!isGreeterMode) {
@@ -569,14 +580,7 @@ Singleton {
             }
         }
 
-        if (!newSettings[identifier]) {
-            newSettings[identifier] = {
-                "enabled": false,
-                "mode": "interval",
-                "interval": 300,
-                "time": "06:00"
-            };
-        }
+        newSettings[identifier] = getMonitorCyclingSettings(screenName);
         newSettings[identifier].enabled = enabled;
         monitorCyclingSettings = newSettings;
         saveSettings();
@@ -607,14 +611,7 @@ Singleton {
             }
         }
 
-        if (!newSettings[identifier]) {
-            newSettings[identifier] = {
-                "enabled": false,
-                "mode": "interval",
-                "interval": 300,
-                "time": "06:00"
-            };
-        }
+        newSettings[identifier] = getMonitorCyclingSettings(screenName);
         newSettings[identifier].mode = mode;
         monitorCyclingSettings = newSettings;
         saveSettings();
@@ -645,14 +642,7 @@ Singleton {
             }
         }
 
-        if (!newSettings[identifier]) {
-            newSettings[identifier] = {
-                "enabled": false,
-                "mode": "interval",
-                "interval": 300,
-                "time": "06:00"
-            };
-        }
+        newSettings[identifier] = getMonitorCyclingSettings(screenName);
         newSettings[identifier].interval = interval;
         monitorCyclingSettings = newSettings;
         saveSettings();
@@ -683,14 +673,7 @@ Singleton {
             }
         }
 
-        if (!newSettings[identifier]) {
-            newSettings[identifier] = {
-                "enabled": false,
-                "mode": "interval",
-                "interval": 300,
-                "time": "06:00"
-            };
-        }
+        newSettings[identifier] = getMonitorCyclingSettings(screenName);
         newSettings[identifier].time = time;
         monitorCyclingSettings = newSettings;
         saveSettings();
@@ -1069,6 +1052,20 @@ Singleton {
         saveSettings();
     }
 
+    function setHiddenOutputDeviceNames(deviceNames) {
+        if (!Array.isArray(deviceNames))
+            return;
+        hiddenOutputDeviceNames = deviceNames;
+        saveSettings();
+    }
+
+    function setHiddenInputDeviceNames(deviceNames) {
+        if (!Array.isArray(deviceNames))
+            return;
+        hiddenInputDeviceNames = deviceNames;
+        saveSettings();
+    }
+
     function getDeviceMaxVolume(nodeName) {
         if (!nodeName)
             return 100;
@@ -1081,6 +1078,29 @@ Singleton {
         const updated = Object.assign({}, deviceMaxVolumes);
         delete updated[nodeName];
         deviceMaxVolumes = updated;
+        saveSettings();
+    }
+
+    function updateLocale() {
+        if (!locale) {
+            I18n._pickTranslation();
+            return;
+        }
+        I18n.useLocale(locale, locale.startsWith("en") ? "" : I18n.folder + "/" + locale + ".json");
+    }
+
+    function setLauncherLastMode(mode) {
+        launcherLastMode = mode;
+        saveSettings();
+    }
+
+    function setAppDrawerLastMode(mode) {
+        appDrawerLastMode = mode;
+        saveSettings();
+    }
+
+    function setNiriOverviewLastMode(mode) {
+        niriOverviewLastMode = mode;
         saveSettings();
     }
 
@@ -1170,7 +1190,7 @@ Singleton {
             "time": "06:00"
         };
         var value = _findMonitorValue(monitorCyclingSettings, screenName);
-        return value !== undefined ? value : defaults;
+        return Object.assign({}, defaults, value !== undefined ? value : {});
     }
 
     FileView {
@@ -1197,7 +1217,7 @@ Singleton {
         id: greeterSessionFile
 
         path: {
-            const greetCfgDir = Quickshell.env("DMS_GREET_CFG_DIR") || "/etc/greetd/.dms";
+            const greetCfgDir = Quickshell.env("DMS_GREET_CFG_DIR") || "/var/cache/dms-greeter";
             return greetCfgDir + "/session.json";
         }
         preload: isGreeterMode

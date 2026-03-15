@@ -9,18 +9,29 @@ Singleton {
     id: root
 
     property var controlCenterPopout: null
+    property var controlCenterLoader: null
     property var notificationCenterPopout: null
+    property var notificationCenterLoader: null
     property var appDrawerPopout: null
+    property var appDrawerLoader: null
     property var processListPopout: null
+    property var processListPopoutLoader: null
     property var dankDashPopout: null
+    property var dankDashPopoutLoader: null
     property var batteryPopout: null
+    property var batteryPopoutLoader: null
     property var vpnPopout: null
+    property var vpnPopoutLoader: null
     property var systemUpdatePopout: null
+    property var systemUpdateLoader: null
+    property var layoutPopout: null
+    property var layoutPopoutLoader: null
+    property var clipboardHistoryPopout: null
+    property var clipboardHistoryPopoutLoader: null
 
     property var settingsModal: null
     property var settingsModalLoader: null
     property var clipboardHistoryModal: null
-    property var clipboardHistoryPopout: null
     property var dankLauncherV2Modal: null
     property var dankLauncherV2ModalLoader: null
     property var powerMenuModal: null
@@ -30,6 +41,8 @@ Singleton {
     property var notificationModal: null
     property var wifiPasswordModal: null
     property var wifiPasswordModalLoader: null
+    property var wifiQRCodeModal: null
+    property var wifiQRCodeModalLoader: null
     property var polkitAuthModal: null
     property var polkitAuthModalLoader: null
     property var bluetoothPairingModal: null
@@ -58,6 +71,13 @@ Singleton {
         controlCenterPopout?.close();
     }
 
+    function unloadControlCenter() {
+        if (!controlCenterLoader)
+            return;
+        controlCenterPopout = null;
+        controlCenterLoader.active = false;
+    }
+
     function toggleControlCenter(x, y, width, section, screen) {
         if (controlCenterPopout) {
             setPosition(controlCenterPopout, x, y, width, section, screen);
@@ -74,6 +94,13 @@ Singleton {
 
     function closeNotificationCenter() {
         notificationCenterPopout?.close();
+    }
+
+    function unloadNotificationCenter() {
+        if (!notificationCenterLoader)
+            return;
+        notificationCenterPopout = null;
+        notificationCenterLoader.active = false;
     }
 
     function toggleNotificationCenter(x, y, width, section, screen) {
@@ -94,6 +121,13 @@ Singleton {
         appDrawerPopout?.close();
     }
 
+    function unloadAppDrawer() {
+        if (!appDrawerLoader)
+            return;
+        appDrawerPopout = null;
+        appDrawerLoader.active = false;
+    }
+
     function toggleAppDrawer(x, y, width, section, screen) {
         if (appDrawerPopout) {
             setPosition(appDrawerPopout, x, y, width, section, screen);
@@ -112,6 +146,13 @@ Singleton {
         processListPopout?.close();
     }
 
+    function unloadProcessListPopout() {
+        if (!processListPopoutLoader)
+            return;
+        processListPopout = null;
+        processListPopoutLoader.active = false;
+    }
+
     function toggleProcessList(x, y, width, section, screen) {
         if (processListPopout) {
             setPosition(processListPopout, x, y, width, section, screen);
@@ -119,31 +160,94 @@ Singleton {
         }
     }
 
+    property bool _dankDashWantsOpen: false
+    property bool _dankDashWantsToggle: false
+    property int _dankDashPendingTab: 0
+    property real _dankDashPendingX: 0
+    property real _dankDashPendingY: 0
+    property real _dankDashPendingWidth: 0
+    property string _dankDashPendingSection: ""
+    property var _dankDashPendingScreen: null
+    property bool _dankDashHasPosition: false
+
+    function _storeDankDashPosition(x, y, width, section, screen, hasPos) {
+        _dankDashPendingX = x;
+        _dankDashPendingY = y;
+        _dankDashPendingWidth = width;
+        _dankDashPendingSection = section;
+        _dankDashPendingScreen = screen;
+        _dankDashHasPosition = hasPos;
+    }
+
     function openDankDash(tabIndex, x, y, width, section, screen) {
+        _dankDashPendingTab = tabIndex || 0;
         if (dankDashPopout) {
-            if (arguments.length >= 6) {
+            if (arguments.length >= 6)
                 setPosition(dankDashPopout, x, y, width, section, screen);
-            }
-            dankDashPopout.currentTabIndex = tabIndex || 0;
+            dankDashPopout.currentTabIndex = _dankDashPendingTab;
             dankDashPopout.dashVisible = true;
+            return;
         }
+        if (!dankDashPopoutLoader)
+            return;
+        _storeDankDashPosition(x, y, width, section, screen, arguments.length >= 6);
+        _dankDashWantsOpen = true;
+        _dankDashWantsToggle = false;
+        dankDashPopoutLoader.active = true;
     }
 
     function closeDankDash() {
-        if (dankDashPopout) {
+        if (dankDashPopout)
             dankDashPopout.dashVisible = false;
-        }
+    }
+
+    function unloadDankDash() {
+        if (!dankDashPopoutLoader)
+            return;
+        dankDashPopout = null;
+        dankDashPopoutLoader.active = false;
     }
 
     function toggleDankDash(tabIndex, x, y, width, section, screen) {
+        _dankDashPendingTab = tabIndex || 0;
         if (dankDashPopout) {
-            if (arguments.length >= 6) {
+            if (arguments.length >= 6)
                 setPosition(dankDashPopout, x, y, width, section, screen);
-            }
             if (dankDashPopout.dashVisible) {
                 dankDashPopout.dashVisible = false;
             } else {
-                dankDashPopout.currentTabIndex = tabIndex || 0;
+                dankDashPopout.currentTabIndex = _dankDashPendingTab;
+                dankDashPopout.dashVisible = true;
+            }
+            return;
+        }
+        if (!dankDashPopoutLoader)
+            return;
+        _storeDankDashPosition(x, y, width, section, screen, arguments.length >= 6);
+        _dankDashWantsToggle = true;
+        _dankDashWantsOpen = false;
+        dankDashPopoutLoader.active = true;
+    }
+
+    function _onDankDashPopoutLoaded() {
+        if (!dankDashPopout)
+            return;
+
+        if (_dankDashHasPosition)
+            setPosition(dankDashPopout, _dankDashPendingX, _dankDashPendingY, _dankDashPendingWidth, _dankDashPendingSection, _dankDashPendingScreen);
+
+        if (_dankDashWantsOpen) {
+            _dankDashWantsOpen = false;
+            dankDashPopout.currentTabIndex = _dankDashPendingTab;
+            dankDashPopout.dashVisible = true;
+            return;
+        }
+        if (_dankDashWantsToggle) {
+            _dankDashWantsToggle = false;
+            if (dankDashPopout.dashVisible) {
+                dankDashPopout.dashVisible = false;
+            } else {
+                dankDashPopout.currentTabIndex = _dankDashPendingTab;
                 dankDashPopout.dashVisible = true;
             }
         }
@@ -158,6 +262,13 @@ Singleton {
 
     function closeBattery() {
         batteryPopout?.close();
+    }
+
+    function unloadBattery() {
+        if (!batteryPopoutLoader)
+            return;
+        batteryPopout = null;
+        batteryPopoutLoader.active = false;
     }
 
     function toggleBattery(x, y, width, section, screen) {
@@ -178,6 +289,13 @@ Singleton {
         vpnPopout?.close();
     }
 
+    function unloadVpn() {
+        if (!vpnPopoutLoader)
+            return;
+        vpnPopout = null;
+        vpnPopoutLoader.active = false;
+    }
+
     function toggleVpn(x, y, width, section, screen) {
         if (vpnPopout) {
             setPosition(vpnPopout, x, y, width, section, screen);
@@ -194,6 +312,13 @@ Singleton {
 
     function closeSystemUpdate() {
         systemUpdatePopout?.close();
+    }
+
+    function unloadSystemUpdate() {
+        if (!systemUpdateLoader)
+            return;
+        systemUpdatePopout = null;
+        systemUpdateLoader.active = false;
     }
 
     function toggleSystemUpdate(x, y, width, section, screen) {
@@ -356,6 +481,20 @@ Singleton {
         clipboardHistoryModal?.close();
     }
 
+    function unloadClipboardHistoryPopout() {
+        if (!clipboardHistoryPopoutLoader)
+            return;
+        clipboardHistoryPopout = null;
+        clipboardHistoryPopoutLoader.active = false;
+    }
+
+    function unloadLayoutPopout() {
+        if (!layoutPopoutLoader)
+            return;
+        layoutPopout = null;
+        layoutPopoutLoader.active = false;
+    }
+
     property bool _dankLauncherV2WantsOpen: false
     property bool _dankLauncherV2WantsToggle: false
     property string _dankLauncherV2PendingQuery: ""
@@ -395,6 +534,13 @@ Singleton {
 
     function closeDankLauncherV2() {
         dankLauncherV2Modal?.hide();
+    }
+
+    function unloadDankLauncherV2() {
+        if (dankLauncherV2ModalLoader) {
+            dankLauncherV2Modal = null;
+            dankLauncherV2ModalLoader.active = false;
+        }
     }
 
     function toggleDankLauncherV2() {
@@ -515,6 +661,13 @@ Singleton {
             wifiPasswordModalLoader.active = true;
         if (wifiPasswordModal)
             wifiPasswordModal.show(ssid);
+    }
+
+    function showWifiQRCodeModal(ssid) {
+        if (wifiQRCodeModalLoader)
+            wifiQRCodeModalLoader.active = true;
+        if (wifiQRCodeModal)
+            wifiQRCodeModal.show(ssid);
     }
 
     function showHiddenNetworkModal() {

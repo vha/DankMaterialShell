@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import qs.Common
 import qs.Services
@@ -21,8 +22,8 @@ Rectangle {
     }
 
     readonly property bool compactMode: SettingsData.notificationCompactMode
-    readonly property real cardPadding: compactMode ? Theme.spacingS : Theme.spacingM
-    readonly property real iconSize: compactMode ? 48 : 63
+    readonly property real cardPadding: compactMode ? Theme.notificationCardPaddingCompact : Theme.notificationCardPadding
+    readonly property real iconSize: compactMode ? Theme.notificationIconSizeCompact : Theme.notificationIconSizeNormal
     readonly property real contentSpacing: compactMode ? Theme.spacingXS : Theme.spacingS
     readonly property real collapsedContentHeight: iconSize + cardPadding
     readonly property real baseCardHeight: cardPadding * 2 + collapsedContentHeight
@@ -30,7 +31,21 @@ Rectangle {
     width: parent ? parent.width : 400
     height: baseCardHeight + contentItem.extraHeight
     radius: Theme.cornerRadius
-    clip: true
+    clip: false
+    readonly property bool shadowsAllowed: Theme.elevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1"
+
+    ElevationShadow {
+        id: shadowLayer
+        anchors.fill: parent
+        z: -1
+        level: Theme.elevationLevel1
+        fallbackOffset: 1
+        targetRadius: root.radius
+        targetColor: root.color
+        borderColor: root.border.color
+        borderWidth: root.border.width
+        shadowEnabled: root.shadowsAllowed
+    }
 
     color: {
         if (isSelected && keyboardNavigationActive)
@@ -49,7 +64,7 @@ Rectangle {
             return 1.5;
         if (historyItem.urgency === 2)
             return 2;
-        return 1;
+        return 0;
     }
 
     Behavior on border.color {
@@ -93,7 +108,7 @@ Rectangle {
         anchors.right: parent.right
         anchors.topMargin: cardPadding
         anchors.leftMargin: Theme.spacingL
-        anchors.rightMargin: Theme.spacingL + (compactMode ? 32 : 40)
+        anchors.rightMargin: Theme.spacingL + Theme.notificationHoverRevealMargin
         height: collapsedContentHeight + extraHeight
 
         DankCircularImage {
@@ -122,12 +137,12 @@ Rectangle {
                     return "";
                 const appIcon = historyItem.appIcon;
                 if (!appIcon)
-                    return iconFromImage ? "image://icon/" + iconFromImage : "";
+                    return iconFromImage ? Paths.resolveIconUrl(iconFromImage) : "";
                 if (appIcon.startsWith("file://") || appIcon.startsWith("http://") || appIcon.startsWith("https://") || appIcon.includes("/"))
                     return appIcon;
                 if (appIcon.startsWith("material:") || appIcon.startsWith("svg:") || appIcon.startsWith("unicode:") || appIcon.startsWith("image:"))
                     return "";
-                return Quickshell.iconPath(appIcon, true);
+                return Paths.resolveIconPath(appIcon);
             }
 
             hasImage: hasNotificationImage
@@ -165,32 +180,47 @@ Rectangle {
             Column {
                 width: parent.width
                 anchors.top: parent.top
-                spacing: compactMode ? 1 : 2
+                spacing: Theme.notificationContentSpacing
 
-                StyledText {
+                Row {
                     width: parent.width
-                    text: {
-                        const timeStr = NotificationService.formatHistoryTime(historyItem.timestamp);
-                        const appName = historyItem.appName || "";
-                        return timeStr.length > 0 ? `${appName} • ${timeStr}` : appName;
+                    spacing: Theme.spacingXS
+                    readonly property real reservedTrailingWidth: historySeparator.implicitWidth + Math.max(historyTimeText.implicitWidth, 72) + spacing
+
+                    StyledText {
+                        id: historyTitleText
+                        width: Math.min(implicitWidth, Math.max(0, parent.width - parent.reservedTrailingWidth))
+                        text: {
+                            let title = historyItem.summary || "";
+                            const appName = historyItem.appName || "";
+                            const prefix = appName + " • ";
+                            if (appName && title.toLowerCase().startsWith(prefix.toLowerCase())) {
+                                title = title.substring(prefix.length);
+                            }
+                            return title;
+                        }
+                        color: Theme.surfaceText
+                        font.pixelSize: Theme.fontSizeMedium
+                        font.weight: Font.Medium
+                        elide: Text.ElideRight
+                        maximumLineCount: 1
+                        visible: text.length > 0
                     }
-                    color: Theme.surfaceVariantText
-                    font.pixelSize: Theme.fontSizeSmall
-                    font.weight: Font.Medium
-                    elide: Text.ElideRight
-                    maximumLineCount: 1
-                    visible: text.length > 0
-                }
-
-                StyledText {
-                    text: historyItem.summary || ""
-                    color: Theme.surfaceText
-                    font.pixelSize: Theme.fontSizeMedium
-                    font.weight: Font.Medium
-                    width: parent.width
-                    elide: Text.ElideRight
-                    maximumLineCount: 1
-                    visible: text.length > 0
+                    StyledText {
+                        id: historySeparator
+                        text: (historyTitleText.text.length > 0 && historyTimeText.text.length > 0) ? " • " : ""
+                        color: Qt.rgba(Theme.surfaceText.r, Theme.surfaceText.g, Theme.surfaceText.b, 0.7)
+                        font.pixelSize: Theme.fontSizeSmall
+                        font.weight: Font.Normal
+                    }
+                    StyledText {
+                        id: historyTimeText
+                        text: NotificationService.formatHistoryTime(historyItem.timestamp)
+                        color: Qt.rgba(Theme.surfaceText.r, Theme.surfaceText.g, Theme.surfaceText.b, 0.7)
+                        font.pixelSize: Theme.fontSizeSmall
+                        font.weight: Font.Normal
+                        visible: text.length > 0
+                    }
                 }
 
                 StyledText {

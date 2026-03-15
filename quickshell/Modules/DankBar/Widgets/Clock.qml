@@ -38,7 +38,7 @@ BasePill {
                             const display = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
                             return String(display).padStart(2, '0').charAt(0);
                         }
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: Theme.widgetTextColor
                         width: Math.round(font.pixelSize * 0.6)
                         horizontalAlignment: Text.AlignHCenter
@@ -53,7 +53,7 @@ BasePill {
                             const display = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
                             return String(display).padStart(2, '0').charAt(1);
                         }
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: Theme.widgetTextColor
                         width: Math.round(font.pixelSize * 0.6)
                         horizontalAlignment: Text.AlignHCenter
@@ -67,7 +67,7 @@ BasePill {
 
                     StyledText {
                         text: String(systemClock?.date?.getMinutes()).padStart(2, '0').charAt(0)
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: Theme.widgetTextColor
                         width: Math.round(font.pixelSize * 0.6)
                         horizontalAlignment: Text.AlignHCenter
@@ -76,7 +76,7 @@ BasePill {
 
                     StyledText {
                         text: String(systemClock?.date?.getMinutes()).padStart(2, '0').charAt(1)
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: Theme.widgetTextColor
                         width: Math.round(font.pixelSize * 0.6)
                         horizontalAlignment: Text.AlignHCenter
@@ -91,7 +91,7 @@ BasePill {
 
                     StyledText {
                         text: String(systemClock?.date?.getSeconds()).padStart(2, '0').charAt(0)
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: Theme.widgetTextColor
                         width: Math.round(font.pixelSize * 0.6)
                         horizontalAlignment: Text.AlignHCenter
@@ -100,7 +100,7 @@ BasePill {
 
                     StyledText {
                         text: String(systemClock?.date?.getSeconds()).padStart(2, '0').charAt(1)
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: Theme.widgetTextColor
                         width: Math.round(font.pixelSize * 0.6)
                         horizontalAlignment: Text.AlignHCenter
@@ -129,13 +129,13 @@ BasePill {
 
                     StyledText {
                         text: {
-                            const locale = Qt.locale();
+                            const locale = I18n.locale();
                             const dateFormatShort = locale.dateFormat(Locale.ShortFormat);
                             const dayFirst = dateFormatShort.indexOf('d') < dateFormatShort.indexOf('M');
                             const value = dayFirst ? String(systemClock?.date?.getDate()).padStart(2, '0') : String(systemClock?.date?.getMonth() + 1).padStart(2, '0');
                             return value.charAt(0);
                         }
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: Theme.primary
                         width: Math.round(font.pixelSize * 0.6)
                         horizontalAlignment: Text.AlignHCenter
@@ -144,13 +144,13 @@ BasePill {
 
                     StyledText {
                         text: {
-                            const locale = Qt.locale();
+                            const locale = I18n.locale();
                             const dateFormatShort = locale.dateFormat(Locale.ShortFormat);
                             const dayFirst = dateFormatShort.indexOf('d') < dateFormatShort.indexOf('M');
                             const value = dayFirst ? String(systemClock?.date?.getDate()).padStart(2, '0') : String(systemClock?.date?.getMonth() + 1).padStart(2, '0');
                             return value.charAt(1);
                         }
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: Theme.primary
                         width: Math.round(font.pixelSize * 0.6)
                         horizontalAlignment: Text.AlignHCenter
@@ -165,13 +165,13 @@ BasePill {
 
                     StyledText {
                         text: {
-                            const locale = Qt.locale();
+                            const locale = I18n.locale();
                             const dateFormatShort = locale.dateFormat(Locale.ShortFormat);
                             const dayFirst = dateFormatShort.indexOf('d') < dateFormatShort.indexOf('M');
                             const value = dayFirst ? String(systemClock?.date?.getMonth() + 1).padStart(2, '0') : String(systemClock?.date?.getDate()).padStart(2, '0');
                             return value.charAt(0);
                         }
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: Theme.primary
                         width: Math.round(font.pixelSize * 0.6)
                         horizontalAlignment: Text.AlignHCenter
@@ -180,13 +180,13 @@ BasePill {
 
                     StyledText {
                         text: {
-                            const locale = Qt.locale();
+                            const locale = I18n.locale();
                             const dateFormatShort = locale.dateFormat(Locale.ShortFormat);
                             const dayFirst = dateFormatShort.indexOf('d') < dateFormatShort.indexOf('M');
                             const value = dayFirst ? String(systemClock?.date?.getMonth() + 1).padStart(2, '0') : String(systemClock?.date?.getDate()).padStart(2, '0');
                             return value.charAt(1);
                         }
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: Theme.primary
                         width: Math.round(font.pixelSize * 0.6)
                         horizontalAlignment: Text.AlignHCenter
@@ -201,7 +201,7 @@ BasePill {
                 anchors.centerIn: parent
                 spacing: Theme.spacingS
 
-                property real fontSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale)
+                property real fontSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                 property real digitWidth: fontSize * 0.6
 
                 property string hoursStr: {
@@ -311,9 +311,9 @@ BasePill {
                     id: dateText
                     text: {
                         if (SettingsData.clockDateFormat && SettingsData.clockDateFormat.length > 0) {
-                            return systemClock?.date?.toLocaleDateString(Qt.locale(), SettingsData.clockDateFormat);
+                            return systemClock?.date?.toLocaleDateString(I18n.locale(), SettingsData.clockDateFormat);
                         }
-                        return systemClock?.date?.toLocaleDateString(Qt.locale(), "ddd d");
+                        return systemClock?.date?.toLocaleDateString(I18n.locale(), "ddd d");
                     }
                     font.pixelSize: clockRow.fontSize
                     color: Theme.widgetTextColor

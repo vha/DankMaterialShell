@@ -7,6 +7,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pipewire
 import qs.Common
+import qs.Services
 
 Singleton {
     id: root
@@ -14,7 +15,7 @@ Singleton {
     readonly property PwNode sink: Pipewire.defaultAudioSink
     readonly property PwNode source: Pipewire.defaultAudioSource
 
-    property bool soundsAvailable: false
+    readonly property bool soundsAvailable: MultimediaService.available
     property bool gsettingsAvailable: false
     property var availableSoundThemes: []
     property string currentSoundTheme: ""
@@ -32,11 +33,7 @@ Singleton {
     property var mediaDevicesConnections: null
 
     property var deviceAliases: ({})
-    property string wireplumberConfigPath: {
-        const homeUrl = StandardPaths.writableLocation(StandardPaths.HomeLocation);
-        const homePath = homeUrl.toString().replace("file://", "");
-        return homePath + "/.config/wireplumber/wireplumber.conf.d/51-dms-audio-aliases.conf";
-    }
+    property string wireplumberConfigPath: Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation)) + "/wireplumber/wireplumber.conf.d/51-dms-audio-aliases.conf"
     property bool wireplumberReloading: false
 
     readonly property int sinkMaxVolume: {
@@ -47,7 +44,7 @@ Singleton {
     }
 
     signal micMuteChanged
-    signal audioOutputCycled(string deviceName)
+    signal audioOutputCycled(string deviceName, string deviceIcon)
     signal deviceAliasChanged(string nodeName, string newAlias)
     signal wireplumberReloadStarted
     signal wireplumberReloadCompleted(bool success)
@@ -71,7 +68,8 @@ Singleton {
     }
 
     function getAvailableSinks() {
-        return Pipewire.nodes.values.filter(node => node.audio && node.isSink && !node.isStream);
+        const hidden = SessionData.hiddenOutputDeviceNames ?? [];
+        return Pipewire.nodes.values.filter(node => node.audio && node.isSink && !node.isStream && !hidden.includes(node.name));
     }
 
     function cycleAudioOutput() {
@@ -79,20 +77,13 @@ Singleton {
         if (sinks.length < 2)
             return null;
 
-        const currentSink = root.sink;
-        let currentIndex = -1;
-        for (let i = 0; i < sinks.length; i++) {
-            if (sinks[i] === currentSink) {
-                currentIndex = i;
-                break;
-            }
-        }
-
+        const currentName = root.sink?.name ?? "";
+        const currentIndex = sinks.findIndex(s => s.name === currentName);
         const nextIndex = (currentIndex + 1) % sinks.length;
         const nextSink = sinks[nextIndex];
         Pipewire.preferredDefaultAudioSink = nextSink;
         const name = displayName(nextSink);
-        audioOutputCycled(name);
+        audioOutputCycled(name, sinkIcon(nextSink));
         return name;
     }
 
@@ -146,9 +137,7 @@ Singleton {
     }
 
     function writeWireplumberConfig() {
-        const homeUrl = StandardPaths.writableLocation(StandardPaths.HomeLocation);
-        const homePath = homeUrl.toString().replace("file://", "");
-        const configDir = homePath + "/.config/wireplumber/wireplumber.conf.d";
+        const configDir = Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation)) + "/wireplumber/wireplumber.conf.d";
         const configContent = generateWireplumberConfig();
 
         const shellCmd = `mkdir -p "${configDir}" && cat > "${wireplumberConfigPath}" << 'EOFCONFIG'
@@ -282,9 +271,7 @@ EOFCONFIG
     }
 
     function loadDeviceAliases() {
-        const homeUrl = StandardPaths.writableLocation(StandardPaths.HomeLocation);
-        const homePath = homeUrl.toString().replace("file://", "");
-        const configPath = homePath + "/.config/wireplumber/wireplumber.conf.d/51-dms-audio-aliases.conf";
+        const configPath = wireplumberConfigPath;
 
         Proc.runCommand("readWireplumberConfig", ["cat", configPath], (output, exitCode) => {
             if (exitCode !== 0) {
@@ -323,24 +310,6 @@ EOFCONFIG
             if (SessionData.suppressOSD)
                 return;
             root.playVolumeChangeSoundIfEnabled();
-        }
-    }
-
-    function detectSoundsAvailability() {
-        try {
-            const testObj = Qt.createQmlObject(`
-                import QtQuick
-                import QtMultimedia
-                Item {}
-            `, root, "AudioService.TestComponent");
-            if (testObj) {
-                testObj.destroy();
-            }
-            soundsAvailable = true;
-            return true;
-        } catch (e) {
-            soundsAvailable = false;
-            return false;
         }
     }
 
@@ -658,40 +627,84 @@ EOFCONFIG
         }
     }
 
+    function isMediaPlaying() {
+        return MprisController.activePlayer?.isPlaying ?? false;
+    }
+
     function playVolumeChangeSound() {
-        if (soundsAvailable && volumeChangeSound && !notificationsAudioMuted) {
-            volumeChangeSound.play();
-        }
+        if (!soundsAvailable || !volumeChangeSound || notificationsAudioMuted || isMediaPlaying())
+            return;
+        volumeChangeSound.play();
     }
 
     function playPowerPlugSound() {
-        if (soundsAvailable && powerPlugSound && !notificationsAudioMuted) {
-            powerPlugSound.play();
-        }
+        if (!soundsAvailable || !powerPlugSound || notificationsAudioMuted || isMediaPlaying())
+            return;
+        powerPlugSound.play();
     }
 
     function playPowerUnplugSound() {
-        if (soundsAvailable && powerUnplugSound && !notificationsAudioMuted) {
-            powerUnplugSound.play();
-        }
+        if (!soundsAvailable || !powerUnplugSound || notificationsAudioMuted || isMediaPlaying())
+            return;
+        powerUnplugSound.play();
     }
 
     function playNormalNotificationSound() {
-        if (soundsAvailable && normalNotificationSound && !SessionData.doNotDisturb && !notificationsAudioMuted) {
-            normalNotificationSound.play();
-        }
+        if (!soundsAvailable || !normalNotificationSound || SessionData.doNotDisturb || notificationsAudioMuted || isMediaPlaying())
+            return;
+        normalNotificationSound.play();
     }
 
     function playCriticalNotificationSound() {
-        if (soundsAvailable && criticalNotificationSound && !SessionData.doNotDisturb && !notificationsAudioMuted) {
-            criticalNotificationSound.play();
-        }
+        if (!soundsAvailable || !criticalNotificationSound || SessionData.doNotDisturb || notificationsAudioMuted || isMediaPlaying())
+            return;
+        criticalNotificationSound.play();
     }
 
     function playVolumeChangeSoundIfEnabled() {
         if (SettingsData.soundsEnabled && SettingsData.soundVolumeChanged && !notificationsAudioMuted) {
             playVolumeChangeSound();
         }
+    }
+
+    function sinkIcon(node) {
+        if (!node)
+            return "speaker";
+
+        const props = node.properties || {};
+        const formFactor = (props["device.form-factor"] || "").toLowerCase();
+
+        switch (formFactor) {
+        case "headphone":
+        case "headset":
+        case "hands-free":
+        case "handset":
+            return "headset";
+        case "tv":
+        case "monitor":
+            return "tv";
+        case "speaker":
+        case "computer":
+        case "hifi":
+        case "portable":
+        case "car":
+            return "speaker";
+        }
+
+        const bus = (props["device.bus"] || "").toLowerCase();
+        if (bus === "bluetooth")
+            return "headset";
+
+        const name = (node.name || "").toLowerCase();
+        if (name.includes("hdmi"))
+            return "tv";
+        if (name.includes("iec958") || name.includes("spdif"))
+            return "speaker";
+
+        if (bus === "usb")
+            return "headset";
+
+        return "speaker";
     }
 
     function displayName(node) {
@@ -998,10 +1011,7 @@ EOFCONFIG
     }
 
     Component.onCompleted: {
-        if (!detectSoundsAvailability()) {
-            console.warn("AudioService: QtMultimedia not available - sound effects disabled");
-        } else {
-            console.info("AudioService: Sound effects enabled");
+        if (soundsAvailable) {
             checkGsettings();
             Qt.callLater(createSoundPlayers);
         }

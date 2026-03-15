@@ -469,6 +469,22 @@
     "description": "Show weather information in top bar and control center"
   },
   {
+    "section": "firstDayOfWeek",
+    "label": "First Day of Week",
+    "tabIndex": 1,
+    "category": "Time & Weather",
+    "keywords": [
+      "clock",
+      "date",
+      "day",
+      "first",
+      "forecast",
+      "time",
+      "weather",
+      "week"
+    ]
+  },
+  {
     "section": "lockDateFormat",
     "label": "Lock Screen Format",
     "tabIndex": 1,
@@ -718,6 +734,26 @@
     "icon": "toolbar"
   },
   {
+    "section": "barShadowDirectionSource",
+    "label": "Direction Source",
+    "tabIndex": 3,
+    "category": "Dank Bar",
+    "keywords": [
+      "bar",
+      "choose",
+      "dank",
+      "direction",
+      "panel",
+      "resolves",
+      "shadow",
+      "source",
+      "statusbar",
+      "taskbar",
+      "topbar"
+    ],
+    "description": "Choose how this bar resolves shadow direction"
+  },
+  {
     "section": "barDisplay",
     "label": "Display Assignment",
     "tabIndex": 3,
@@ -737,6 +773,25 @@
     "icon": "display_settings"
   },
   {
+    "section": "barShadowDirectionManual",
+    "label": "Manual Direction",
+    "tabIndex": 3,
+    "category": "Dank Bar",
+    "keywords": [
+      "bar",
+      "dank",
+      "direction",
+      "fixed",
+      "manual",
+      "panel",
+      "shadow",
+      "statusbar",
+      "taskbar",
+      "topbar"
+    ],
+    "description": "Use a fixed shadow direction for this bar"
+  },
+  {
     "section": "barPosition",
     "label": "Position",
     "tabIndex": 3,
@@ -753,18 +808,23 @@
   },
   {
     "section": "barShadow",
-    "label": "Shadow",
+    "label": "Shadow Override",
     "tabIndex": 3,
     "category": "Dank Bar",
     "keywords": [
       "bar",
       "dank",
+      "global",
+      "override",
       "panel",
+      "settings",
       "shadow",
       "statusbar",
+      "taskbar",
       "topbar"
     ],
-    "icon": "layers"
+    "icon": "layers",
+    "description": "Override the global shadow with per-bar settings"
   },
   {
     "section": "barSpacing",
@@ -917,6 +977,32 @@
       "workspaces"
     ],
     "description": "Group repeated application icons in unfocused workspaces"
+  },
+  {
+    "section": "workspaceActiveAppHighlightEnabled",
+    "label": "Highlight Active Workspace App",
+    "tabIndex": 4,
+    "category": "Workspaces",
+    "keywords": [
+      "active",
+      "app",
+      "apps",
+      "currently",
+      "day",
+      "desktop",
+      "focused",
+      "highlight",
+      "icons",
+      "indicators",
+      "inside",
+      "light mode",
+      "spaces",
+      "virtual",
+      "virtual desktops",
+      "workspace",
+      "workspaces"
+    ],
+    "description": "Highlight the currently focused app inside workspace indicators"
   },
   {
     "section": "workspaceIcons",
@@ -1221,7 +1307,8 @@
       "windows"
     ],
     "icon": "apps",
-    "description": "Only show windows from the current monitor on each dock"
+    "description": "Only show windows from the current monitor on each dock",
+    "conditionKey": "isHyprland"
   },
   {
     "section": "dockBorder",
@@ -1489,6 +1576,33 @@
       "taskbar"
     ],
     "icon": "swap_vert"
+  },
+  {
+    "section": "dockRestoreSpecialWorkspaceOnClick",
+    "label": "Restore Special Workspace Windows",
+    "tabIndex": 5,
+    "category": "Dock",
+    "keywords": [
+      "back",
+      "before",
+      "bring",
+      "clicking",
+      "desktop",
+      "dock",
+      "focusing",
+      "hyprland",
+      "launcher bar",
+      "panel",
+      "restore",
+      "special",
+      "taskbar",
+      "virtual",
+      "window",
+      "windows",
+      "workspace"
+    ],
+    "description": "When clicking a dock window in a Hyprland special workspace, bring that special workspace back before focusing the window",
+    "conditionKey": "isHyprland"
   },
   {
     "section": "showDock",
@@ -2110,6 +2224,35 @@
     ]
   },
   {
+    "section": "dankLauncherV2UnloadOnClose",
+    "label": "Unload on Close",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "app drawer",
+      "app menu",
+      "applications",
+      "cause",
+      "close",
+      "closed",
+      "day",
+      "delay",
+      "drawer",
+      "free",
+      "launcher",
+      "light mode",
+      "memory",
+      "menu",
+      "reopening",
+      "slight",
+      "start",
+      "start menu",
+      "unload",
+      "vram"
+    ],
+    "description": "Free VRAM/memory when the launcher is closed. May cause a slight delay when reopening."
+  },
+  {
     "section": "matugenTemplateAlacritty",
     "label": "Alacritty",
     "tabIndex": 10,
@@ -2158,7 +2301,7 @@
       "theme",
       "wide"
     ],
-    "icon": "terminal",
+    "icon": "apps",
     "description": "Sync dark mode with settings portals for system-wide theme hints"
   },
   {
@@ -2206,6 +2349,33 @@
       "tint"
     ],
     "icon": "schedule"
+  },
+  {
+    "section": "barElevationEnabled",
+    "label": "Bar Shadows",
+    "tabIndex": 10,
+    "category": "Theme & Colors",
+    "keywords": [
+      "appearance",
+      "bar",
+      "bars",
+      "colors",
+      "elevation",
+      "look",
+      "m3",
+      "navigation",
+      "panel",
+      "panels",
+      "scheme",
+      "shadow",
+      "shadows",
+      "statusbar",
+      "style",
+      "taskbar",
+      "theme",
+      "topbar"
+    ],
+    "description": "Shadow elevation on bars and panels"
   },
   {
     "section": "niriLayoutBorderSize",
@@ -2414,6 +2584,29 @@
     "conditionKey": "isNiri"
   },
   {
+    "section": "matugenTemplateNeovimSettings",
+    "label": "Dark mode base",
+    "tabIndex": 10,
+    "category": "Theme & Colors",
+    "keywords": [
+      "appearance",
+      "base",
+      "colors",
+      "dark",
+      "dark mode",
+      "look",
+      "matugen",
+      "mode",
+      "neovim",
+      "night",
+      "scheme",
+      "style",
+      "template",
+      "terminal",
+      "theme"
+    ]
+  },
+  {
     "section": "modalDarkenBackground",
     "label": "Darken Modal Background",
     "tabIndex": 10,
@@ -2619,6 +2812,7 @@
       "system",
       "theme"
     ],
+    "icon": "interests",
     "description": "DankShell & System Icons (requires restart)"
   },
   {
@@ -2643,6 +2837,32 @@
       "theme",
       "tint"
     ]
+  },
+  {
+    "section": "m3ElevationLightDirection",
+    "label": "Light Direction",
+    "tabIndex": 10,
+    "category": "Theme & Colors",
+    "keywords": [
+      "advanced",
+      "appearance",
+      "cast",
+      "colors",
+      "controls",
+      "day",
+      "direction",
+      "elevation",
+      "layers",
+      "light",
+      "light mode",
+      "look",
+      "m3",
+      "scheme",
+      "shadow",
+      "style",
+      "theme"
+    ],
+    "description": "Controls shadow cast direction for elevation layers"
   },
   {
     "section": "isLightMode",
@@ -2781,7 +3001,31 @@
       "style",
       "theme"
     ],
+    "icon": "layers",
     "description": "Show darkened overlay behind modal dialogs"
+  },
+  {
+    "section": "modalElevationEnabled",
+    "label": "Modal Shadows",
+    "tabIndex": 10,
+    "category": "Theme & Colors",
+    "keywords": [
+      "appearance",
+      "colors",
+      "dialog",
+      "dialogs",
+      "elevation",
+      "look",
+      "m3",
+      "modal",
+      "modals",
+      "scheme",
+      "shadow",
+      "shadows",
+      "style",
+      "theme"
+    ],
+    "description": "Shadow elevation on modals and dialogs"
   },
   {
     "section": "niriLayout",
@@ -3044,6 +3288,32 @@
     "description": "Use custom gaps instead of bar spacing"
   },
   {
+    "section": "popoutElevationEnabled",
+    "label": "Popout Shadows",
+    "tabIndex": 10,
+    "category": "Theme & Colors",
+    "keywords": [
+      "appearance",
+      "colors",
+      "dropdown",
+      "dropdowns",
+      "elevation",
+      "look",
+      "m3",
+      "osd",
+      "osds",
+      "popout",
+      "popouts",
+      "popup",
+      "scheme",
+      "shadow",
+      "shadows",
+      "style",
+      "theme"
+    ],
+    "description": "Shadow elevation on popouts, OSDs, and dropdowns"
+  },
+  {
     "section": "popupTransparency",
     "label": "Popup Transparency",
     "tabIndex": 10,
@@ -3108,6 +3378,105 @@
     ]
   },
   {
+    "section": "m3ElevationColorMode",
+    "label": "Shadow Color",
+    "tabIndex": 10,
+    "category": "Theme & Colors",
+    "keywords": [
+      "appearance",
+      "applied",
+      "base",
+      "color",
+      "colors",
+      "colour",
+      "elevation",
+      "hue",
+      "look",
+      "m3",
+      "scheme",
+      "shadow",
+      "shadows",
+      "style",
+      "theme",
+      "tint"
+    ],
+    "description": "Base color for shadows (opacity is applied automatically)"
+  },
+  {
+    "section": "m3ElevationIntensity",
+    "label": "Shadow Intensity",
+    "tabIndex": 10,
+    "category": "Theme & Colors",
+    "keywords": [
+      "appearance",
+      "base",
+      "blur",
+      "colors",
+      "controls",
+      "elevation",
+      "intensity",
+      "look",
+      "m3",
+      "offset",
+      "radius",
+      "scheme",
+      "shadow",
+      "shadows",
+      "style",
+      "theme"
+    ],
+    "description": "Controls the base blur radius and offset of shadows"
+  },
+  {
+    "section": "m3ElevationOpacity",
+    "label": "Shadow Opacity",
+    "tabIndex": 10,
+    "category": "Theme & Colors",
+    "keywords": [
+      "alpha",
+      "appearance",
+      "colors",
+      "controls",
+      "elevation",
+      "look",
+      "m3",
+      "opacity",
+      "scheme",
+      "shadow",
+      "style",
+      "theme",
+      "translucent",
+      "transparency",
+      "transparent"
+    ],
+    "description": "Controls the transparency of the shadow"
+  },
+  {
+    "section": "m3ElevationEnabled",
+    "label": "Shadows",
+    "tabIndex": 10,
+    "category": "Theme & Colors",
+    "keywords": [
+      "appearance",
+      "colors",
+      "dialogs",
+      "elevation",
+      "inspired",
+      "lift",
+      "look",
+      "m3",
+      "material",
+      "modals",
+      "popouts",
+      "scheme",
+      "shadow",
+      "shadows",
+      "style",
+      "theme"
+    ],
+    "description": "Material inspired shadows and elevation on modals, popouts, and dialogs"
+  },
+  {
     "section": "syncModeWithPortal",
     "label": "Sync Mode with Portal",
     "tabIndex": 10,
@@ -3152,7 +3521,7 @@
       "theme",
       "theming"
     ],
-    "icon": "extension",
+    "icon": "brush",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -3490,6 +3859,23 @@
     "description": "Rounded corners for windows (decoration.rounding)"
   },
   {
+    "section": "matugenTemplateZed",
+    "label": "Zed",
+    "tabIndex": 10,
+    "category": "Theme & Colors",
+    "keywords": [
+      "appearance",
+      "colors",
+      "look",
+      "matugen",
+      "scheme",
+      "style",
+      "template",
+      "theme",
+      "zed"
+    ]
+  },
+  {
     "section": "matugenTemplateDgop",
     "label": "dgop",
     "tabIndex": 10,
@@ -3588,12 +3974,14 @@
       "look",
       "matugen",
       "neovim",
+      "required",
       "scheme",
       "style",
       "template",
       "terminal",
       "theme"
-    ]
+    ],
+    "description": "Required plugin: "
   },
   {
     "section": "matugenTemplateNiri",
@@ -3716,6 +4104,52 @@
     ]
   },
   {
+    "section": "lockScreenVideoCycling",
+    "label": "Automatic Cycling",
+    "tabIndex": 11,
+    "category": "Lock Screen",
+    "keywords": [
+      "automatic",
+      "cycling",
+      "different",
+      "folder",
+      "lock",
+      "login",
+      "password",
+      "pick",
+      "random",
+      "same",
+      "screen",
+      "screensaver",
+      "security",
+      "shuffle",
+      "time",
+      "video"
+    ],
+    "description": "Pick a different random video each time from the same folder"
+  },
+  {
+    "section": "lockScreenVideoEnabled",
+    "label": "Enable Video Screensaver",
+    "tabIndex": 11,
+    "category": "Lock Screen",
+    "keywords": [
+      "animation",
+      "enable",
+      "lock",
+      "locks",
+      "login",
+      "movie",
+      "password",
+      "play",
+      "screen",
+      "screensaver",
+      "security",
+      "video"
+    ],
+    "description": "Play a video when the screen locks."
+  },
+  {
     "section": "enableFprint",
     "label": "Enable fingerprint authentication",
     "tabIndex": 11,
@@ -3724,18 +4158,14 @@
       "authentication",
       "biometric",
       "enable",
-      "enrolled",
       "fingerprint",
       "fprint",
       "lock",
-      "lockscreen",
       "login",
       "password",
-      "reader",
       "screen",
       "security"
-    ],
-    "description": "Use fingerprint reader for lock screen authentication (requires enrolled fingerprints)"
+    ]
   },
   {
     "section": "loginctlLockIntegration",
@@ -3759,6 +4189,26 @@
       "signals"
     ],
     "description": "Bind lock screen to dbus signals from loginctl. Disable if using an external lock screen"
+  },
+  {
+    "section": "enableU2f",
+    "label": "Enable security key authentication",
+    "tabIndex": 11,
+    "category": "Lock Screen",
+    "keywords": [
+      "authentication",
+      "enable",
+      "fido",
+      "hardware",
+      "key",
+      "lock",
+      "login",
+      "password",
+      "screen",
+      "security",
+      "u2f",
+      "yubikey"
+    ]
   },
   {
     "section": "lockDisplay",
@@ -3850,6 +4300,27 @@
     "description": "Automatically lock the screen when DMS starts"
   },
   {
+    "section": "lockBeforeSuspend",
+    "label": "Lock before suspend",
+    "tabIndex": 11,
+    "category": "Lock Screen",
+    "keywords": [
+      "automatic",
+      "automatically",
+      "before",
+      "lock",
+      "login",
+      "password",
+      "prepares",
+      "screen",
+      "security",
+      "sleep",
+      "suspend",
+      "system"
+    ],
+    "description": "Automatically lock the screen when the system prepares to suspend"
+  },
+  {
     "section": "lockScreenNotificationMode",
     "label": "Notification Display",
     "tabIndex": 11,
@@ -3930,6 +4401,25 @@
       "turn"
     ],
     "description": "Turn off all displays immediately when the lock screen activates"
+  },
+  {
+    "section": "u2fMode",
+    "label": "Security key mode",
+    "tabIndex": 11,
+    "category": "Lock Screen",
+    "keywords": [
+      "factor",
+      "key",
+      "lock",
+      "login",
+      "mode",
+      "password",
+      "screen",
+      "second",
+      "security",
+      "u2f",
+      "yubikey"
+    ]
   },
   {
     "section": "lockScreenShowMediaPlayer",
@@ -4065,6 +4555,27 @@
       "system",
       "time"
     ]
+  },
+  {
+    "section": "videoScreensaver",
+    "label": "Video Screensaver",
+    "tabIndex": 11,
+    "category": "Lock Screen",
+    "keywords": [
+      "animation",
+      "lock",
+      "locks",
+      "login",
+      "movie",
+      "password",
+      "play",
+      "screen",
+      "screensaver",
+      "security",
+      "video"
+    ],
+    "icon": "movie",
+    "description": "Play a video when the screen locks."
   },
   {
     "section": "_tab_12",
@@ -4717,6 +5228,29 @@
     "description": "Suppress notification popups while enabled"
   },
   {
+    "section": "notificationCustomAnimationDuration",
+    "label": "Duration",
+    "tabIndex": 17,
+    "category": "Notifications",
+    "keywords": [
+      "alerts",
+      "animate",
+      "animation",
+      "animations",
+      "base",
+      "custom",
+      "duration",
+      "messages",
+      "motion",
+      "notification",
+      "notifications",
+      "speed",
+      "toast",
+      "transition"
+    ],
+    "description": "Base duration for animations (drag to use Custom)"
+  },
+  {
     "section": "notificationHistoryEnabled",
     "label": "Enable History",
     "tabIndex": 17,
@@ -4737,6 +5271,31 @@
       "toast"
     ],
     "description": "Save dismissed notifications to history"
+  },
+  {
+    "section": "notificationFocusedMonitor",
+    "label": "Focused Monitor Only",
+    "tabIndex": 17,
+    "category": "Notifications",
+    "keywords": [
+      "active",
+      "alert",
+      "alerts",
+      "currently",
+      "display",
+      "focused",
+      "messages",
+      "monitor",
+      "notif",
+      "notification",
+      "notifications",
+      "popup",
+      "popups",
+      "screen",
+      "show",
+      "toast"
+    ],
+    "description": "Show notification popups only on the currently focused monitor"
   },
   {
     "section": "notificationHistoryMaxAgeDays",
@@ -4879,6 +5438,25 @@
       "toast"
     ],
     "description": "Maximum number of notifications to keep"
+  },
+  {
+    "section": "mutedApps",
+    "label": "Muted Apps",
+    "tabIndex": 17,
+    "category": "Notifications",
+    "keywords": [
+      "alerts",
+      "apps",
+      "messages",
+      "mute",
+      "muted",
+      "notification",
+      "notifications",
+      "popup",
+      "toast",
+      "unmute"
+    ],
+    "icon": "volume_off"
   },
   {
     "section": "notificationHistorySaveNormal",
@@ -5057,6 +5635,69 @@
       "where"
     ],
     "description": "Choose where notification popups appear on screen"
+  },
+  {
+    "section": "notificationPopupShadowEnabled",
+    "label": "Popup Shadow",
+    "tabIndex": 17,
+    "category": "Notifications",
+    "keywords": [
+      "alert",
+      "alerts",
+      "appearance",
+      "colors",
+      "colour",
+      "colours",
+      "drop",
+      "elevation",
+      "enabled",
+      "hue",
+      "look",
+      "messages",
+      "notif",
+      "notification",
+      "notifications",
+      "palette",
+      "popup",
+      "popups",
+      "radius",
+      "requires",
+      "rounded",
+      "shadow",
+      "show",
+      "style",
+      "theme",
+      "tint",
+      "toast"
+    ],
+    "description": "Show drop shadow on notification popups. Requires M3 Elevation to be enabled in Theme & Colors."
+  },
+  {
+    "section": "notificationPopupPrivacyMode",
+    "label": "Privacy Mode",
+    "tabIndex": 17,
+    "category": "Notifications",
+    "keywords": [
+      "alert",
+      "alerts",
+      "body",
+      "collapsed",
+      "content",
+      "default",
+      "hide",
+      "messages",
+      "mode",
+      "notif",
+      "notification",
+      "notifications",
+      "popup",
+      "popups",
+      "privacy",
+      "show",
+      "toast",
+      "until"
+    ],
+    "description": "Hide notification content until expanded; popups show collapsed by default"
   },
   {
     "section": "osdAlwaysShowValue",
@@ -5685,27 +6326,6 @@
     "description": "Gradually fade the screen before locking with a configurable grace period"
   },
   {
-    "section": "lockBeforeSuspend",
-    "label": "Lock before suspend",
-    "tabIndex": 21,
-    "category": "Power & Sleep",
-    "keywords": [
-      "automatically",
-      "before",
-      "energy",
-      "lock",
-      "power",
-      "prepares",
-      "screen",
-      "security",
-      "shutdown",
-      "sleep",
-      "suspend",
-      "system"
-    ],
-    "description": "Automatically lock the screen when the system prepares to suspend"
-  },
-  {
     "section": "fadeToLockGracePeriod",
     "label": "Lock fade grace period",
     "tabIndex": 21,
@@ -6001,6 +6621,24 @@
     "conditionKey": "dmsConnected"
   },
   {
+    "section": "clipboardEnterToPaste",
+    "label": "Enter to Paste",
+    "tabIndex": 23,
+    "category": "System",
+    "keywords": [
+      "behavior",
+      "clipboard",
+      "copy",
+      "enter",
+      "linux",
+      "os",
+      "paste",
+      "press",
+      "system"
+    ],
+    "description": "Press Enter to paste, Shift+Enter to copy"
+  },
+  {
     "section": "maxHistory",
     "label": "History Settings",
     "tabIndex": 23,
@@ -6254,5 +6892,64 @@
       "volume"
     ],
     "icon": "computer"
+  },
+  {
+    "section": "_tab_30",
+    "label": "Locale",
+    "tabIndex": 30,
+    "category": "Locale",
+    "keywords": [
+      "country",
+      "language",
+      "locale"
+    ],
+    "icon": "language"
+  },
+  {
+    "section": "locale",
+    "label": "Locale Settings",
+    "tabIndex": 30,
+    "category": "Locale",
+    "keywords": [
+      "change",
+      "country",
+      "interface",
+      "language",
+      "locale",
+      "settings"
+    ],
+    "icon": "language",
+    "description": "Change the locale used by the DMS interface."
+  },
+  {
+    "section": "timeLocale",
+    "label": "Time & Date Locale",
+    "tabIndex": 30,
+    "category": "Locale",
+    "keywords": [
+      "change",
+      "country",
+      "date",
+      "format",
+      "formatting",
+      "independent",
+      "interface",
+      "language",
+      "locale",
+      "region",
+      "time"
+    ],
+    "description": "Change the locale used for date and time formatting, independent of the interface language."
+  },
+  {
+    "section": "_tab_31",
+    "label": "Greeter",
+    "tabIndex": 31,
+    "category": "Settings",
+    "keywords": [
+      "greeter",
+      "settings"
+    ],
+    "icon": "login"
   }
 ]

@@ -231,13 +231,16 @@ Singleton {
         const compositor = CompositorService.compositor;
         const profilesDir = getProfilesDir();
         const profileFile = profilesDir + "/" + profileId + getProfileExtension();
+        const isActive = SettingsData.getActiveDisplayProfile(compositor) === profileId;
 
         profilesLoading = true;
         Proc.runCommand("delete-profile", ["rm", "-f", profileFile], (output, exitCode) => {
             profilesLoading = false;
             SettingsData.removeDisplayProfile(compositor, profileId);
-            if (SettingsData.getActiveDisplayProfile(compositor) === profileId)
+            if (isActive) {
                 SettingsData.setActiveDisplayProfile(compositor, "");
+                backendWriteOutputsConfig(allOutputs);
+            }
             const updated = JSON.parse(JSON.stringify(validatedProfiles));
             delete updated[profileId];
             validatedProfiles = updated;
@@ -906,6 +909,9 @@ Singleton {
         case "dwl":
             DwlService.generateOutputsConfig(outputsData);
             break;
+        default:
+            WlrOutputService.applyOutputsConfig(outputsData, outputs);
+            break;
         }
     }
 
@@ -1061,7 +1067,7 @@ Singleton {
 
     function getHyprlandOutputIdentifier(output, outputName) {
         if (SettingsData.displayNameMode === "model" && output?.make && output?.model)
-            return "desc:" + output.make + " " + output.model;
+            return "desc:" + output.make + " " + output.model + " " + (output?.serial || "Unknown");
         return outputName;
     }
 
@@ -1493,6 +1499,10 @@ Singleton {
         }
 
         const original = originalOutputs ? JSON.parse(JSON.stringify(originalOutputs)) : buildOutputsWithPendingChanges();
+        for (const name in savedOutputs) {
+            if (!original[name])
+                original[name] = JSON.parse(JSON.stringify(savedOutputs[name]));
+        }
         backendWriteOutputsConfig(original);
         clearPendingChanges();
         if (originalOutputs)

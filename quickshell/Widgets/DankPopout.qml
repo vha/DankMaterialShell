@@ -1,10 +1,8 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import qs.Common
 import qs.Services
-import qs.Widgets
 
 Item {
     id: root
@@ -26,10 +24,16 @@ Item {
     property real animationOffset: Theme.spacingL
     property list<real> animationEnterCurve: Theme.expressiveCurves.expressiveDefaultSpatial
     property list<real> animationExitCurve: Theme.expressiveCurves.emphasized
+    property bool suspendShadowWhileResizing: false
     property bool shouldBeVisible: false
     property var customKeyboardFocus: null
     property bool backgroundInteractive: true
     property bool contentHandlesKeys: false
+    property bool fullHeightSurface: false
+    property bool _primeContent: false
+    property bool _resizeActive: false
+    property real _surfaceMarginLeft: 0
+    property real _surfaceW: 0
 
     property real storedBarThickness: Theme.barHeight - 4
     property real storedBarSpacing: 4
@@ -73,6 +77,38 @@ Item {
 
     property int effectiveBarPosition: 0
     property real effectiveBarBottomGap: 0
+    readonly property string autoBarShadowDirection: {
+        const section = triggerSection || "center";
+        switch (effectiveBarPosition) {
+        case SettingsData.Position.Top:
+            if (section === "left")
+                return "topLeft";
+            if (section === "right")
+                return "topRight";
+            return "top";
+        case SettingsData.Position.Bottom:
+            if (section === "left")
+                return "bottomLeft";
+            if (section === "right")
+                return "bottomRight";
+            return "bottom";
+        case SettingsData.Position.Left:
+            if (section === "left")
+                return "topLeft";
+            if (section === "right")
+                return "bottomLeft";
+            return "left";
+        case SettingsData.Position.Right:
+            if (section === "left")
+                return "topRight";
+            if (section === "right")
+                return "bottomRight";
+            return "right";
+        default:
+            return "top";
+        }
+    }
+    readonly property string effectiveShadowDirection: Theme.elevationLightDirection === "autoBar" ? autoBarShadowDirection : Theme.elevationLightDirection
 
     // Snapshot mask geometry to prevent background damage on bar updates
     property real _frozenMaskX: 0
@@ -83,6 +119,14 @@ Item {
     function setBarContext(position, bottomGap) {
         effectiveBarPosition = position !== undefined ? position : 0;
         effectiveBarBottomGap = bottomGap !== undefined ? bottomGap : 0;
+    }
+
+    function primeContent() {
+        _primeContent = true;
+    }
+
+    function clearPrimedContent() {
+        _primeContent = false;
     }
 
     function setTriggerPosition(x, y, width, section, targetScreen, barPosition, barThickness, barSpacing, barConfig) {
@@ -105,6 +149,13 @@ Item {
 
     readonly property bool useBackgroundWindow: !CompositorService.isHyprland || CompositorService.useHyprlandFocusGrab
 
+    function updateSurfacePosition() {
+        if (useBackgroundWindow && shouldBeVisible) {
+            _surfaceMarginLeft = alignedX - shadowBuffer;
+            _surfaceW = alignedWidth + shadowBuffer * 2;
+        }
+    }
+
     function open() {
         if (!screen)
             return;
@@ -124,6 +175,10 @@ Item {
         _lastOpenedScreen = screen;
 
         shouldBeVisible = true;
+        if (useBackgroundWindow) {
+            _surfaceMarginLeft = alignedX - shadowBuffer;
+            _surfaceW = alignedWidth + shadowBuffer * 2;
+        }
         Qt.callLater(() => {
             if (shouldBeVisible && screen) {
                 if (useBackgroundWindow)
@@ -137,6 +192,7 @@ Item {
 
     function close() {
         shouldBeVisible = false;
+        _primeContent = false;
         PopoutManager.popoutChanged();
         closeTimer.restart();
     }
@@ -182,9 +238,33 @@ Item {
     readonly property real screenHeight: screen ? screen.height : 0
     readonly property real dpr: screen ? screen.devicePixelRatio : 1
 
-    readonly property real shadowBuffer: 5
+    readonly property var shadowLevel: Theme.elevationLevel3
+    readonly property real shadowFallbackOffset: 6
+    readonly property real shadowRenderPadding: (Theme.elevationEnabled && SettingsData.popoutElevationEnabled) ? Theme.elevationRenderPadding(shadowLevel, effectiveShadowDirection, shadowFallbackOffset, 8, 16) : 0
+    readonly property real shadowMotionPadding: Math.max(0, animationOffset)
+    readonly property real shadowBuffer: Theme.snap(shadowRenderPadding + shadowMotionPadding, dpr)
     readonly property real alignedWidth: Theme.px(popupWidth, dpr)
     readonly property real alignedHeight: Theme.px(popupHeight, dpr)
+
+    onAlignedHeightChanged: {
+        if (!suspendShadowWhileResizing || !shouldBeVisible)
+            return;
+        _resizeActive = true;
+        resizeSettleTimer.restart();
+    }
+    onShouldBeVisibleChanged: {
+        if (!shouldBeVisible) {
+            _resizeActive = false;
+            resizeSettleTimer.stop();
+        }
+    }
+
+    Timer {
+        id: resizeSettleTimer
+        interval: 80
+        repeat: false
+        onTriggered: root._resizeActive = false
+    }
 
     readonly property real alignedX: Theme.snap((() => {
             const useAutoGaps = storedBarConfig?.popupGapsAuto !== undefined ? storedBarConfig.popupGapsAuto : true;
@@ -222,29 +302,30 @@ Item {
             }
         })(), dpr)
 
+    readonly property real triggeringBarLeftExclusion: (effectiveBarPosition === SettingsData.Position.Left && barWidth > 0) ? Math.max(0, barX + barWidth) : 0
+    readonly property real triggeringBarTopExclusion: (effectiveBarPosition === SettingsData.Position.Top && barHeight > 0) ? Math.max(0, barY + barHeight) : 0
+    readonly property real triggeringBarRightExclusion: (effectiveBarPosition === SettingsData.Position.Right && barWidth > 0) ? Math.max(0, screenWidth - barX) : 0
+    readonly property real triggeringBarBottomExclusion: (effectiveBarPosition === SettingsData.Position.Bottom && barHeight > 0) ? Math.max(0, screenHeight - barY) : 0
+
     readonly property real maskX: {
-        const triggeringBarX = (effectiveBarPosition === SettingsData.Position.Left && barWidth > 0) ? barWidth : 0;
         const adjacentLeftBar = adjacentBarInfo?.leftBar ?? 0;
-        return Math.max(triggeringBarX, adjacentLeftBar);
+        return Math.max(triggeringBarLeftExclusion, adjacentLeftBar);
     }
 
     readonly property real maskY: {
-        const triggeringBarY = (effectiveBarPosition === SettingsData.Position.Top && barHeight > 0) ? barHeight : 0;
         const adjacentTopBar = adjacentBarInfo?.topBar ?? 0;
-        return Math.max(triggeringBarY, adjacentTopBar);
+        return Math.max(triggeringBarTopExclusion, adjacentTopBar);
     }
 
     readonly property real maskWidth: {
-        const triggeringBarRight = (effectiveBarPosition === SettingsData.Position.Right && barWidth > 0) ? barWidth : 0;
         const adjacentRightBar = adjacentBarInfo?.rightBar ?? 0;
-        const rightExclusion = Math.max(triggeringBarRight, adjacentRightBar);
+        const rightExclusion = Math.max(triggeringBarRightExclusion, adjacentRightBar);
         return Math.max(100, screenWidth - maskX - rightExclusion);
     }
 
     readonly property real maskHeight: {
-        const triggeringBarBottom = (effectiveBarPosition === SettingsData.Position.Bottom && barHeight > 0) ? barHeight : 0;
         const adjacentBottomBar = adjacentBarInfo?.bottomBar ?? 0;
-        const bottomExclusion = Math.max(triggeringBarBottom, adjacentBottomBar);
+        const bottomExclusion = Math.max(triggeringBarBottomExclusion, adjacentBottomBar);
         return Math.max(100, screenHeight - maskY - bottomExclusion);
     }
 
@@ -253,6 +334,10 @@ Item {
         screen: root.screen
         visible: false
         color: "transparent"
+        Component.onCompleted: {
+            if (typeof updatesEnabled !== "undefined" && !root.overlayContent)
+                updatesEnabled = false;
+        }
 
         WlrLayershell.namespace: root.layerNamespace + ":background"
         WlrLayershell.layer: WlrLayershell.Top
@@ -339,20 +424,38 @@ Item {
             return WlrKeyboardFocus.Exclusive;
         }
 
+        readonly property bool _fullHeight: useBackgroundWindow && root.fullHeightSurface
+
         anchors {
             left: true
             top: true
             right: !useBackgroundWindow
-            bottom: !useBackgroundWindow
+            bottom: _fullHeight || !useBackgroundWindow
         }
 
         WlrLayershell.margins {
-            left: useBackgroundWindow ? (root.alignedX - shadowBuffer) : 0
-            top: useBackgroundWindow ? (root.alignedY - shadowBuffer) : 0
+            left: useBackgroundWindow ? root._surfaceMarginLeft : 0
+            top: (useBackgroundWindow && !_fullHeight) ? (root.alignedY - shadowBuffer) : 0
         }
 
-        implicitWidth: useBackgroundWindow ? (root.alignedWidth + (shadowBuffer * 2)) : 0
-        implicitHeight: useBackgroundWindow ? (root.alignedHeight + (shadowBuffer * 2)) : 0
+        implicitWidth: useBackgroundWindow ? root._surfaceW : 0
+        implicitHeight: (useBackgroundWindow && !_fullHeight) ? (root.alignedHeight + shadowBuffer * 2) : 0
+
+        mask: useBackgroundWindow ? contentInputMask : null
+
+        Region {
+            id: contentInputMask
+            item: contentMaskRect
+        }
+
+        Item {
+            id: contentMaskRect
+            visible: false
+            x: contentContainer.x
+            y: contentContainer.y
+            width: root.alignedWidth
+            height: root.alignedHeight
+        }
 
         MouseArea {
             anchors.fill: parent
@@ -372,7 +475,7 @@ Item {
         Item {
             id: contentContainer
             x: useBackgroundWindow ? shadowBuffer : root.alignedX
-            y: useBackgroundWindow ? shadowBuffer : root.alignedY
+            y: (useBackgroundWindow && !contentWindow._fullHeight) ? shadowBuffer : root.alignedY
             width: root.alignedWidth
             height: root.alignedHeight
 
@@ -423,6 +526,22 @@ Item {
                 }
             }
 
+            ElevationShadow {
+                id: shadowSource
+                width: parent.width
+                height: parent.height
+                opacity: contentWrapper.opacity
+                scale: contentWrapper.scale
+                x: contentWrapper.x
+                y: contentWrapper.y
+                level: root.shadowLevel
+                direction: root.effectiveShadowDirection
+                fallbackOffset: root.shadowFallbackOffset
+                targetRadius: Theme.cornerRadius
+                targetColor: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
+                shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1" && !(root.suspendShadowWhileResizing && root._resizeActive)
+            }
+
             Item {
                 id: contentWrapper
                 anchors.centerIn: parent
@@ -434,30 +553,9 @@ Item {
                 x: Theme.snap(contentContainer.animX + (parent.width - width) * (1 - contentContainer.scaleValue) * 0.5, root.dpr)
                 y: Theme.snap(contentContainer.animY + (parent.height - height) * (1 - contentContainer.scaleValue) * 0.5, root.dpr)
 
-                property real shadowBlurPx: 10
-                property real shadowSpreadPx: 0
-                property real shadowBaseAlpha: 0.60
-                readonly property real popupSurfaceAlpha: SettingsData.popupTransparency
-                readonly property real effectiveShadowAlpha: Math.max(0, Math.min(1, shadowBaseAlpha * popupSurfaceAlpha))
-                readonly property int blurMax: 64
-
-                layer.enabled: Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1"
+                layer.enabled: contentWrapper.opacity < 1
                 layer.smooth: false
                 layer.textureSize: root.dpr > 1 ? Qt.size(Math.ceil(width * root.dpr), Math.ceil(height * root.dpr)) : Qt.size(0, 0)
-
-                layer.effect: MultiEffect {
-                    id: shadowFx
-                    autoPaddingEnabled: true
-                    shadowEnabled: true
-                    blurEnabled: false
-                    maskEnabled: false
-                    shadowBlur: Math.max(0, Math.min(1, contentWrapper.shadowBlurPx / contentWrapper.blurMax))
-                    shadowScale: 1 + (2 * contentWrapper.shadowSpreadPx) / Math.max(1, Math.min(contentWrapper.width, contentWrapper.height))
-                    shadowColor: {
-                        const baseColor = Theme.isLightMode ? Qt.rgba(0, 0, 0, 1) : Theme.surfaceContainerHighest;
-                        return Theme.withAlpha(baseColor, contentWrapper.effectiveShadowAlpha);
-                    }
-                }
 
                 Behavior on opacity {
                     NumberAnimation {
@@ -471,18 +569,14 @@ Item {
                     anchors.fill: parent
                     radius: Theme.cornerRadius
                     color: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
-                }
-
-                DankRectangle {
-                    anchors.fill: parent
-                    radius: Theme.cornerRadius
-                    color: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
+                    border.color: Theme.outlineMedium
+                    border.width: 0
                 }
 
                 Loader {
                     id: contentLoader
                     anchors.fill: parent
-                    active: shouldBeVisible || contentWindow.visible
+                    active: root._primeContent || shouldBeVisible || contentWindow.visible
                     asynchronous: false
                 }
             }

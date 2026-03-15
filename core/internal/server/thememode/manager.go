@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/geolocation"
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/loginctl"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wayland"
 	"github.com/AvengeMedia/DankMaterialShell/core/pkg/syncmap"
 )
@@ -30,6 +32,8 @@ type Manager struct {
 	locationMutex sync.RWMutex
 	cachedIPLat   *float64
 	cachedIPLon   *float64
+
+	geoClient geolocation.Client
 
 	stopChan      chan struct{}
 	updateTrigger chan struct{}
@@ -187,6 +191,29 @@ func (m *Manager) Close() {
 	})
 }
 
+func (m *Manager) WatchLoginctl(lm *loginctl.Manager) {
+	ch := lm.Subscribe("thememode")
+	m.wg.Add(1)
+	go func() {
+		defer m.wg.Done()
+		defer lm.Unsubscribe("thememode")
+		for {
+			select {
+			case <-m.stopChan:
+				return
+			case state, ok := <-ch:
+				if !ok {
+					return
+				}
+				if state.PreparingForSleep {
+					continue
+				}
+				m.TriggerUpdate()
+			}
+		}
+	}()
+}
+
 func (m *Manager) schedulerLoop() {
 	defer m.wg.Done()
 
@@ -287,11 +314,18 @@ func (m *Manager) getConfig() Config {
 	return m.config
 }
 
+func (m *Manager) SetGeoClient(client geolocation.Client) {
+	m.geoClient = client
+}
+
 func (m *Manager) getLocation(config Config) (*float64, *float64) {
 	if config.Latitude != nil && config.Longitude != nil {
 		return config.Latitude, config.Longitude
 	}
 	if !config.UseIPLocation {
+		return nil, nil
+	}
+	if m.geoClient == nil {
 		return nil, nil
 	}
 
@@ -303,17 +337,17 @@ func (m *Manager) getLocation(config Config) (*float64, *float64) {
 	}
 	m.locationMutex.RUnlock()
 
-	lat, lon, err := wayland.FetchIPLocation()
+	location, err := m.geoClient.GetLocation()
 	if err != nil {
 		return nil, nil
 	}
 
 	m.locationMutex.Lock()
-	m.cachedIPLat = lat
-	m.cachedIPLon = lon
+	m.cachedIPLat = &location.Latitude
+	m.cachedIPLon = &location.Longitude
 	m.locationMutex.Unlock()
 
-	return lat, lon
+	return m.cachedIPLat, m.cachedIPLon
 }
 
 func statesEqual(a, b *State) bool {
@@ -327,10 +361,12 @@ func statesEqual(a, b *State) bool {
 }
 
 func (m *Manager) computeSchedule(now time.Time, config Config) (bool, time.Time) {
-	if config.Mode == "location" {
+	switch config.Mode {
+	case "location":
 		return m.computeLocationSchedule(now, config)
+	default:
+		return computeTimeSchedule(now, config)
 	}
-	return computeTimeSchedule(now, config)
 }
 
 func computeTimeSchedule(now time.Time, config Config) (bool, time.Time) {
@@ -381,10 +417,10 @@ func (m *Manager) computeLocationSchedule(now time.Time, config Config) (bool, t
 	}
 
 	times, cond := wayland.CalculateSunTimesWithTwilight(*lat, *lon, now, config.ElevationTwilight, config.ElevationDaylight)
-	if cond != wayland.SunNormal {
-		if cond == wayland.SunMidnightSun {
-			return true, startOfNextDay(now)
-		}
+	switch cond {
+	case wayland.SunMidnightSun:
+		return true, startOfNextDay(now)
+	case wayland.SunPolarNight:
 		return false, startOfNextDay(now)
 	}
 
@@ -397,10 +433,10 @@ func (m *Manager) computeLocationSchedule(now time.Time, config Config) (bool, t
 
 	nextDay := startOfNextDay(now)
 	nextTimes, nextCond := wayland.CalculateSunTimesWithTwilight(*lat, *lon, nextDay, config.ElevationTwilight, config.ElevationDaylight)
-	if nextCond != wayland.SunNormal {
-		if nextCond == wayland.SunMidnightSun {
-			return true, startOfNextDay(nextDay)
-		}
+	switch nextCond {
+	case wayland.SunMidnightSun:
+		return true, startOfNextDay(nextDay)
+	case wayland.SunPolarNight:
 		return false, startOfNextDay(nextDay)
 	}
 
@@ -413,13 +449,7 @@ func startOfNextDay(t time.Time) time.Time {
 }
 
 func validateHourMinute(hour, minute int) bool {
-	if hour < 0 || hour > 23 {
-		return false
-	}
-	if minute < 0 || minute > 59 {
-		return false
-	}
-	return true
+	return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59
 }
 
 func (m *Manager) ValidateSchedule(startHour, startMinute, endHour, endMinute int) error {

@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Services.SystemTray
@@ -39,6 +38,12 @@ BasePill {
             return id;
         }
         return `${id}::${tooltipTitle}`;
+    }
+
+    // ! TODO - replace with either native dbus client (like plugins use) or just a DMS cli or something
+    function callContextMenuFallback(trayItemId, globalX, globalY) {
+        const script = ['ITEMS=$(dbus-send --session --print-reply --dest=org.kde.StatusNotifierWatcher /StatusNotifierWatcher org.freedesktop.DBus.Properties.Get string:org.kde.StatusNotifierWatcher string:RegisteredStatusNotifierItems 2>/dev/null)', 'while IFS= read -r line; do', '  line="${line#*\\\"}"', '  line="${line%\\\"*}"', '  [ -z "$line" ] && continue', '  BUS="${line%%/*}"', '  OBJ="/${line#*/}"', '  ID=$(dbus-send --session --print-reply --dest="$BUS" "$OBJ" org.freedesktop.DBus.Properties.Get string:org.kde.StatusNotifierItem string:Id 2>/dev/null | grep -oP "(?<=\\\")(.*?)(?=\\\")" | tail -1)', '  if [ "$ID" = "$1" ]; then', '    dbus-send --session --type=method_call --dest="$BUS" "$OBJ" org.kde.StatusNotifierItem.ContextMenu int32:"$2" int32:"$3"', '    exit 0', '  fi', 'done <<< "$ITEMS"',].join("\n");
+        Quickshell.execDetached(["bash", "-c", script, "_", trayItemId, String(globalX), String(globalY)]);
     }
 
     property int _trayOrderTrigger: 0
@@ -99,7 +104,45 @@ BasePill {
     property bool suppressShiftAnimation: false
     readonly property bool hasHiddenItems: allTrayItems.length > mainBarItems.length
     visible: allTrayItems.length > 0
-    readonly property real trayItemSize: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground) + 6
+    opacity: allTrayItems.length > 0 ? 1 : 0
+
+    states: [
+        State {
+            name: "hidden_horizontal"
+            when: allTrayItems.length === 0 && !isVerticalOrientation
+            PropertyChanges {
+                target: root
+                width: 0
+            }
+        },
+        State {
+            name: "hidden_vertical"
+            when: allTrayItems.length === 0 && isVerticalOrientation
+            PropertyChanges {
+                target: root
+                height: 0
+            }
+        }
+    ]
+
+    transitions: [
+        Transition {
+            NumberAnimation {
+                properties: "width,height"
+                duration: Theme.shortDuration
+                easing.type: Theme.standardEasing
+            }
+        }
+    ]
+
+    Behavior on opacity {
+        NumberAnimation {
+            duration: Theme.shortDuration
+            easing.type: Theme.standardEasing
+        }
+    }
+
+    readonly property real trayItemSize: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale) + 6
 
     readonly property real minTooltipY: {
         if (!parentScreen || !isVerticalOrientation) {
@@ -117,6 +160,23 @@ BasePill {
 
         return 0;
     }
+
+    readonly property string autoBarShadowDirection: {
+        const edge = root.axis?.edge;
+        switch (edge) {
+        case "top":
+            return "top";
+        case "bottom":
+            return "bottom";
+        case "left":
+            return "left";
+        case "right":
+            return "right";
+        default:
+            return "bottom";
+        }
+    }
+    readonly property string effectiveShadowDirection: Theme.elevationLightDirection === "autoBar" ? autoBarShadowDirection : Theme.elevationLightDirection
 
     property bool menuOpen: false
     property var currentTrayMenu: null
@@ -239,8 +299,8 @@ BasePill {
                         IconImage {
                             id: iconImg
                             anchors.centerIn: parent
-                            width: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
-                            height: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                            width: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
+                            height: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                             source: delegateRoot.iconSource
                             asynchronous: true
                             smooth: true
@@ -342,8 +402,11 @@ BasePill {
                                 return;
                             if (mouse.button !== Qt.RightButton)
                                 return;
-                            if (!delegateRoot.trayItem?.hasMenu)
+                            if (!delegateRoot.trayItem?.hasMenu) {
+                                const gp = trayItemArea.mapToGlobal(mouse.x, mouse.y);
+                                root.callContextMenuFallback(delegateRoot.trayItem.id, Math.round(gp.x), Math.round(gp.y));
                                 return;
+                            }
                             root.menuOpen = false;
                             root.showForTrayItem(delegateRoot.trayItem, visualContent, parentScreen, root.isAtBottom, root.isVerticalOrientation, root.axis);
                         }
@@ -367,7 +430,7 @@ BasePill {
                     DankIcon {
                         anchors.centerIn: parent
                         name: root.menuOpen ? "expand_less" : "expand_more"
-                        size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                        size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                         color: Theme.widgetTextColor
                     }
 
@@ -496,8 +559,8 @@ BasePill {
                         IconImage {
                             id: iconImg
                             anchors.centerIn: parent
-                            width: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
-                            height: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                            width: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
+                            height: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                             source: delegateRoot.iconSource
                             asynchronous: true
                             smooth: true
@@ -599,8 +662,11 @@ BasePill {
                                 return;
                             if (mouse.button !== Qt.RightButton)
                                 return;
-                            if (!delegateRoot.trayItem?.hasMenu)
+                            if (!delegateRoot.trayItem?.hasMenu) {
+                                const gp = trayItemArea.mapToGlobal(mouse.x, mouse.y);
+                                root.callContextMenuFallback(delegateRoot.trayItem.id, Math.round(gp.x), Math.round(gp.y));
                                 return;
+                            }
                             root.menuOpen = false;
                             root.showForTrayItem(delegateRoot.trayItem, visualContent, parentScreen, root.isAtBottom, root.isVerticalOrientation, root.axis);
                         }
@@ -631,7 +697,7 @@ BasePill {
                                 return root.menuOpen ? "chevron_right" : "chevron_left";
                             }
                         }
-                        size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                        size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                         color: Theme.widgetTextColor
                     }
 
@@ -890,12 +956,6 @@ BasePill {
                     }
                 })(), overflowMenu.dpr)
 
-            property real shadowBlurPx: 10
-            property real shadowSpreadPx: 0
-            property real shadowBaseAlpha: 0.60
-            readonly property real popupSurfaceAlpha: Theme.popupTransparency
-            readonly property real effectiveShadowAlpha: Math.max(0, Math.min(1, shadowBaseAlpha * popupSurfaceAlpha))
-
             opacity: root.menuOpen ? 1 : 0
             scale: root.menuOpen ? 1 : 0.85
 
@@ -913,37 +973,21 @@ BasePill {
                 }
             }
 
-            Item {
+            ElevationShadow {
                 id: bgShadowLayer
                 anchors.fill: parent
-                layer.enabled: true
+                level: Theme.elevationLevel3
+                direction: root.effectiveShadowDirection
+                fallbackOffset: 6
+                targetColor: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
+                targetRadius: Theme.cornerRadius
+                sourceRect.antialiasing: true
+                sourceRect.smooth: true
+                shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled
                 layer.smooth: true
                 layer.textureSize: Qt.size(Math.round(width * overflowMenu.dpr * 2), Math.round(height * overflowMenu.dpr * 2))
                 layer.textureMirroring: ShaderEffectSource.MirrorVertically
                 layer.samples: 4
-
-                readonly property int blurMax: 64
-
-                layer.effect: MultiEffect {
-                    autoPaddingEnabled: true
-                    shadowEnabled: true
-                    blurEnabled: false
-                    maskEnabled: false
-                    shadowBlur: Math.max(0, Math.min(1, menuContainer.shadowBlurPx / bgShadowLayer.blurMax))
-                    shadowScale: 1 + (2 * menuContainer.shadowSpreadPx) / Math.max(1, Math.min(bgShadowLayer.width, bgShadowLayer.height))
-                    shadowColor: {
-                        const baseColor = Theme.isLightMode ? Qt.rgba(0, 0, 0, 1) : Theme.surfaceContainerHighest;
-                        return Theme.withAlpha(baseColor, menuContainer.effectiveShadowAlpha);
-                    }
-                }
-
-                Rectangle {
-                    anchors.fill: parent
-                    color: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
-                    radius: Theme.cornerRadius
-                    antialiasing: true
-                    smooth: true
-                }
             }
 
             Grid {
@@ -991,8 +1035,8 @@ BasePill {
                         IconImage {
                             id: menuIconImg
                             anchors.centerIn: parent
-                            width: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
-                            height: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.noBackground)
+                            width: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
+                            height: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                             source: parent.iconSource
                             asynchronous: true
                             smooth: true
@@ -1027,9 +1071,11 @@ BasePill {
                                     root.menuOpen = false;
                                     return;
                                 }
-
-                                if (!trayItem.hasMenu)
+                                if (!trayItem.hasMenu) {
+                                    const gp = itemArea.mapToGlobal(mouse.x, mouse.y);
+                                    root.callContextMenuFallback(trayItem.id, Math.round(gp.x), Math.round(gp.y));
                                     return;
+                                }
                                 root.showForTrayItem(trayItem, menuContainer, parentScreen, root.isAtBottom, root.isVerticalOrientation, root.axis);
                             }
                         }
@@ -1360,12 +1406,6 @@ BasePill {
                             }
                         })(), menuWindow.dpr)
 
-                    property real shadowBlurPx: 10
-                    property real shadowSpreadPx: 0
-                    property real shadowBaseAlpha: 0.60
-                    readonly property real popupSurfaceAlpha: Theme.popupTransparency
-                    readonly property real effectiveShadowAlpha: Math.max(0, Math.min(1, shadowBaseAlpha * popupSurfaceAlpha))
-
                     opacity: menuRoot.showMenu ? 1 : 0
                     scale: menuRoot.showMenu ? 1 : 0.85
 
@@ -1383,35 +1423,19 @@ BasePill {
                         }
                     }
 
-                    Item {
+                    ElevationShadow {
                         id: menuBgShadowLayer
                         anchors.fill: parent
-                        layer.enabled: true
+                        level: Theme.elevationLevel3
+                        direction: root.effectiveShadowDirection
+                        fallbackOffset: 6
+                        targetColor: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
+                        targetRadius: Theme.cornerRadius
+                        sourceRect.antialiasing: true
+                        shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled
                         layer.smooth: true
                         layer.textureSize: Qt.size(Math.round(width * menuWindow.dpr), Math.round(height * menuWindow.dpr))
                         layer.textureMirroring: ShaderEffectSource.MirrorVertically
-
-                        readonly property int blurMax: 64
-
-                        layer.effect: MultiEffect {
-                            autoPaddingEnabled: true
-                            shadowEnabled: true
-                            blurEnabled: false
-                            maskEnabled: false
-                            shadowBlur: Math.max(0, Math.min(1, menuContainer.shadowBlurPx / menuBgShadowLayer.blurMax))
-                            shadowScale: 1 + (2 * menuContainer.shadowSpreadPx) / Math.max(1, Math.min(menuBgShadowLayer.width, menuBgShadowLayer.height))
-                            shadowColor: {
-                                const baseColor = Theme.isLightMode ? Qt.rgba(0, 0, 0, 1) : Theme.surfaceContainerHighest;
-                                return Theme.withAlpha(baseColor, menuContainer.effectiveShadowAlpha);
-                            }
-                        }
-
-                        Rectangle {
-                            anchors.fill: parent
-                            color: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
-                            radius: Theme.cornerRadius
-                            antialiasing: true
-                        }
                     }
 
                     QsMenuAnchor {

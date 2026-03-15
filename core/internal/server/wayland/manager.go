@@ -13,6 +13,7 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/errdefs"
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/geolocation"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_gamma_control"
 )
@@ -420,6 +421,10 @@ func (m *Manager) recalcSchedule(now time.Time) {
 	}
 }
 
+func (m *Manager) SetGeoClient(client geolocation.Client) {
+	m.geoClient = client
+}
+
 func (m *Manager) getLocation() (*float64, *float64) {
 	m.configMutex.RLock()
 	config := m.config
@@ -428,26 +433,31 @@ func (m *Manager) getLocation() (*float64, *float64) {
 	if config.Latitude != nil && config.Longitude != nil {
 		return config.Latitude, config.Longitude
 	}
-	if config.UseIPLocation {
-		m.locationMutex.RLock()
-		if m.cachedIPLat != nil && m.cachedIPLon != nil {
-			lat, lon := m.cachedIPLat, m.cachedIPLon
-			m.locationMutex.RUnlock()
-			return lat, lon
-		}
-		m.locationMutex.RUnlock()
+	if !config.UseIPLocation {
+		return nil, nil
+	}
+	if m.geoClient == nil {
+		return nil, nil
+	}
 
-		lat, lon, err := FetchIPLocation()
-		if err != nil {
-			return nil, nil
-		}
-		m.locationMutex.Lock()
-		m.cachedIPLat = lat
-		m.cachedIPLon = lon
-		m.locationMutex.Unlock()
+	m.locationMutex.RLock()
+	if m.cachedIPLat != nil && m.cachedIPLon != nil {
+		lat, lon := m.cachedIPLat, m.cachedIPLon
+		m.locationMutex.RUnlock()
 		return lat, lon
 	}
-	return nil, nil
+	m.locationMutex.RUnlock()
+
+	location, err := m.geoClient.GetLocation()
+	if err != nil {
+		return nil, nil
+	}
+
+	m.locationMutex.Lock()
+	m.cachedIPLat = &location.Latitude
+	m.cachedIPLon = &location.Longitude
+	m.locationMutex.Unlock()
+	return m.cachedIPLat, m.cachedIPLon
 }
 
 func (m *Manager) hasValidSchedule() bool {

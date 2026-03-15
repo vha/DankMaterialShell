@@ -18,6 +18,8 @@ Singleton {
     function registerWidget(widgetId, screenName, widgetRef) {
         if (!widgetId || !screenName || !widgetRef)
             return;
+        if (typeof widgetRegistry !== "object" || widgetRegistry === null)
+            widgetRegistry = ({});
 
         if (!widgetRegistry[widgetId])
             widgetRegistry[widgetId] = {};
@@ -28,6 +30,8 @@ Singleton {
 
     function unregisterWidget(widgetId, screenName) {
         if (!widgetId || !screenName)
+            return;
+        if (typeof widgetRegistry !== "object" || widgetRegistry === null)
             return;
         if (!widgetRegistry[widgetId])
             return;
@@ -66,7 +70,7 @@ Singleton {
             return Hyprland.focusedWorkspace.monitor.name;
         if (CompositorService.isNiri && NiriService.currentOutput)
             return NiriService.currentOutput;
-        if (CompositorService.isSway || CompositorService.isScroll) {
+        if (CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle) {
             const focusedWs = I3.workspaces?.values?.find(ws => ws.focused === true);
             return focusedWs?.monitor?.name || "";
         }

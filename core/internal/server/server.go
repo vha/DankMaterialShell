@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/geolocation"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/apppicker"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/bluez"
@@ -25,6 +26,7 @@ import (
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/evdev"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/extworkspace"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/freedesktop"
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/location"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/loginctl"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/network"
@@ -70,6 +72,8 @@ var clipboardManager *clipboard.Manager
 var dbusManager *serverDbus.Manager
 var wlContext *wlcontext.SharedContext
 var themeModeManager *thememode.Manager
+var locationManager *location.Manager
+var geoClientInstance geolocation.Client
 
 const dbusClientID = "dms-dbus-client"
 
@@ -390,6 +394,19 @@ func InitializeThemeModeManager() error {
 	return nil
 }
 
+func InitializeLocationManager(geoClient geolocation.Client) error {
+	manager, err := location.NewManager(geoClient)
+	if err != nil {
+		log.Warnf("Failed to initialize location manager: %v", err)
+		return err
+	}
+
+	locationManager = manager
+
+	log.Info("Location manager initialized")
+	return nil
+}
+
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
@@ -535,6 +552,10 @@ func getServerInfo() ServerInfo {
 
 	if themeModeManager != nil {
 		caps = append(caps, "theme.auto")
+	}
+
+	if locationManager != nil {
+		caps = append(caps, "location")
 	}
 
 	if dbusManager != nil {
@@ -1307,6 +1328,12 @@ func cleanupManagers() {
 	if wlContext != nil {
 		wlContext.Close()
 	}
+	if locationManager != nil {
+		locationManager.Close()
+	}
+	if geoClientInstance != nil {
+		geoClientInstance.Close()
+	}
 }
 
 func Start(printDocs bool) error {
@@ -1488,6 +1515,9 @@ func Start(printDocs bool) error {
 		log.Info(" clipboard.getConfig                   - Get clipboard configuration")
 		log.Info(" clipboard.setConfig                   - Set configuration (params: maxHistory?, maxEntrySize?, autoClearDays?, clearAtStartup?)")
 		log.Info(" clipboard.subscribe                   - Subscribe to clipboard state changes (streaming)")
+		log.Info("Location:")
+		log.Info(" location.getState                      - Get current location state")
+		log.Info(" location.subscribe                     - Subscribe to location changes (streaming)")
 		log.Info("")
 	}
 	log.Info("Initializing managers...")
@@ -1516,7 +1546,11 @@ func Start(printDocs bool) error {
 		}
 	}()
 
+	loginctlReady := make(chan struct{})
+	freedesktopReady := make(chan struct{})
+
 	go func() {
+		defer close(loginctlReady)
 		if err := InitializeLoginctlManager(); err != nil {
 			log.Warnf("Loginctl manager unavailable: %v", err)
 		} else {
@@ -1525,6 +1559,7 @@ func Start(printDocs bool) error {
 	}()
 
 	go func() {
+		defer close(freedesktopReady)
 		if err := InitializeFreedeskManager(); err != nil {
 			log.Warnf("Freedesktop manager unavailable: %v", err)
 		} else if freedesktopManager != nil {
@@ -1533,9 +1568,65 @@ func Start(printDocs bool) error {
 		}
 	}()
 
+	// Bridge loginctl lock state to the freedesktop/gnome screensaver
+	// ActiveChanged signal so apps like Bitwarden can detect screen lock.
+	go func() {
+		<-loginctlReady
+		<-freedesktopReady
+
+		if loginctlManager == nil || freedesktopManager == nil {
+			return
+		}
+
+		ch := loginctlManager.Subscribe("dms-lock-bridge")
+		defer loginctlManager.Unsubscribe("dms-lock-bridge")
+
+		initial := loginctlManager.GetState()
+		lastLocked := initial.Locked
+		freedesktopManager.SetScreenLockActive(lastLocked)
+
+		for state := range ch {
+			if state.Locked != lastLocked {
+				lastLocked = state.Locked
+				freedesktopManager.SetScreenLockActive(lastLocked)
+			}
+		}
+	}()
+
 	if err := InitializeWaylandManager(); err != nil {
 		log.Warnf("Wayland manager unavailable: %v", err)
 	}
+
+	if err := InitializeThemeModeManager(); err != nil {
+		log.Warnf("Theme mode manager unavailable: %v", err)
+	} else {
+		notifyCapabilityChange()
+		go func() {
+			<-loginctlReady
+			if loginctlManager == nil {
+				return
+			}
+			themeModeManager.WatchLoginctl(loginctlManager)
+		}()
+	}
+
+	go func() {
+		geoClient := geolocation.NewClient()
+		geoClientInstance = geoClient
+
+		if waylandManager != nil {
+			waylandManager.SetGeoClient(geoClient)
+		}
+		if themeModeManager != nil {
+			themeModeManager.SetGeoClient(geoClient)
+		}
+
+		if err := InitializeLocationManager(geoClient); err != nil {
+			log.Warnf("Location manager unavailable: %v", err)
+		} else {
+			notifyCapabilityChange()
+		}
+	}()
 
 	go func() {
 		if err := InitializeBluezManager(); err != nil {
@@ -1563,12 +1654,6 @@ func Start(printDocs bool) error {
 
 	if err := InitializeWlrOutputManager(); err != nil {
 		log.Debugf("WlrOutput manager unavailable: %v", err)
-	}
-
-	if err := InitializeThemeModeManager(); err != nil {
-		log.Warnf("Theme mode manager unavailable: %v", err)
-	} else {
-		notifyCapabilityChange()
 	}
 
 	fatalErrChan := make(chan error, 1)

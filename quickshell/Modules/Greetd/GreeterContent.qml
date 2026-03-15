@@ -31,6 +31,38 @@ Item {
     signal launchRequested
 
     property bool weatherInitialized: false
+    property bool awaitingExternalAuth: false
+    property bool pendingPasswordResponse: false
+    property bool passwordSubmitRequested: false
+    property bool cancelingExternalAuthForPassword: false
+    property int defaultAuthTimeoutMs: 10000
+    property int externalAuthTimeoutMs: 30000
+    property int memoryFlushDelayMs: 120
+    property string pendingLaunchCommand: ""
+    property var pendingLaunchEnv: []
+    property int passwordFailureCount: 0
+    property int passwordAttemptLimitHint: 0
+    property string authFeedbackMessage: ""
+    property string greetdPamText: ""
+    property string systemAuthPamText: ""
+    property string commonAuthPamText: ""
+    property string passwordAuthPamText: ""
+    property string systemLoginPamText: ""
+    property string systemLocalLoginPamText: ""
+    property string commonAuthPcPamText: ""
+    property string loginPamText: ""
+    property string faillockConfigText: ""
+    property bool greeterWallpaperOverrideExists: false
+    property string externalAuthAutoStartedForUser: ""
+    property int passwordSessionTransitionRetryCount: 0
+    property int maxPasswordSessionTransitionRetries: 2
+    property bool fprintdProbeComplete: false
+    property bool fprintdHasDevice: false
+    // Falls back to PAM-only detection until the fprintd D-Bus probe completes.
+    readonly property bool greeterPamHasFprint: greeterPamStackHasModule("pam_fprintd") && (!fprintdProbeComplete || fprintdHasDevice)
+    readonly property bool greeterPamHasU2f: greeterPamStackHasModule("pam_u2f")
+    readonly property bool greeterExternalAuthAvailable: (greeterPamHasFprint && GreetdSettings.greeterEnableFprint) || (greeterPamHasU2f && GreetdSettings.greeterEnableU2f)
+    readonly property bool greeterPamHasExternalAuth: greeterPamHasFprint || greeterPamHasU2f
 
     function initWeatherService() {
         if (weatherInitialized)
@@ -44,32 +76,490 @@ Item {
         WeatherService.forceRefresh();
     }
 
+    function stripPamComment(line) {
+        if (!line)
+            return "";
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("#"))
+            return "";
+        const hashIdx = trimmed.indexOf("#");
+        if (hashIdx >= 0)
+            return trimmed.substring(0, hashIdx).trim();
+        return trimmed;
+    }
+
+    function pamModuleEnabled(pamText, moduleName) {
+        if (!pamText || !moduleName)
+            return false;
+        const lines = pamText.split(/\r?\n/);
+        for (let i = 0; i < lines.length; i++) {
+            const line = stripPamComment(lines[i]);
+            if (!line)
+                continue;
+            if (line.includes(moduleName))
+                return true;
+        }
+        return false;
+    }
+
+    function pamTextIncludesFile(pamText, filename) {
+        if (!pamText || !filename)
+            return false;
+        const lines = pamText.split(/\r?\n/);
+        for (let i = 0; i < lines.length; i++) {
+            const line = stripPamComment(lines[i]);
+            if (!line)
+                continue;
+            if (line.includes(filename) && (line.includes("include") || line.includes("substack") || line.startsWith("@include")))
+                return true;
+        }
+        return false;
+    }
+
+    function greeterPamStackHasModule(moduleName) {
+        if (pamModuleEnabled(greetdPamText, moduleName))
+            return true;
+        const includedPamStacks = [
+            ["system-auth", systemAuthPamText],
+            ["common-auth", commonAuthPamText],
+            ["password-auth", passwordAuthPamText],
+            ["system-login", systemLoginPamText],
+            ["system-local-login", systemLocalLoginPamText],
+            ["common-auth-pc", commonAuthPcPamText],
+            ["login", loginPamText]
+        ];
+        for (let i = 0; i < includedPamStacks.length; i++) {
+            const stack = includedPamStacks[i];
+            if (pamTextIncludesFile(greetdPamText, stack[0]) && pamModuleEnabled(stack[1], moduleName))
+                return true;
+        }
+        return false;
+    }
+
+    function usesPamLockoutPolicy(pamText) {
+        if (!pamText)
+            return false;
+        const lines = pamText.split(/\r?\n/);
+        for (let i = 0; i < lines.length; i++) {
+            const line = stripPamComment(lines[i]);
+            if (!line)
+                continue;
+            if (line.includes("pam_faillock.so") || line.includes("pam_tally2.so") || line.includes("pam_tally.so"))
+                return true;
+        }
+        return false;
+    }
+
+    function parsePamLineDenyValue(pamText) {
+        if (!pamText)
+            return -1;
+        const lines = pamText.split(/\r?\n/);
+        for (let i = 0; i < lines.length; i++) {
+            const line = stripPamComment(lines[i]);
+            if (!line)
+                continue;
+            if (!line.includes("pam_faillock.so") && !line.includes("pam_tally2.so") && !line.includes("pam_tally.so"))
+                continue;
+            const denyMatch = line.match(/\bdeny\s*=\s*(\d+)\b/i);
+            if (!denyMatch)
+                continue;
+            const parsed = parseInt(denyMatch[1], 10);
+            if (!isNaN(parsed))
+                return parsed;
+        }
+        return -1;
+    }
+
+    function parseFaillockDenyValue(configText) {
+        if (!configText)
+            return -1;
+        const lines = configText.split(/\r?\n/);
+        for (let i = 0; i < lines.length; i++) {
+            const line = stripPamComment(lines[i]);
+            if (!line)
+                continue;
+            const denyMatch = line.match(/^deny\s*=\s*(\d+)\s*$/i);
+            if (!denyMatch)
+                continue;
+            const parsed = parseInt(denyMatch[1], 10);
+            if (!isNaN(parsed))
+                return parsed;
+        }
+        return -1;
+    }
+
+    function refreshPasswordAttemptPolicyHint() {
+        const pamSources = [greetdPamText, systemAuthPamText, commonAuthPamText, passwordAuthPamText, systemLoginPamText, systemLocalLoginPamText, commonAuthPcPamText, loginPamText];
+        let lockoutConfigured = false;
+        let denyFromPam = -1;
+        for (let i = 0; i < pamSources.length; i++) {
+            const source = pamSources[i];
+            if (!source)
+                continue;
+            if (usesPamLockoutPolicy(source))
+                lockoutConfigured = true;
+            const denyValue = parsePamLineDenyValue(source);
+            if (denyValue >= 0 && (denyFromPam < 0 || denyValue < denyFromPam))
+                denyFromPam = denyValue;
+        }
+
+        if (!lockoutConfigured) {
+            passwordAttemptLimitHint = 0;
+            return;
+        }
+
+        const denyFromConfig = parseFaillockDenyValue(faillockConfigText);
+        if (denyFromConfig >= 0) {
+            passwordAttemptLimitHint = denyFromConfig;
+            return;
+        }
+
+        if (denyFromPam >= 0) {
+            passwordAttemptLimitHint = denyFromPam;
+            return;
+        }
+
+        // pam_faillock default deny value when no explicit config is set.
+        passwordAttemptLimitHint = 3;
+    }
+
+    function isLikelyLockoutMessage(message) {
+        const lower = (message || "").toLowerCase();
+        return lower.includes("account is locked") || lower.includes("too many") || lower.includes("maximum number of") || lower.includes("auth_err");
+    }
+
+    function currentAuthMessage() {
+        if (GreeterState.pamState === "error")
+            return "Authentication error - try again";
+        if (GreeterState.pamState === "max")
+            return "Too many failed attempts - account may be locked";
+        if (GreeterState.pamState === "fail") {
+            if (passwordAttemptLimitHint > 0) {
+                const attempt = Math.max(1, Math.min(passwordFailureCount, passwordAttemptLimitHint));
+                const remaining = Math.max(passwordAttemptLimitHint - attempt, 0);
+                if (remaining > 0) {
+                    return "Incorrect password - attempt " + attempt + " of " + passwordAttemptLimitHint + " (lockout may follow)";
+                }
+                return "Incorrect password - next failures may trigger account lockout";
+            }
+            return "Incorrect password";
+        }
+        return "";
+    }
+
+    function clearAuthFeedback() {
+        GreeterState.pamState = "";
+        authFeedbackMessage = "";
+    }
+
+    function resetPasswordSessionTransition(clearSubmitRequest) {
+        cancelingExternalAuthForPassword = false;
+        passwordSessionTransitionRetryCount = 0;
+        if (clearSubmitRequest)
+            passwordSubmitRequested = false;
+    }
+
     Connections {
         target: GreetdSettings
         function onSettingsLoadedChanged() {
-            if (GreetdSettings.settingsLoaded)
+            if (GreetdSettings.settingsLoaded) {
                 initWeatherService();
+                if (isPrimaryScreen) {
+                    applyLastSuccessfulUser();
+                    finalizeSessionSelection();
+                }
+            }
+        }
+
+        function onRememberLastUserChanged() {
+            if (!isPrimaryScreen)
+                return;
+            if (!GreetdSettings.rememberLastUser && GreetdMemory.lastSuccessfulUser) {
+                GreetdMemory.setLastSuccessfulUser("");
+            }
+            applyLastSuccessfulUser();
+        }
+
+        function onRememberLastSessionChanged() {
+            if (!isPrimaryScreen)
+                return;
+            if (!GreetdSettings.rememberLastSession && GreetdMemory.lastSessionId) {
+                GreetdMemory.setLastSessionId("");
+            }
+            finalizeSessionSelection();
+        }
+    }
+
+    FileView {
+        id: greetdPamWatcher
+        path: "/etc/pam.d/greetd"
+        printErrors: false
+        onLoaded: {
+            root.greetdPamText = text();
+            root.refreshPasswordAttemptPolicyHint();
+            root.maybeAutoStartExternalAuth();
+        }
+        onLoadFailed: {
+            root.greetdPamText = "";
+            root.refreshPasswordAttemptPolicyHint();
+        }
+    }
+
+    FileView {
+        id: systemAuthPamWatcher
+        path: "/etc/pam.d/system-auth"
+        printErrors: false
+        onLoaded: {
+            root.systemAuthPamText = text();
+            root.refreshPasswordAttemptPolicyHint();
+            root.maybeAutoStartExternalAuth();
+        }
+        onLoadFailed: {
+            root.systemAuthPamText = "";
+            root.refreshPasswordAttemptPolicyHint();
+        }
+    }
+
+    FileView {
+        id: commonAuthPamWatcher
+        path: "/etc/pam.d/common-auth"
+        printErrors: false
+        onLoaded: {
+            root.commonAuthPamText = text();
+            root.refreshPasswordAttemptPolicyHint();
+            root.maybeAutoStartExternalAuth();
+        }
+        onLoadFailed: {
+            root.commonAuthPamText = "";
+            root.refreshPasswordAttemptPolicyHint();
+        }
+    }
+
+    FileView {
+        id: passwordAuthPamWatcher
+        path: "/etc/pam.d/password-auth"
+        printErrors: false
+        onLoaded: {
+            root.passwordAuthPamText = text();
+            root.refreshPasswordAttemptPolicyHint();
+            root.maybeAutoStartExternalAuth();
+        }
+        onLoadFailed: {
+            root.passwordAuthPamText = "";
+            root.refreshPasswordAttemptPolicyHint();
+        }
+    }
+
+    FileView {
+        id: systemLoginPamWatcher
+        path: "/etc/pam.d/system-login"
+        printErrors: false
+        onLoaded: {
+            root.systemLoginPamText = text();
+            root.refreshPasswordAttemptPolicyHint();
+            root.maybeAutoStartExternalAuth();
+        }
+        onLoadFailed: {
+            root.systemLoginPamText = "";
+            root.refreshPasswordAttemptPolicyHint();
+        }
+    }
+
+    FileView {
+        id: systemLocalLoginPamWatcher
+        path: "/etc/pam.d/system-local-login"
+        printErrors: false
+        onLoaded: {
+            root.systemLocalLoginPamText = text();
+            root.refreshPasswordAttemptPolicyHint();
+            root.maybeAutoStartExternalAuth();
+        }
+        onLoadFailed: {
+            root.systemLocalLoginPamText = "";
+            root.refreshPasswordAttemptPolicyHint();
+        }
+    }
+
+    FileView {
+        id: commonAuthPcPamWatcher
+        path: "/etc/pam.d/common-auth-pc"
+        printErrors: false
+        onLoaded: {
+            root.commonAuthPcPamText = text();
+            root.refreshPasswordAttemptPolicyHint();
+            root.maybeAutoStartExternalAuth();
+        }
+        onLoadFailed: {
+            root.commonAuthPcPamText = "";
+            root.refreshPasswordAttemptPolicyHint();
+        }
+    }
+
+    FileView {
+        id: loginPamWatcher
+        path: "/etc/pam.d/login"
+        printErrors: false
+        onLoaded: {
+            root.loginPamText = text();
+            root.refreshPasswordAttemptPolicyHint();
+            root.maybeAutoStartExternalAuth();
+        }
+        onLoadFailed: {
+            root.loginPamText = "";
+            root.refreshPasswordAttemptPolicyHint();
+        }
+    }
+
+    FileView {
+        id: faillockConfigWatcher
+        path: "/etc/security/faillock.conf"
+        printErrors: false
+        onLoaded: {
+            root.faillockConfigText = text();
+            root.refreshPasswordAttemptPolicyHint();
+        }
+        onLoadFailed: {
+            root.faillockConfigText = "";
+            root.refreshPasswordAttemptPolicyHint();
         }
     }
 
     Component.onCompleted: {
         initWeatherService();
+        refreshPasswordAttemptPolicyHint();
 
         if (isPrimaryScreen)
             applyLastSuccessfulUser();
 
         if (CompositorService.isHyprland)
             updateHyprlandLayout();
+
+        fprintdDeviceProbe.running = true;
     }
 
     function applyLastSuccessfulUser() {
+        if (!GreetdSettings.settingsLoaded || !GreetdSettings.rememberLastUser)
+            return;
         const lastUser = GreetdMemory.lastSuccessfulUser;
         if (lastUser && !GreeterState.showPasswordInput && !GreeterState.username) {
             GreeterState.username = lastUser;
             GreeterState.usernameInput = lastUser;
             GreeterState.showPasswordInput = true;
             PortalService.getGreeterUserProfileImage(lastUser);
+            maybeAutoStartExternalAuth();
         }
+    }
+
+    function submitUsername(rawValue) {
+        const user = (rawValue || "").trim();
+        if (!user)
+            return;
+        if (GreeterState.username !== user) {
+            passwordFailureCount = 0;
+            clearAuthFeedback();
+            externalAuthAutoStartedForUser = "";
+        }
+        GreeterState.username = user;
+        GreeterState.showPasswordInput = true;
+        PortalService.getGreeterUserProfileImage(user);
+        GreeterState.passwordBuffer = "";
+        pendingPasswordResponse = false;
+        resetPasswordSessionTransition(true);
+        maybeAutoStartExternalAuth();
+    }
+
+    function submitBufferedPassword() {
+        pendingPasswordResponse = false;
+        resetPasswordSessionTransition(true);
+        awaitingExternalAuth = false;
+        authTimeout.interval = defaultAuthTimeoutMs;
+        authTimeout.restart();
+        // Some PAM stacks expect an explicit empty response to advance U2F/fprint or fail normally.
+        Greetd.respond(GreeterState.passwordBuffer || "");
+        GreeterState.passwordBuffer = "";
+        inputField.text = "";
+        return true;
+    }
+
+    function requestPasswordSessionTransition() {
+        const hasPasswordBuffer = GreeterState.passwordBuffer && GreeterState.passwordBuffer.length > 0;
+        if (!passwordSubmitRequested && !hasPasswordBuffer)
+            return;
+        if (cancelingExternalAuthForPassword)
+            return;
+        if (passwordSessionTransitionRetryCount >= maxPasswordSessionTransitionRetries) {
+            pendingPasswordResponse = false;
+            awaitingExternalAuth = false;
+            authTimeout.interval = defaultAuthTimeoutMs;
+            authTimeout.stop();
+            resetPasswordSessionTransition(true);
+            GreeterState.pamState = "error";
+            authFeedbackMessage = currentAuthMessage();
+            placeholderDelay.restart();
+            Greetd.cancelSession();
+            return;
+        }
+        cancelingExternalAuthForPassword = true;
+        passwordSessionTransitionRetryCount = passwordSessionTransitionRetryCount + 1;
+        awaitingExternalAuth = false;
+        pendingPasswordResponse = false;
+        authTimeout.interval = defaultAuthTimeoutMs;
+        authTimeout.stop();
+        Greetd.cancelSession();
+    }
+
+    function startAuthSession(submitPassword) {
+        submitPassword = submitPassword === true;
+        if (!GreeterState.showPasswordInput || !GreeterState.username)
+            return;
+        if (GreeterState.unlocking)
+            return;
+        const hasPasswordBuffer = GreeterState.passwordBuffer && GreeterState.passwordBuffer.length > 0;
+        if (Greetd.state !== GreetdState.Inactive) {
+            if (pendingPasswordResponse && submitPassword)
+                submitBufferedPassword();
+            else if (submitPassword)
+                passwordSubmitRequested = true;
+            return;
+        }
+        if (cancelingExternalAuthForPassword) {
+            if (submitPassword)
+                passwordSubmitRequested = true;
+            return;
+        }
+        if (!submitPassword && !hasPasswordBuffer && !root.greeterExternalAuthAvailable)
+            return;
+        pendingPasswordResponse = false;
+        passwordSubmitRequested = submitPassword;
+        awaitingExternalAuth = !submitPassword && !hasPasswordBuffer && root.greeterExternalAuthAvailable;
+        // Use greeterExternalAuthAvailable so systems with pam_fprintd but no hardware don't incur the 30 s wait.
+        const waitingOnPamExternalBeforePassword = submitPassword && root.greeterExternalAuthAvailable;
+        authTimeout.interval = (awaitingExternalAuth || waitingOnPamExternalBeforePassword) ? externalAuthTimeoutMs : defaultAuthTimeoutMs;
+        authTimeout.restart();
+        Greetd.createSession(GreeterState.username);
+    }
+
+    function maybeAutoStartExternalAuth() {
+        if (!GreeterState.showPasswordInput || !GreeterState.username)
+            return;
+        if (!root.greeterExternalAuthAvailable)
+            return;
+        if (GreeterState.unlocking || Greetd.state !== GreetdState.Inactive)
+            return;
+        if (passwordSubmitRequested || cancelingExternalAuthForPassword)
+            return;
+        if (GreeterState.passwordBuffer && GreeterState.passwordBuffer.length > 0)
+            return;
+        if (externalAuthAutoStartedForUser === GreeterState.username)
+            return;
+
+        externalAuthAutoStartedForUser = GreeterState.username;
+        startAuthSession(false);
+    }
+
+    function isExternalAuthPrompt(message, responseRequired) {
+        // Non-response PAM messages commonly represent waiting states (fprint/U2F/token touch).
+        return !responseRequired;
     }
 
     Component.onDestruction: {
@@ -113,6 +603,34 @@ Item {
         }
     }
 
+    // Probe fprintd D-Bus for physically enrolled scanners to eliminate PAM stack false-positives.
+    Process {
+        id: fprintdDeviceProbe
+        running: false
+        // sh wrapper: emits PROBE_UNAVAILABLE if gdbus is absent or fprintd unreachable,
+        // keeping the PAM-only fallback active in those cases.
+        command: ["sh", "-c",
+                  "command -v gdbus >/dev/null 2>&1 || { echo PROBE_UNAVAILABLE; exit 0; }; " +
+                  "gdbus call --system " +
+                  "--dest net.reactivated.Fprint " +
+                  "--object-path /net/reactivated/Fprint/Manager " +
+                  "--method net.reactivated.Fprint.Manager.GetDevices 2>/dev/null " +
+                  "|| echo PROBE_UNAVAILABLE"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (text.includes("PROBE_UNAVAILABLE"))
+                    return; // PAM-only fallback stays active
+                root.fprintdHasDevice = text.includes("objectpath");
+                root.fprintdProbeComplete = true;
+                root.maybeAutoStartExternalAuth();
+            }
+        }
+        onExited: function(exitCode, exitStatus) {
+            if (!root.fprintdProbeComplete)
+                root.maybeAutoStartExternalAuth(); // PAM-only fallback stays active
+        }
+    }
+
     Connections {
         target: CompositorService.isHyprland ? Hyprland : null
         enabled: CompositorService.isHyprland
@@ -143,10 +661,39 @@ Item {
         }
     }
 
+    FileView {
+        id: greeterWallpaperOverrideFile
+        path: GreetdSettings.greeterWallpaperOverridePath
+        printErrors: false
+        watchChanges: true
+        onLoaded: root.greeterWallpaperOverrideExists = true
+        onLoadFailed: root.greeterWallpaperOverrideExists = false
+    }
+
+    Connections {
+        target: GreetdSettings
+        function onGreeterWallpaperOverridePathChanged() {
+            if (!GreetdSettings.greeterWallpaperOverridePath) {
+                root.greeterWallpaperOverrideExists = false;
+                return;
+            }
+            greeterWallpaperOverrideFile.reload();
+        }
+        function onGreeterWallpaperPathChanged() {
+            if (!GreetdSettings.greeterWallpaperPath) {
+                root.greeterWallpaperOverrideExists = false;
+                return;
+            }
+            greeterWallpaperOverrideFile.reload();
+        }
+    }
+
     DankBackdrop {
         anchors.fill: parent
         screenName: root.screenName
         visible: {
+            if (GreetdSettings.greeterWallpaperPath !== "" && root.greeterWallpaperOverrideExists)
+                return false;
             var _ = SessionData.perMonitorWallpaper;
             var __ = SessionData.monitorWallpapers;
             var currentWallpaper = SessionData.getMonitorWallpaper(screenName);
@@ -159,12 +706,14 @@ Item {
 
         anchors.fill: parent
         source: {
+            if (GreetdSettings.greeterWallpaperPath !== "" && root.greeterWallpaperOverrideExists)
+                return encodeFileUrl(GreetdSettings.greeterWallpaperOverridePath);
             var _ = SessionData.perMonitorWallpaper;
             var __ = SessionData.monitorWallpapers;
             var currentWallpaper = SessionData.getMonitorWallpaper(screenName);
             return (currentWallpaper && !currentWallpaper.startsWith("#")) ? encodeFileUrl(currentWallpaper) : "";
         }
-        fillMode: Theme.getFillMode(GreetdSettings.wallpaperFillMode)
+        fillMode: Theme.getFillMode(GreetdSettings.getEffectiveWallpaperFillMode())
         smooth: true
         asynchronous: false
         cache: true
@@ -218,7 +767,7 @@ Item {
 
                 property string fullTimeStr: {
                     const format = GreetdSettings.getEffectiveTimeFormat();
-                    return systemClock.date.toLocaleTimeString(Qt.locale(), format);
+                    return systemClock.date.toLocaleTimeString(I18n.locale(), format);
                 }
                 property var timeParts: fullTimeStr.split(':')
                 property string hours: timeParts[0] || ""
@@ -327,10 +876,7 @@ Item {
             anchors.top: clockContainer.bottom
             anchors.topMargin: 4
             text: {
-                if (GreetdSettings.lockDateFormat && GreetdSettings.lockDateFormat.length > 0) {
-                    return systemClock.date.toLocaleDateString(Qt.locale(), GreetdSettings.lockDateFormat);
-                }
-                return systemClock.date.toLocaleDateString(Qt.locale(), Locale.LongFormat);
+                return systemClock.date.toLocaleDateString(I18n.locale(), GreetdSettings.getEffectiveLockDateFormat());
             }
             font.pixelSize: Theme.fontSizeXLarge
             color: "white"
@@ -399,6 +945,9 @@ Item {
                                 if (GreeterState.showPasswordInput && revealButton.visible) {
                                     margin += revealButton.width;
                                 }
+                                if (externalAuthButton.visible) {
+                                    margin += externalAuthButton.width;
+                                }
                                 if (virtualKeyboardButton.visible) {
                                     margin += virtualKeyboardButton.width;
                                 }
@@ -415,21 +964,18 @@ Item {
                                     return;
                                 if (GreeterState.showPasswordInput) {
                                     GreeterState.passwordBuffer = text;
+                                    if (!text || text.length === 0)
+                                        root.passwordSubmitRequested = false;
                                 } else {
                                     GreeterState.usernameInput = text;
                                 }
                             }
                             onAccepted: {
                                 if (GreeterState.showPasswordInput) {
-                                    if (Greetd.state === GreetdState.Inactive && GreeterState.username) {
-                                        Greetd.createSession(GreeterState.username);
-                                    }
+                                    root.startAuthSession(true);
                                 } else {
                                     if (text.trim()) {
-                                        GreeterState.username = text.trim();
-                                        GreeterState.showPasswordInput = true;
-                                        PortalService.getGreeterUserProfileImage(GreeterState.username);
-                                        GreeterState.passwordBuffer = "";
+                                        root.submitUsername(text);
                                         syncingFromState = true;
                                         text = "";
                                         syncingFromState = false;
@@ -461,14 +1007,14 @@ Item {
 
                             anchors.left: lockIcon.right
                             anchors.leftMargin: Theme.spacingM
-                            anchors.right: (GreeterState.showPasswordInput && revealButton.visible ? revealButton.left : (virtualKeyboardButton.visible ? virtualKeyboardButton.left : (enterButton.visible ? enterButton.left : parent.right)))
+                            anchors.right: (GreeterState.showPasswordInput && revealButton.visible ? revealButton.left : (externalAuthButton.visible ? externalAuthButton.left : (virtualKeyboardButton.visible ? virtualKeyboardButton.left : (enterButton.visible ? enterButton.left : parent.right))))
                             anchors.rightMargin: 2
                             anchors.verticalCenter: parent.verticalCenter
                             text: {
                                 if (GreeterState.unlocking) {
                                     return "Logging in...";
                                 }
-                                if (Greetd.state !== GreetdState.Inactive) {
+                                if (Greetd.state !== GreetdState.Inactive && !awaitingExternalAuth && !pendingPasswordResponse) {
                                     return "Authenticating...";
                                 }
                                 if (GreeterState.showPasswordInput) {
@@ -476,7 +1022,7 @@ Item {
                                 }
                                 return "Username...";
                             }
-                            color: GreeterState.unlocking ? Theme.primary : (Greetd.state !== GreetdState.Inactive ? Theme.primary : Theme.outline)
+                            color: (GreeterState.unlocking || (Greetd.state !== GreetdState.Inactive && !awaitingExternalAuth && !pendingPasswordResponse)) ? Theme.primary : Theme.outline
                             font.pixelSize: Theme.fontSizeMedium
                             opacity: (GreeterState.showPasswordInput ? GreeterState.passwordBuffer.length === 0 : GreeterState.usernameInput.length === 0) ? 1 : 0
 
@@ -498,7 +1044,7 @@ Item {
                         StyledText {
                             anchors.left: lockIcon.right
                             anchors.leftMargin: Theme.spacingM
-                            anchors.right: (GreeterState.showPasswordInput && revealButton.visible ? revealButton.left : (virtualKeyboardButton.visible ? virtualKeyboardButton.left : (enterButton.visible ? enterButton.left : parent.right)))
+                            anchors.right: (GreeterState.showPasswordInput && revealButton.visible ? revealButton.left : (externalAuthButton.visible ? externalAuthButton.left : (virtualKeyboardButton.visible ? virtualKeyboardButton.left : (enterButton.visible ? enterButton.left : parent.right))))
                             anchors.rightMargin: 2
                             anchors.verticalCenter: parent.verticalCenter
                             text: {
@@ -528,14 +1074,26 @@ Item {
                         DankActionButton {
                             id: revealButton
 
-                            anchors.right: virtualKeyboardButton.visible ? virtualKeyboardButton.left : (enterButton.visible ? enterButton.left : parent.right)
+                            anchors.right: externalAuthButton.visible ? externalAuthButton.left : (virtualKeyboardButton.visible ? virtualKeyboardButton.left : (enterButton.visible ? enterButton.left : parent.right))
                             anchors.rightMargin: 0
                             anchors.verticalCenter: parent.verticalCenter
                             iconName: parent.showPassword ? "visibility_off" : "visibility"
                             buttonSize: 32
-                            visible: GreeterState.showPasswordInput && GreeterState.passwordBuffer.length > 0 && Greetd.state === GreetdState.Inactive && !GreeterState.unlocking
+                            visible: GreeterState.showPasswordInput && GreeterState.passwordBuffer.length > 0 && (Greetd.state === GreetdState.Inactive || awaitingExternalAuth || pendingPasswordResponse) && !GreeterState.unlocking
                             enabled: visible
                             onClicked: parent.showPassword = !parent.showPassword
+                        }
+                        DankActionButton {
+                            id: externalAuthButton
+
+                            anchors.right: virtualKeyboardButton.visible ? virtualKeyboardButton.left : (enterButton.visible ? enterButton.left : parent.right)
+                            anchors.rightMargin: 0
+                            anchors.verticalCenter: parent.verticalCenter
+                            iconName: root.greeterPamHasFprint ? "fingerprint" : "key"
+                            buttonSize: 32
+                            visible: GreeterState.showPasswordInput && root.greeterExternalAuthAvailable && GreeterState.passwordBuffer.length === 0 && (Greetd.state === GreetdState.Inactive || awaitingExternalAuth || pendingPasswordResponse) && !GreeterState.unlocking
+                            enabled: visible
+                            onClicked: root.startAuthSession(false)
                         }
                         DankActionButton {
                             id: virtualKeyboardButton
@@ -545,7 +1103,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             iconName: "keyboard"
                             buttonSize: 32
-                            visible: Greetd.state === GreetdState.Inactive && !GreeterState.unlocking
+                            visible: (Greetd.state === GreetdState.Inactive || awaitingExternalAuth || pendingPasswordResponse) && !GreeterState.unlocking
                             enabled: visible
                             onClicked: {
                                 if (keyboard_controller.isKeyboardActive) {
@@ -564,19 +1122,14 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             iconName: "keyboard_return"
                             buttonSize: 36
-                            visible: Greetd.state === GreetdState.Inactive && !GreeterState.unlocking
+                            visible: (Greetd.state === GreetdState.Inactive || awaitingExternalAuth || pendingPasswordResponse) && !GreeterState.unlocking
                             enabled: true
                             onClicked: {
                                 if (GreeterState.showPasswordInput) {
-                                    if (GreeterState.username) {
-                                        Greetd.createSession(GreeterState.username);
-                                    }
+                                    root.startAuthSession(true);
                                 } else {
                                     if (inputField.text.trim()) {
-                                        GreeterState.username = inputField.text.trim();
-                                        GreeterState.showPasswordInput = true;
-                                        PortalService.getGreeterUserProfileImage(GreeterState.username);
-                                        GreeterState.passwordBuffer = "";
+                                        root.submitUsername(inputField.text);
                                         inputField.text = "";
                                     }
                                 }
@@ -601,20 +1154,16 @@ Item {
 
                 StyledText {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 20
+                    Layout.preferredHeight: 38
                     Layout.topMargin: -Theme.spacingS
                     Layout.bottomMargin: -Theme.spacingS
-                    text: {
-                        if (GreeterState.pamState === "error")
-                            return "Authentication error - try again";
-                        if (GreeterState.pamState === "fail")
-                            return "Incorrect password";
-                        return "";
-                    }
+                    text: root.authFeedbackMessage
                     color: Theme.error
                     font.pixelSize: Theme.fontSizeSmall
                     horizontalAlignment: Text.AlignHCenter
-                    opacity: GreeterState.pamState !== "" ? 1 : 0
+                    wrapMode: Text.WordWrap
+                    maximumLineCount: 2
+                    opacity: root.authFeedbackMessage !== "" ? 1 : 0
 
                     Behavior on opacity {
                         NumberAnimation {
@@ -667,6 +1216,7 @@ Item {
                         enabled: !GreeterState.unlocking && Greetd.state === GreetdState.Inactive && GreeterState.showPasswordInput
                         onClicked: {
                             GreeterState.reset();
+                            root.externalAuthAutoStartedForUser = "";
                             inputField.text = "";
                             PortalService.profileImage = "";
                         }
@@ -1029,9 +1579,11 @@ Item {
             return;
         if (!GreetdMemory.memoryReady)
             return;
+        if (!GreetdSettings.settingsLoaded)
+            return;
 
-        const savedSession = GreetdMemory.lastSessionId;
-        if (savedSession) {
+        const savedSession = GreetdSettings.rememberLastSession ? GreetdMemory.lastSessionId : "";
+        if (savedSession && GreetdSettings.rememberLastSession) {
             for (var i = 0; i < GreeterState.sessionPaths.length; i++) {
                 if (GreeterState.sessionPaths[i] === savedSession) {
                     GreeterState.currentSessionIndex = i;
@@ -1164,44 +1716,151 @@ Item {
 
         function onAuthMessage(message, error, responseRequired, echoResponse) {
             if (responseRequired) {
-                Greetd.respond(GreeterState.passwordBuffer);
-                GreeterState.passwordBuffer = "";
-                inputField.text = "";
+                cancelingExternalAuthForPassword = false;
+                passwordSessionTransitionRetryCount = 0;
+                awaitingExternalAuth = false;
+                pendingPasswordResponse = true;
+                const hasPasswordBuffer = GreeterState.passwordBuffer && GreeterState.passwordBuffer.length > 0;
+                if (!passwordSubmitRequested && hasPasswordBuffer)
+                    passwordSubmitRequested = true;
+                if (passwordSubmitRequested && !root.submitBufferedPassword())
+                    passwordSubmitRequested = false;
+                if (passwordSubmitRequested || hasPasswordBuffer) {
+                    authTimeout.interval = defaultAuthTimeoutMs;
+                    authTimeout.restart();
+                } else {
+                    authTimeout.stop();
+                }
                 return;
             }
-            if (!error)
-                Greetd.respond("");
+            pendingPasswordResponse = false;
+            const externalPrompt = root.isExternalAuthPrompt(message, responseRequired);
+            if (!passwordSubmitRequested)
+                awaitingExternalAuth = root.greeterExternalAuthAvailable && externalPrompt;
+            if (awaitingExternalAuth || (passwordSubmitRequested && externalPrompt && root.greeterPamHasExternalAuth))
+                authTimeout.interval = externalAuthTimeoutMs;
+            else
+                authTimeout.interval = defaultAuthTimeoutMs;
+            authTimeout.restart();
+            Greetd.respond("");
+        }
+
+        function onStateChanged() {
+            if (Greetd.state === GreetdState.Inactive) {
+                const resumePasswordSubmit = cancelingExternalAuthForPassword && passwordSubmitRequested;
+                awaitingExternalAuth = false;
+                pendingPasswordResponse = false;
+                cancelingExternalAuthForPassword = false;
+                authTimeout.interval = defaultAuthTimeoutMs;
+                authTimeout.stop();
+                if (resumePasswordSubmit) {
+                    Qt.callLater(function() {
+                        root.startAuthSession(true);
+                    });
+                    return;
+                }
+                resetPasswordSessionTransition(true);
+            }
         }
 
         function onReadyToLaunch() {
+            awaitingExternalAuth = false;
+            pendingPasswordResponse = false;
+            resetPasswordSessionTransition(true);
+            authTimeout.interval = defaultAuthTimeoutMs;
+            authTimeout.stop();
+            passwordFailureCount = 0;
+            clearAuthFeedback();
             const sessionCmd = GreeterState.selectedSession || GreeterState.sessionExecs[GreeterState.currentSessionIndex];
             const sessionPath = GreeterState.selectedSessionPath || GreeterState.sessionPaths[GreeterState.currentSessionIndex];
             if (!sessionCmd) {
                 GreeterState.pamState = "error";
+                authFeedbackMessage = currentAuthMessage();
                 placeholderDelay.restart();
                 return;
             }
 
             GreeterState.unlocking = true;
             launchTimeout.restart();
-            GreetdMemory.setLastSessionId(sessionPath);
-            GreetdMemory.setLastSuccessfulUser(GreeterState.username);
-            Greetd.launch(sessionCmd.split(" "), ["XDG_SESSION_TYPE=wayland"]);
+            if (GreetdSettings.rememberLastSession) {
+                GreetdMemory.setLastSessionId(sessionPath);
+            } else if (GreetdMemory.lastSessionId) {
+                GreetdMemory.setLastSessionId("");
+            }
+            if (GreetdSettings.rememberLastUser) {
+                GreetdMemory.setLastSuccessfulUser(GreeterState.username);
+            } else if (GreetdMemory.lastSuccessfulUser) {
+                GreetdMemory.setLastSuccessfulUser("");
+            }
+            pendingLaunchCommand = sessionCmd;
+            pendingLaunchEnv = ["XDG_SESSION_TYPE=wayland"];
+            memoryFlushTimer.restart();
         }
 
         function onAuthFailure(message) {
+            awaitingExternalAuth = false;
+            pendingPasswordResponse = false;
+            resetPasswordSessionTransition(true);
+            authTimeout.interval = defaultAuthTimeoutMs;
+            authTimeout.stop();
             launchTimeout.stop();
             GreeterState.unlocking = false;
-            GreeterState.pamState = "fail";
+            if (isLikelyLockoutMessage(message)) {
+                GreeterState.pamState = "max";
+            } else {
+                GreeterState.pamState = "fail";
+                passwordFailureCount = passwordFailureCount + 1;
+            }
+            authFeedbackMessage = currentAuthMessage();
             GreeterState.passwordBuffer = "";
             inputField.text = "";
             placeholderDelay.restart();
+            Greetd.cancelSession();
         }
 
         function onError(error) {
+            awaitingExternalAuth = false;
+            pendingPasswordResponse = false;
+            resetPasswordSessionTransition(true);
+            authTimeout.interval = defaultAuthTimeoutMs;
+            authTimeout.stop();
             launchTimeout.stop();
             GreeterState.unlocking = false;
             GreeterState.pamState = "error";
+            authFeedbackMessage = currentAuthMessage();
+            GreeterState.passwordBuffer = "";
+            inputField.text = "";
+            placeholderDelay.restart();
+            Greetd.cancelSession();
+        }
+    }
+
+    Timer {
+        id: memoryFlushTimer
+        interval: memoryFlushDelayMs
+        onTriggered: {
+            if (!pendingLaunchCommand)
+                return;
+            const sessionCommand = pendingLaunchCommand;
+            const launchEnv = pendingLaunchEnv;
+            pendingLaunchCommand = "";
+            pendingLaunchEnv = [];
+            Greetd.launch(sessionCommand.split(" "), launchEnv);
+        }
+    }
+
+    Timer {
+        id: authTimeout
+        interval: defaultAuthTimeoutMs
+        onTriggered: {
+            if (GreeterState.unlocking || Greetd.state === GreetdState.Inactive)
+                return;
+            awaitingExternalAuth = false;
+            pendingPasswordResponse = false;
+            resetPasswordSessionTransition(true);
+            authTimeout.interval = defaultAuthTimeoutMs;
+            GreeterState.pamState = "error";
+            authFeedbackMessage = currentAuthMessage();
             GreeterState.passwordBuffer = "";
             inputField.text = "";
             placeholderDelay.restart();
@@ -1215,8 +1874,11 @@ Item {
         onTriggered: {
             if (!GreeterState.unlocking)
                 return;
+            pendingPasswordResponse = false;
+            resetPasswordSessionTransition(true);
             GreeterState.unlocking = false;
             GreeterState.pamState = "error";
+            authFeedbackMessage = currentAuthMessage();
             placeholderDelay.restart();
             Greetd.cancelSession();
         }
@@ -1225,12 +1887,18 @@ Item {
     Timer {
         id: placeholderDelay
         interval: 4000
-        onTriggered: GreeterState.pamState = ""
+        onTriggered: clearAuthFeedback()
     }
 
     LockPowerMenu {
         id: powerMenu
         showLogout: false
+        powerActionConfirmOverride: GreetdSettings.powerActionConfirm
+        powerActionHoldDurationOverride: GreetdSettings.powerActionHoldDuration
+        powerMenuActionsOverride: GreetdSettings.powerMenuActions
+        powerMenuDefaultActionOverride: GreetdSettings.powerMenuDefaultAction
+        powerMenuGridLayoutOverride: GreetdSettings.powerMenuGridLayout
+        requiredActions: ["poweroff"]
         onClosed: {
             if (isPrimaryScreen && inputField && inputField.forceActiveFocus) {
                 Qt.callLater(() => inputField.forceActiveFocus());

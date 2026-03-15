@@ -40,6 +40,24 @@ Rectangle {
             font.weight: Font.Medium
             anchors.verticalCenter: parent.verticalCenter
         }
+
+        Item {
+            height: 1
+            width: parent.width - headerText.width - settingsButton.width
+        }
+
+        DankActionButton {
+            id: settingsButton
+            anchors.verticalCenter: parent.verticalCenter
+            iconName: "settings"
+            buttonSize: 28
+            iconSize: 16
+            iconColor: Theme.surfaceVariantText
+            onClicked: {
+                PopoutService.closeControlCenter();
+                PopoutService.openSettingsWithTab("audio");
+            }
+        }
     }
 
     Row {
@@ -161,8 +179,11 @@ Rectangle {
             Repeater {
                 model: ScriptModel {
                     values: {
+                        const hidden = SessionData.hiddenOutputDeviceNames ?? [];
                         const nodes = Pipewire.nodes.values.filter(node => {
-                            return node.audio && node.isSink && !node.isStream;
+                            if (!node.audio || !node.isSink || node.isStream)
+                                return false;
+                            return !hidden.includes(node.name);
                         });
                         const pinnedList = audioContent.getPinnedOutputs();
 
@@ -213,16 +234,7 @@ Rectangle {
                         spacing: Theme.spacingS
 
                         DankIcon {
-                            name: {
-                                if (modelData.name.includes("bluez"))
-                                    return "headset";
-                                else if (modelData.name.includes("hdmi"))
-                                    return "tv";
-                                else if (modelData.name.includes("usb"))
-                                    return "headset";
-                                else
-                                    return "speaker";
-                            }
+                            name: AudioService.sinkIcon(modelData)
                             size: Theme.iconSize - 4
                             color: modelData === AudioService.sink ? Theme.primary : Theme.surfaceText
                             anchors.verticalCenter: parent.verticalCenter

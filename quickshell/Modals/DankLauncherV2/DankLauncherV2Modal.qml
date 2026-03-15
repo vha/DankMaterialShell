@@ -1,10 +1,10 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs.Common
 import qs.Services
-import qs.Widgets
 
 Item {
     id: root
@@ -14,10 +14,14 @@ Item {
     property bool spotlightOpen: false
     property bool keyboardActive: false
     property bool contentVisible: false
-    property alias spotlightContent: launcherContent
+    property var spotlightContent: launcherContentLoader.item
     property bool openedFromOverview: false
     property bool isClosing: false
     property bool _windowEnabled: true
+    property bool _pendingInitialize: false
+    property string _pendingQuery: ""
+    property string _pendingMode: ""
+    readonly property bool unloadContentOnClose: SettingsData.dankLauncherV2UnloadOnClose
 
     readonly property bool useHyprlandFocusGrab: CompositorService.useHyprlandFocusGrab
     readonly property var effectiveScreen: launcherWindow.screen
@@ -72,11 +76,26 @@ Item {
             return Theme.primary;
         }
     }
-    readonly property int borderWidth: SettingsData.dankLauncherV2BorderEnabled ? SettingsData.dankLauncherV2BorderThickness : 1
+    readonly property int borderWidth: SettingsData.dankLauncherV2BorderEnabled ? SettingsData.dankLauncherV2BorderThickness : 0
 
     signal dialogClosed
 
+    function _ensureContentLoadedAndInitialize(query, mode) {
+        _pendingQuery = query || "";
+        _pendingMode = mode || "";
+        _pendingInitialize = true;
+        contentVisible = true;
+        launcherContentLoader.active = true;
+
+        if (spotlightContent) {
+            _initializeAndShow(_pendingQuery, _pendingMode);
+            _pendingInitialize = false;
+        }
+    }
+
     function _initializeAndShow(query, mode) {
+        if (!spotlightContent)
+            return;
         contentVisible = true;
         spotlightContent.searchField.forceActiveFocus();
 
@@ -84,11 +103,15 @@ Item {
             spotlightContent.searchField.text = query;
         }
         if (spotlightContent.controller) {
-            var targetMode = mode || "all";
+            var targetMode = mode || SessionData.launcherLastMode || "all";
             spotlightContent.controller.searchMode = targetMode;
             spotlightContent.controller.activePluginId = "";
             spotlightContent.controller.activePluginName = "";
             spotlightContent.controller.pluginFilter = "";
+            spotlightContent.controller.fileSearchType = "all";
+            spotlightContent.controller.fileSearchExt = "";
+            spotlightContent.controller.fileSearchFolder = "";
+            spotlightContent.controller.fileSearchSort = "score";
             spotlightContent.controller.collapsedSections = {};
             spotlightContent.controller.selectedFlatIndex = 0;
             spotlightContent.controller.selectedItem = null;
@@ -122,7 +145,7 @@ Item {
         if (useHyprlandFocusGrab)
             focusGrab.active = true;
 
-        _initializeAndShow("");
+        _ensureContentLoadedAndInitialize("", "");
     }
 
     function showWithQuery(query) {
@@ -140,7 +163,7 @@ Item {
         if (useHyprlandFocusGrab)
             focusGrab.active = true;
 
-        _initializeAndShow(query);
+        _ensureContentLoadedAndInitialize(query, "");
     }
 
     function hide() {
@@ -177,7 +200,7 @@ Item {
         if (useHyprlandFocusGrab)
             focusGrab.active = true;
 
-        _initializeAndShow("", mode);
+        _ensureContentLoadedAndInitialize("", mode);
     }
 
     function toggleWithMode(mode) {
@@ -202,7 +225,18 @@ Item {
         repeat: false
         onTriggered: {
             isClosing = false;
+            if (root.unloadContentOnClose)
+                launcherContentLoader.active = false;
             dialogClosed();
+        }
+    }
+
+    Connections {
+        target: spotlightContent?.controller ?? null
+        function onModeChanged(mode) {
+            if (spotlightContent.controller.autoSwitchedToFiles)
+                return;
+            SessionData.setLauncherLastMode(mode);
         }
     }
 
@@ -264,7 +298,7 @@ Item {
 
     PanelWindow {
         id: launcherWindow
-        visible: root._windowEnabled
+        visible: root._windowEnabled && (spotlightOpen || isClosing)
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
 
@@ -357,12 +391,16 @@ Item {
                 }
             }
 
-            DankRectangle {
+            ElevationShadow {
+                id: launcherShadowLayer
                 anchors.fill: parent
-                color: root.backgroundColor
+                level: Theme.elevationLevel3
+                fallbackOffset: 6
+                targetColor: root.backgroundColor
                 borderColor: root.borderColor
                 borderWidth: root.borderWidth
-                radius: root.cornerRadius
+                targetRadius: root.cornerRadius
+                shadowEnabled: Theme.elevationEnabled && SettingsData.modalElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1"
             }
 
             MouseArea {
@@ -374,10 +412,22 @@ Item {
                 anchors.fill: parent
                 focus: keyboardActive
 
-                LauncherContent {
-                    id: launcherContent
+                Loader {
+                    id: launcherContentLoader
                     anchors.fill: parent
-                    parentModal: root
+                    active: !root.unloadContentOnClose || root.spotlightOpen || root.isClosing || root.contentVisible || root._pendingInitialize
+                    asynchronous: false
+                    sourceComponent: LauncherContent {
+                        focus: true
+                        parentModal: root
+                    }
+
+                    onLoaded: {
+                        if (root._pendingInitialize) {
+                            root._initializeAndShow(root._pendingQuery, root._pendingMode);
+                            root._pendingInitialize = false;
+                        }
+                    }
                 }
 
                 Keys.onEscapePressed: event => {

@@ -16,6 +16,7 @@ Singleton {
     property bool isDwl: false
     property bool isSway: false
     property bool isScroll: false
+    property bool isMiracle: false
     property bool isLabwc: false
     property string compositor: "unknown"
     readonly property bool useHyprlandFocusGrab: isHyprland && Quickshell.env("DMS_HYPRLAND_EXCLUSIVE_FOCUS") !== "1"
@@ -24,13 +25,40 @@ Singleton {
     readonly property string niriSocket: Quickshell.env("NIRI_SOCKET")
     readonly property string swaySocket: Quickshell.env("SWAYSOCK")
     readonly property string scrollSocket: Quickshell.env("SWAYSOCK")
+    readonly property string miracleSocket: Quickshell.env("MIRACLESOCK")
     readonly property string labwcPid: Quickshell.env("LABWC_PID")
     property bool useNiriSorting: isNiri && NiriService
+
+    property var randrScales: ({})
+    property bool randrReady: false
+    signal randrDataReady
 
     property var sortedToplevels: []
     property bool _sortScheduled: false
 
     signal toplevelsChanged
+
+    function fetchRandrData() {
+        Proc.runCommand("randr", ["dms", "randr", "--json"], (output, exitCode) => {
+            if (exitCode === 0 && output) {
+                try {
+                    const data = JSON.parse(output.trim());
+                    if (data.outputs && Array.isArray(data.outputs)) {
+                        const scales = {};
+                        for (const out of data.outputs) {
+                            if (out.name && out.scale > 0)
+                                scales[out.name] = out.scale;
+                        }
+                        randrScales = scales;
+                    }
+                } catch (e) {
+                    console.warn("CompositorService: failed to parse randr data:", e);
+                }
+            }
+            randrReady = true;
+            randrDataReady();
+        }, 0, 3000);
+    }
 
     function getScreenScale(screen) {
         if (!screen)
@@ -39,6 +67,10 @@ Singleton {
         if (Quickshell.env("QT_WAYLAND_FORCE_DPI") || Quickshell.env("QT_SCALE_FACTOR")) {
             return screen.devicePixelRatio || 1;
         }
+
+        const randrScale = randrScales[screen.name];
+        if (randrScale !== undefined && randrScale > 0)
+            return Math.round(randrScale * 20) / 20;
 
         if (WlrOutputService.wlrOutputAvailable && screen) {
             const wlrOutput = WlrOutputService.getOutput(screen.name);
@@ -74,7 +106,7 @@ Singleton {
             screenName = Hyprland.focusedWorkspace.monitor.name;
         else if (isNiri && NiriService.currentOutput)
             screenName = NiriService.currentOutput;
-        else if (isSway || isScroll) {
+        else if (isSway || isScroll || isMiracle) {
             const focusedWs = I3.workspaces?.values?.find(ws => ws.focused === true);
             screenName = focusedWs?.monitor?.name || "";
         } else if (isDwl && DwlService.activeOutput)
@@ -135,6 +167,7 @@ Singleton {
     }
 
     Component.onCompleted: {
+        fetchRandrData();
         detectCompositor();
         scheduleSort();
         Qt.callLater(() => {
@@ -443,12 +476,13 @@ Singleton {
     }
 
     function detectCompositor() {
-        if (hyprlandSignature && hyprlandSignature.length > 0 && !niriSocket && !swaySocket && !scrollSocket && !labwcPid) {
+        if (hyprlandSignature && hyprlandSignature.length > 0 && !niriSocket && !swaySocket && !scrollSocket && !miracleSocket && !labwcPid) {
             isHyprland = true;
             isNiri = false;
             isDwl = false;
             isSway = false;
             isScroll = false;
+            isMiracle = false;
             isLabwc = false;
             compositor = "hyprland";
             console.info("CompositorService: Detected Hyprland");
@@ -463,6 +497,7 @@ Singleton {
                     isDwl = false;
                     isSway = false;
                     isScroll = false;
+                    isMiracle = false;
                     isLabwc = false;
                     compositor = "niri";
                     console.info("CompositorService: Detected Niri with socket:", niriSocket);
@@ -472,7 +507,7 @@ Singleton {
             return;
         }
 
-        if (swaySocket && swaySocket.length > 0 && !scrollSocket && scrollSocket.length == 0) {
+        if (swaySocket && swaySocket.length > 0 && !scrollSocket && scrollSocket.length == 0 && !miracleSocket) {
             Proc.runCommand("swaySocketCheck", ["test", "-S", swaySocket], (output, exitCode) => {
                 if (exitCode === 0) {
                     isNiri = false;
@@ -480,6 +515,7 @@ Singleton {
                     isDwl = false;
                     isSway = true;
                     isScroll = false;
+                    isMiracle = false;
                     isLabwc = false;
                     compositor = "sway";
                     console.info("CompositorService: Detected Sway with socket:", swaySocket);
@@ -488,7 +524,24 @@ Singleton {
             return;
         }
 
-        if (scrollSocket && scrollSocket.length > 0) {
+        if (miracleSocket && miracleSocket.length > 0) {
+            Proc.runCommand("miracleSocketCheck", ["test", "-S", miracleSocket], (output, exitCode) => {
+                if (exitCode === 0) {
+                    isNiri = false;
+                    isHyprland = false;
+                    isDwl = false;
+                    isSway = false;
+                    isScroll = false;
+                    isMiracle = true;
+                    isLabwc = false;
+                    compositor = "miracle";
+                    console.info("CompositorService: Detected Miracle WM with socket:", miracleSocket);
+                }
+            }, 0);
+            return;
+        }
+
+        if (scrollSocket && scrollSocket.length > 0 && !miracleSocket) {
             Proc.runCommand("scrollSocketCheck", ["test", "-S", scrollSocket], (output, exitCode) => {
                 if (exitCode === 0) {
                     isNiri = false;
@@ -496,6 +549,7 @@ Singleton {
                     isDwl = false;
                     isSway = false;
                     isScroll = true;
+                    isMiracle = false;
                     isLabwc = false;
                     compositor = "scroll";
                     console.info("CompositorService: Detected Scroll with socket:", scrollSocket);
@@ -510,6 +564,7 @@ Singleton {
             isDwl = false;
             isSway = false;
             isScroll = false;
+            isMiracle = false;
             isLabwc = true;
             compositor = "labwc";
             console.info("CompositorService: Detected LabWC with PID:", labwcPid);
@@ -524,6 +579,7 @@ Singleton {
             isDwl = false;
             isSway = false;
             isScroll = false;
+            isMiracle = false;
             isLabwc = false;
             compositor = "unknown";
             console.warn("CompositorService: No compositor detected");
@@ -546,6 +602,7 @@ Singleton {
             isDwl = true;
             isSway = false;
             isScroll = false;
+            isMiracle = false;
             isLabwc = false;
             compositor = "dwl";
             console.info("CompositorService: Detected DWL via DMS capability");
@@ -559,7 +616,7 @@ Singleton {
             return Hyprland.dispatch("dpms off");
         if (isDwl)
             return _dwlPowerOffMonitors();
-        if (isSway || isScroll) {
+        if (isSway || isScroll || isMiracle) {
             try {
                 I3.dispatch("output * dpms off");
             } catch (_) {}
@@ -578,7 +635,7 @@ Singleton {
             return Hyprland.dispatch("dpms on");
         if (isDwl)
             return _dwlPowerOnMonitors();
-        if (isSway || isScroll) {
+        if (isSway || isScroll || isMiracle) {
             try {
                 I3.dispatch("output * dpms on");
             } catch (_) {}

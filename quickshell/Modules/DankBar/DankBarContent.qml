@@ -103,7 +103,7 @@ Item {
                 }, (_, i) => i);
             }
             return DwlService.getVisibleTags(barWindow.screenName);
-        } else if (CompositorService.isSway || CompositorService.isScroll) {
+        } else if (CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle) {
             const workspaces = I3.workspaces?.values || [];
             if (workspaces.length === 0)
                 return [
@@ -145,7 +145,7 @@ Item {
                 return 0;
             const activeTags = DwlService.getActiveTags(barWindow.screenName);
             return activeTags.length > 0 ? activeTags[0] : 0;
-        } else if (CompositorService.isSway || CompositorService.isScroll) {
+        } else if (CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle) {
             if (!barWindow.screenName || SettingsData.workspaceFollowFocus) {
                 const focusedWs = I3.workspaces?.values?.find(ws => ws.focused === true);
                 return focusedWs ? focusedWs.num : 1;
@@ -194,7 +194,7 @@ Item {
             if (nextIndex !== validIndex) {
                 DwlService.switchToTag(barWindow.screenName, realWorkspaces[nextIndex]);
             }
-        } else if (CompositorService.isSway || CompositorService.isScroll) {
+        } else if (CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle) {
             const currentWs = getCurrentWorkspace();
             const currentIndex = realWorkspaces.findIndex(ws => ws.num === currentWs);
             const validIndex = currentIndex === -1 ? 0 : currentIndex;
@@ -561,10 +561,7 @@ Item {
             axis: barWindow.axis
             section: topBarContent.getWidgetSection(parent)
             parentScreen: barWindow.screen
-            popoutTarget: {
-                clipboardHistoryPopoutLoader.active = true;
-                return clipboardHistoryPopoutLoader.item;
-            }
+            popoutTarget: clipboardHistoryPopoutLoader.item ?? null
 
             function openClipboardPopout(initialTab) {
                 clipboardHistoryPopoutLoader.active = true;
@@ -642,24 +639,52 @@ Item {
             popoutTarget: appDrawerLoader.item
             parentScreen: barWindow.screen
             hyprlandOverviewLoader: barWindow ? barWindow.hyprlandOverviewLoader : null
-            onClicked: {
+
+            function _preparePopout() {
                 appDrawerLoader.active = true;
-                // Use topBarContent.barConfig directly since widget barConfig binding doesn't work in Components
+                if (!appDrawerLoader.item)
+                    return false;
                 const effectiveBarConfig = topBarContent.barConfig;
-                // Calculate barPosition from axis.edge
                 const barPosition = barWindow.axis?.edge === "left" ? 2 : (barWindow.axis?.edge === "right" ? 3 : (barWindow.axis?.edge === "top" ? 0 : 1));
-                if (appDrawerLoader.item && appDrawerLoader.item.setBarContext) {
+                if (appDrawerLoader.item.setBarContext)
                     appDrawerLoader.item.setBarContext(barPosition, effectiveBarConfig?.bottomGap ?? 0);
-                }
-                if (appDrawerLoader.item && appDrawerLoader.item.setTriggerPosition) {
+                if (appDrawerLoader.item.setTriggerPosition) {
                     const globalPos = launcherButton.visualContent.mapToItem(null, 0, 0);
                     const currentScreen = barWindow.screen;
                     const pos = SettingsData.getPopupTriggerPosition(globalPos, currentScreen, barWindow.effectiveBarThickness, launcherButton.visualWidth, effectiveBarConfig?.spacing ?? 4, barPosition, effectiveBarConfig);
                     appDrawerLoader.item.setTriggerPosition(pos.x, pos.y, pos.width, launcherButton.section, currentScreen, barPosition, barWindow.effectiveBarThickness, effectiveBarConfig?.spacing ?? 4, effectiveBarConfig);
                 }
-                if (appDrawerLoader.item) {
-                    PopoutManager.requestPopout(appDrawerLoader.item, undefined, "appDrawer");
-                }
+                return true;
+            }
+
+            function openWithMode(mode) {
+                if (!_preparePopout())
+                    return;
+                appDrawerLoader.item.openWithMode(mode);
+            }
+
+            function toggleWithMode(mode) {
+                if (!_preparePopout())
+                    return;
+                appDrawerLoader.item.toggleWithMode(mode);
+            }
+
+            function openWithQuery(query) {
+                if (!_preparePopout())
+                    return;
+                appDrawerLoader.item.openWithQuery(query);
+            }
+
+            function toggleWithQuery(query) {
+                if (!_preparePopout())
+                    return;
+                appDrawerLoader.item.toggleWithQuery(query);
+            }
+
+            onClicked: {
+                if (!_preparePopout())
+                    return;
+                PopoutManager.requestPopout(appDrawerLoader.item, undefined, "appDrawer");
             }
         }
     }
@@ -731,10 +756,7 @@ Item {
             barThickness: barWindow.effectiveBarThickness
             widgetThickness: barWindow.widgetThickness
             section: topBarContent.getWidgetSection(parent) || "center"
-            popoutTarget: {
-                dankDashPopoutLoader.active = true;
-                return dankDashPopoutLoader.item;
-            }
+            popoutTarget: dankDashPopoutLoader.item ?? null
             parentScreen: barWindow.screen
 
             Component.onCompleted: {
@@ -783,7 +805,7 @@ Item {
                     } else {
                         dankDashPopoutLoader.item.triggerScreen = barWindow.screen;
                     }
-                    PopoutManager.requestPopout(dankDashPopoutLoader.item, 0, (effectiveBarConfig?.id ?? "default") + "-0");
+                    PopoutManager.requestPopout(dankDashPopoutLoader.item, 0, (effectiveBarConfig?.id ?? "default") + "-" + section + "-0");
                 }
             }
         }
@@ -798,10 +820,7 @@ Item {
             barThickness: barWindow.effectiveBarThickness
             widgetThickness: barWindow.widgetThickness
             section: topBarContent.getWidgetSection(parent) || "center"
-            popoutTarget: {
-                dankDashPopoutLoader.active = true;
-                return dankDashPopoutLoader.item;
-            }
+            popoutTarget: dankDashPopoutLoader.item ?? null
             parentScreen: barWindow.screen
             onClicked: {
                 dankDashPopoutLoader.active = true;
@@ -839,7 +858,7 @@ Item {
                     } else {
                         dankDashPopoutLoader.item.triggerScreen = barWindow.screen;
                     }
-                    PopoutManager.requestPopout(dankDashPopoutLoader.item, 1, (effectiveBarConfig?.id ?? "default") + "-1");
+                    PopoutManager.requestPopout(dankDashPopoutLoader.item, 1, (effectiveBarConfig?.id ?? "default") + "-" + section + "-1");
                 }
             }
         }
@@ -853,10 +872,7 @@ Item {
             barThickness: barWindow.effectiveBarThickness
             widgetThickness: barWindow.widgetThickness
             section: topBarContent.getWidgetSection(parent) || "center"
-            popoutTarget: {
-                dankDashPopoutLoader.active = true;
-                return dankDashPopoutLoader.item;
-            }
+            popoutTarget: dankDashPopoutLoader.item ?? null
             parentScreen: barWindow.screen
             onClicked: {
                 dankDashPopoutLoader.active = true;
@@ -898,7 +914,7 @@ Item {
                     } else {
                         dankDashPopoutLoader.item.triggerScreen = barWindow.screen;
                     }
-                    PopoutManager.requestPopout(dankDashPopoutLoader.item, 3, (effectiveBarConfig?.id ?? "default") + "-3");
+                    PopoutManager.requestPopout(dankDashPopoutLoader.item, 3, (effectiveBarConfig?.id ?? "default") + "-" + section + "-3");
                 }
             }
         }
@@ -940,10 +956,7 @@ Item {
             widgetThickness: barWindow.widgetThickness
             axis: barWindow.axis
             section: topBarContent.getWidgetSection(parent) || "right"
-            popoutTarget: {
-                processListPopoutLoader.active = true;
-                return processListPopoutLoader.item;
-            }
+            popoutTarget: processListPopoutLoader.item ?? null
             parentScreen: barWindow.screen
             widgetData: parent.widgetData
             onCpuClicked: {
@@ -976,10 +989,7 @@ Item {
             widgetThickness: barWindow.widgetThickness
             axis: barWindow.axis
             section: topBarContent.getWidgetSection(parent) || "right"
-            popoutTarget: {
-                processListPopoutLoader.active = true;
-                return processListPopoutLoader.item;
-            }
+            popoutTarget: processListPopoutLoader.item ?? null
             parentScreen: barWindow.screen
             widgetData: parent.widgetData
             onRamClicked: {
@@ -1026,10 +1036,7 @@ Item {
             widgetThickness: barWindow.widgetThickness
             axis: barWindow.axis
             section: topBarContent.getWidgetSection(parent) || "right"
-            popoutTarget: {
-                processListPopoutLoader.active = true;
-                return processListPopoutLoader.item;
-            }
+            popoutTarget: processListPopoutLoader.item ?? null
             parentScreen: barWindow.screen
             widgetData: parent.widgetData
             onCpuTempClicked: {
@@ -1062,10 +1069,7 @@ Item {
             widgetThickness: barWindow.widgetThickness
             axis: barWindow.axis
             section: topBarContent.getWidgetSection(parent) || "right"
-            popoutTarget: {
-                processListPopoutLoader.active = true;
-                return processListPopoutLoader.item;
-            }
+            popoutTarget: processListPopoutLoader.item ?? null
             parentScreen: barWindow.screen
             widgetData: parent.widgetData
             onGpuTempClicked: {
@@ -1106,10 +1110,7 @@ Item {
             barThickness: barWindow.effectiveBarThickness
             axis: barWindow.axis
             section: topBarContent.getWidgetSection(parent) || "right"
-            popoutTarget: {
-                notificationCenterLoader.active = true;
-                return notificationCenterLoader.item;
-            }
+            popoutTarget: notificationCenterLoader.item ?? null
             parentScreen: barWindow.screen
             onClicked: {
                 notificationCenterLoader.active = true;
@@ -1144,10 +1145,7 @@ Item {
             section: topBarContent.getWidgetSection(parent) || "right"
             barSpacing: barConfig?.spacing ?? 4
             barConfig: topBarContent.barConfig
-            popoutTarget: {
-                batteryPopoutLoader.active = true;
-                return batteryPopoutLoader.item;
-            }
+            popoutTarget: batteryPopoutLoader.item ?? null
             parentScreen: barWindow.screen
             onToggleBatteryPopup: {
                 batteryPopoutLoader.active = true;
@@ -1180,10 +1178,7 @@ Item {
             barThickness: barWindow.effectiveBarThickness
             axis: barWindow.axis
             section: topBarContent.getWidgetSection(parent) || "center"
-            popoutTarget: {
-                layoutPopoutLoader.active = true;
-                return layoutPopoutLoader.item;
-            }
+            popoutTarget: layoutPopoutLoader.item ?? null
             parentScreen: barWindow.screen
             onToggleLayoutPopup: {
                 layoutPopoutLoader.active = true;
@@ -1216,10 +1211,7 @@ Item {
             barSpacing: barConfig?.spacing ?? 4
             barConfig: topBarContent.barConfig
             isAutoHideBar: topBarContent.barConfig?.autoHide ?? false
-            popoutTarget: {
-                vpnPopoutLoader.active = true;
-                return vpnPopoutLoader.item;
-            }
+            popoutTarget: vpnPopoutLoader.item ?? null
             parentScreen: barWindow.screen
             onToggleVpnPopup: {
                 vpnPopoutLoader.active = true;
@@ -1253,10 +1245,7 @@ Item {
             barThickness: barWindow.effectiveBarThickness
             axis: barWindow.axis
             section: topBarContent.getWidgetSection(parent) || "right"
-            popoutTarget: {
-                controlCenterLoader.active = true;
-                return controlCenterLoader.item;
-            }
+            popoutTarget: controlCenterLoader.item ?? null
             parentScreen: barWindow.screen
             screenName: barWindow.screen?.name || ""
             screenModel: barWindow.screen?.model || ""
@@ -1406,10 +1395,7 @@ Item {
             barThickness: barWindow.effectiveBarThickness
             axis: barWindow.axis
             section: topBarContent.getWidgetSection(parent) || "right"
-            popoutTarget: {
-                systemUpdateLoader.active = true;
-                return systemUpdateLoader.item;
-            }
+            popoutTarget: systemUpdateLoader.item ?? null
             parentScreen: barWindow.screen
             onClicked: {
                 systemUpdateLoader.active = true;

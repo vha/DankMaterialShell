@@ -32,56 +32,6 @@ Item {
 
             SettingsCard {
                 width: parent.width
-                iconName: "swap_vert"
-                title: I18n.tr("Position")
-                settingKey: "dockPosition"
-
-                Item {
-                    width: parent.width
-                    height: dockPositionButtonGroup.height
-
-                    DankButtonGroup {
-                        id: dockPositionButtonGroup
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        model: [I18n.tr("Top"), I18n.tr("Bottom"), I18n.tr("Left"), I18n.tr("Right")]
-                        currentIndex: {
-                            switch (SettingsData.dockPosition) {
-                            case SettingsData.Position.Top:
-                                return 0;
-                            case SettingsData.Position.Bottom:
-                                return 1;
-                            case SettingsData.Position.Left:
-                                return 2;
-                            case SettingsData.Position.Right:
-                                return 3;
-                            default:
-                                return 1;
-                            }
-                        }
-                        onSelectionChanged: (index, selected) => {
-                            if (!selected)
-                                return;
-                            switch (index) {
-                            case 0:
-                                SettingsData.setDockPosition(SettingsData.Position.Top);
-                                break;
-                            case 1:
-                                SettingsData.setDockPosition(SettingsData.Position.Bottom);
-                                break;
-                            case 2:
-                                SettingsData.setDockPosition(SettingsData.Position.Left);
-                                break;
-                            case 3:
-                                SettingsData.setDockPosition(SettingsData.Position.Right);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            SettingsCard {
-                width: parent.width
                 iconName: "dock_to_bottom"
                 title: I18n.tr("Dock Visibility")
                 settingKey: "dockVisibility"
@@ -138,6 +88,56 @@ Item {
 
             SettingsCard {
                 width: parent.width
+                iconName: "swap_vert"
+                title: I18n.tr("Position")
+                settingKey: "dockPosition"
+
+                Item {
+                    width: parent.width
+                    height: dockPositionButtonGroup.height
+
+                    DankButtonGroup {
+                        id: dockPositionButtonGroup
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        model: [I18n.tr("Top"), I18n.tr("Bottom"), I18n.tr("Left"), I18n.tr("Right")]
+                        currentIndex: {
+                            switch (SettingsData.dockPosition) {
+                            case SettingsData.Position.Top:
+                                return 0;
+                            case SettingsData.Position.Bottom:
+                                return 1;
+                            case SettingsData.Position.Left:
+                                return 2;
+                            case SettingsData.Position.Right:
+                                return 3;
+                            default:
+                                return 1;
+                            }
+                        }
+                        onSelectionChanged: (index, selected) => {
+                            if (!selected)
+                                return;
+                            switch (index) {
+                            case 0:
+                                SettingsData.setDockPosition(SettingsData.Position.Top);
+                                break;
+                            case 1:
+                                SettingsData.setDockPosition(SettingsData.Position.Bottom);
+                                break;
+                            case 2:
+                                SettingsData.setDockPosition(SettingsData.Position.Left);
+                                break;
+                            case 3:
+                                SettingsData.setDockPosition(SettingsData.Position.Right);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            SettingsCard {
+                width: parent.width
                 iconName: "apps"
                 title: I18n.tr("Behavior")
                 settingKey: "dockBehavior"
@@ -158,6 +158,16 @@ Item {
                     description: I18n.tr("Group multiple windows of the same app together with a window count indicator")
                     checked: SettingsData.dockGroupByApp
                     onToggled: checked => SettingsData.set("dockGroupByApp", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "dockRestoreSpecialWorkspaceOnClick"
+                    tags: ["dock", "hyprland", "special", "workspace", "restore"]
+                    text: I18n.tr("Restore Special Workspace Windows")
+                    description: I18n.tr("When clicking a dock window in a Hyprland special workspace, bring that special workspace back before focusing the window")
+                    checked: SettingsData.dockRestoreSpecialWorkspaceOnClick
+                    visible: CompositorService.isHyprland
+                    onToggled: checked => SettingsData.set("dockRestoreSpecialWorkspaceOnClick", checked)
                 }
 
                 SettingsButtonGroupRow {
@@ -264,6 +274,8 @@ Item {
                                         modes.push("Sway");
                                     } else if (CompositorService.isScroll) {
                                         modes.push("Scroll");
+                                    } else if (CompositorService.isMiracle) {
+                                        modes.push("Miracle");
                                     } else {
                                         modes.push(I18n.tr("Compositor"));
                                     }
@@ -507,6 +519,7 @@ Item {
                     value: SettingsData.dockIconSize
                     minimum: 24
                     maximum: 96
+                    unit: "px"
                     defaultValue: 48
                     onSliderValueChanged: newValue => SettingsData.set("dockIconSize", newValue)
                 }

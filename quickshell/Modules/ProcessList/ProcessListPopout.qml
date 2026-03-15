@@ -14,6 +14,7 @@ DankPopout {
     property var triggerScreen: null
     property string searchText: ""
     property string expandedPid: ""
+    property string processFilter: "all"
 
     function hide() {
         close();
@@ -25,8 +26,8 @@ DankPopout {
         open();
     }
 
-    popupWidth: 650
-    popupHeight: 550
+    popupWidth: Math.round(Theme.fontSizeMedium * 46)
+    popupHeight: Math.round(Theme.fontSizeMedium * 39)
     triggerWidth: 55
     positioning: ""
     screen: triggerScreen
@@ -42,6 +43,7 @@ DankPopout {
         if (!shouldBeVisible) {
             searchText = "";
             expandedPid = "";
+            processFilter = "all";
         }
     }
 
@@ -110,6 +112,7 @@ DankPopout {
                         Qt.callLater(() => searchField.forceActiveFocus());
                     } else {
                         processesView.reset();
+                        processFilterGroup.currentIndex = 0;
                     }
                 }
             }
@@ -146,9 +149,38 @@ DankPopout {
                         Layout.fillWidth: true
                     }
 
+                    DankButtonGroup {
+                        id: processFilterGroup
+                        Layout.minimumWidth: implicitWidth
+                        model: [I18n.tr("All"), I18n.tr("User"), I18n.tr("System")]
+                        currentIndex: 0
+                        checkEnabled: false
+                        buttonHeight: Math.round(Theme.fontSizeSmall * 2.4)
+                        minButtonWidth: 0
+                        buttonPadding: Theme.spacingM
+                        textSize: Theme.fontSizeSmall
+                        onSelectionChanged: (index, selected) => {
+                            if (!selected)
+                                return;
+                            currentIndex = index;
+                            switch (index) {
+                            case 0:
+                                processListPopout.processFilter = "all";
+                                return;
+                            case 1:
+                                processListPopout.processFilter = "user";
+                                return;
+                            case 2:
+                                processListPopout.processFilter = "system";
+                                return;
+                            }
+                        }
+                    }
+
                     DankTextField {
                         id: searchField
-                        Layout.preferredWidth: Theme.fontSizeMedium * 14
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: Theme.fontSizeMedium * 8
                         Layout.preferredHeight: Theme.fontSizeMedium * 2.5
                         placeholderText: I18n.tr("Search...")
                         leftIconName: "search"
@@ -334,6 +366,7 @@ DankPopout {
                         anchors.margins: Theme.spacingS
                         searchText: processListPopout.searchText
                         expandedPid: processListPopout.expandedPid
+                        processFilter: processListPopout.processFilter
                         contextMenu: processContextMenu
                         onExpandedPidChanged: processListPopout.expandedPid = expandedPid
                     }
@@ -354,7 +387,7 @@ DankPopout {
 
         readonly property real thickness: Math.max(4, Math.min(width, height) / 15)
         readonly property real glowExtra: thickness * 1.4
-        readonly property real arcPadding: thickness / 1.3
+        readonly property real arcPadding: (thickness + glowExtra) / 2
 
         readonly property real innerDiameter: width - (arcPadding + thickness + glowExtra) * 2
         readonly property real maxTextWidth: innerDiameter * 0.9

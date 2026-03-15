@@ -209,7 +209,7 @@ Rectangle {
             "children": [
                 {
                     "id": "display_config",
-                    "text": I18n.tr("Configuration") + " (Beta)",
+                    "text": I18n.tr("Configuration"),
                     "icon": "display_settings",
                     "tabIndex": 24
                 },
@@ -247,6 +247,12 @@ Rectangle {
                     "tabIndex": 29
                 },
                 {
+                    "id": "locale",
+                    "text": I18n.tr("Locale"),
+                    "icon": "language",
+                    "tabIndex": 30
+                },
+                {
                     "id": "clipboard",
                     "text": I18n.tr("Clipboard"),
                     "icon": "content_paste",
@@ -280,6 +286,12 @@ Rectangle {
                     "text": I18n.tr("Lock Screen"),
                     "icon": "lock",
                     "tabIndex": 11
+                },
+                {
+                    "id": "greeter",
+                    "text": I18n.tr("Greeter"),
+                    "icon": "login",
+                    "tabIndex": 31
                 },
                 {
                     "id": "power_sleep",

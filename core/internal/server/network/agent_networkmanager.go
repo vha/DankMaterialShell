@@ -32,8 +32,10 @@ type SecretAgent struct {
 	backend *NetworkManagerBackend
 }
 
-type nmVariantMap map[string]dbus.Variant
-type nmSettingMap map[string]nmVariantMap
+type (
+	nmVariantMap map[string]dbus.Variant
+	nmSettingMap map[string]nmVariantMap
+)
 
 const introspectXML = `
 <node>
@@ -122,7 +124,7 @@ func (a *SecretAgent) GetSecrets(
 
 	connType, displayName, vpnSvc := readConnTypeAndName(conn)
 	ssid := readSSID(conn)
-	fields := fieldsNeeded(settingName, hints)
+	fields := fieldsNeeded(settingName, hints, conn)
 	vpnPasswordFlags := readVPNPasswordFlags(conn, settingName)
 
 	log.Infof("[SecretAgent] connType=%s, name=%s, vpnSvc=%s, fields=%v, flags=%d, vpnPasswordFlags=%d", connType, displayName, vpnSvc, fields, flags, vpnPasswordFlags)
@@ -218,8 +220,16 @@ func (a *SecretAgent) GetSecrets(
 				out[settingName] = nmVariantMap{}
 				return out, nil
 			} else if passwordFlags&NM_SETTING_SECRET_FLAG_AGENT_OWNED != 0 {
-				log.Warnf("[SecretAgent] Secrets are agent-owned but we don't store secrets (flags=%d) - returning NoSecrets error", passwordFlags)
-				return nil, dbus.NewError("org.freedesktop.NetworkManager.SecretAgent.Error.NoSecrets", nil)
+				switch settingName {
+				case "802-11-wireless-security":
+					fields = []string{"psk"}
+				case "802-1x":
+					fields = infer8021xFields(conn)
+				default:
+					log.Warnf("[SecretAgent] Agent-owned secrets for unhandled setting %s (flags=%d)", settingName, passwordFlags)
+					return nil, dbus.NewError("org.freedesktop.NetworkManager.SecretAgent.Error.NoSecrets", nil)
+				}
+				log.Infof("[SecretAgent] Agent-owned secrets, inferred fields: %v", fields)
 			} else {
 				log.Infof("[SecretAgent] No secrets needed, using system stored secrets (flags=%d)", passwordFlags)
 				out := nmSettingMap{}
@@ -300,6 +310,63 @@ func (a *SecretAgent) GetSecrets(
 			return out, nil
 		}
 		a.backend.cachedVPNCredsMu.Unlock()
+
+		a.backend.cachedGPSamlMu.Lock()
+		cachedGPSaml := a.backend.cachedGPSamlCookie
+		if cachedGPSaml != nil && cachedGPSaml.ConnectionUUID == connUuid {
+			a.backend.cachedGPSamlMu.Unlock()
+
+			log.Infof("[SecretAgent] Using cached GlobalProtect SAML cookie for %s", connUuid)
+
+			return buildGPSamlSecretsResponse(settingName, cachedGPSaml.Cookie, cachedGPSaml.Host, cachedGPSaml.Fingerprint), nil
+		}
+		a.backend.cachedGPSamlMu.Unlock()
+
+		if len(fields) == 1 && fields[0] == "gp-saml" {
+			gateway := ""
+			protocol := ""
+			if vpnSettings, ok := conn["vpn"]; ok {
+				if dataVariant, ok := vpnSettings["data"]; ok {
+					if dataMap, ok := dataVariant.Value().(map[string]string); ok {
+						if gw, ok := dataMap["gateway"]; ok {
+							gateway = gw
+						}
+						if proto, ok := dataMap["protocol"]; ok && proto != "" {
+							protocol = proto
+						}
+					}
+				}
+			}
+
+			if protocol != "gp" {
+				return nil, dbus.MakeFailedError(fmt.Errorf("gp-saml auth only supported for GlobalProtect (protocol=gp), got: %s", protocol))
+			}
+
+			log.Infof("[SecretAgent] Starting GlobalProtect SAML authentication for gateway=%s", gateway)
+
+			samlCtx, samlCancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer samlCancel()
+
+			authResult, err := a.backend.runGlobalProtectSAMLAuth(samlCtx, gateway, protocol)
+			if err != nil {
+				log.Warnf("[SecretAgent] GlobalProtect SAML authentication failed: %v", err)
+				return nil, dbus.MakeFailedError(fmt.Errorf("GlobalProtect SAML authentication failed: %w", err))
+			}
+
+			log.Infof("[SecretAgent] GlobalProtect SAML authentication successful, returning cookie to NetworkManager")
+
+			a.backend.cachedGPSamlMu.Lock()
+			a.backend.cachedGPSamlCookie = &cachedGPSamlCookie{
+				ConnectionUUID: connUuid,
+				Cookie:         authResult.Cookie,
+				Host:           authResult.Host,
+				User:           authResult.User,
+				Fingerprint:    authResult.Fingerprint,
+			}
+			a.backend.cachedGPSamlMu.Unlock()
+
+			return buildGPSamlSecretsResponse(settingName, authResult.Cookie, authResult.Host, authResult.Fingerprint), nil
+		}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -418,8 +485,19 @@ func (a *SecretAgent) GetSecrets(
 			log.Infof("[SecretAgent] Cached PKCS11 PIN for potential re-request")
 		}
 	case "802-1x":
-		out[settingName] = sec
-		log.Infof("[SecretAgent] Returning 802-1x enterprise secrets with %d fields", len(sec))
+		secretsOnly := nmVariantMap{}
+		for k, v := range reply.Secrets {
+			switch k {
+			case "password", "private-key-password", "phase2-private-key-password", "pin":
+				secretsOnly[k] = dbus.MakeVariant(v)
+			}
+		}
+		out[settingName] = secretsOnly
+
+		if identity, ok := reply.Secrets["identity"]; ok && identity != "" {
+			a.save8021xIdentity(path, identity)
+		}
+		log.Infof("[SecretAgent] Returning 802-1x enterprise secrets with %d fields", len(secretsOnly))
 	default:
 		out[settingName] = sec
 	}
@@ -434,63 +512,6 @@ func (a *SecretAgent) GetSecrets(
 		}
 		a.backend.pendingVPNSaveMu.Unlock()
 		log.Infof("[SecretAgent] Queued credentials persist for after connection succeeds")
-	} else if reply.Save && settingName != "vpn" {
-		// Non-VPN save logic
-		go func() {
-			log.Infof("[SecretAgent] Persisting secrets with Update2: path=%s, setting=%s", path, settingName)
-
-			connObj := a.conn.Object("org.freedesktop.NetworkManager", path)
-			var existingSettings map[string]map[string]dbus.Variant
-			if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.GetSettings", 0).Store(&existingSettings); err != nil {
-				log.Warnf("[SecretAgent] GetSettings failed: %v", err)
-				return
-			}
-
-			settings := make(map[string]map[string]dbus.Variant)
-			if connSection, ok := existingSettings["connection"]; ok {
-				settings["connection"] = connSection
-			}
-
-			switch settingName {
-			case "802-11-wireless-security":
-				wifiSec, ok := existingSettings["802-11-wireless-security"]
-				if !ok {
-					wifiSec = make(map[string]dbus.Variant)
-				}
-				wifiSec["psk-flags"] = dbus.MakeVariant(uint32(0))
-
-				if psk, ok := reply.Secrets["psk"]; ok {
-					wifiSec["psk"] = dbus.MakeVariant(psk)
-					log.Infof("[SecretAgent] Updated WiFi settings: psk-flags=0")
-				}
-				settings["802-11-wireless-security"] = wifiSec
-
-			case "802-1x":
-				dot1x, ok := existingSettings["802-1x"]
-				if !ok {
-					dot1x = make(map[string]dbus.Variant)
-				}
-				dot1x["password-flags"] = dbus.MakeVariant(uint32(0))
-
-				if password, ok := reply.Secrets["password"]; ok {
-					dot1x["password"] = dbus.MakeVariant(password)
-					log.Infof("[SecretAgent] Updated 802.1x settings: password-flags=0")
-				}
-				settings["802-1x"] = dot1x
-			}
-
-			// Call Update2 with correct signature:
-			// Update2(IN settings, IN flags, IN args) -> OUT result
-			// flags: 0x1 = to-disk
-			var result map[string]dbus.Variant
-			err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.Update2", 0,
-				settings, uint32(0x1), map[string]dbus.Variant{}).Store(&result)
-			if err != nil {
-				log.Warnf("[SecretAgent] Update2(to-disk) failed: %v", err)
-			} else {
-				log.Infof("[SecretAgent] Successfully persisted secrets to disk for %s", settingName)
-			}
-		}()
 	}
 
 	return out, nil
@@ -521,6 +542,35 @@ func (a *SecretAgent) CancelGetSecrets(path dbus.ObjectPath, settingName string)
 
 func (a *SecretAgent) Introspect() (string, *dbus.Error) {
 	return introspectXML, nil
+}
+
+func (a *SecretAgent) save8021xIdentity(path dbus.ObjectPath, identity string) {
+	connObj := a.conn.Object("org.freedesktop.NetworkManager", path)
+	var existing map[string]map[string]dbus.Variant
+	if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.GetSettings", 0).Store(&existing); err != nil {
+		log.Warnf("[SecretAgent] Failed to get settings for identity save: %v", err)
+		return
+	}
+
+	settings := make(map[string]map[string]dbus.Variant)
+	if connSection, ok := existing["connection"]; ok {
+		settings["connection"] = connSection
+	}
+
+	dot1x, ok := existing["802-1x"]
+	if !ok {
+		dot1x = make(map[string]dbus.Variant)
+	}
+	dot1x["identity"] = dbus.MakeVariant(identity)
+	settings["802-1x"] = dot1x
+
+	var result map[string]dbus.Variant
+	if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.Update2", 0,
+		settings, uint32(0x1), map[string]dbus.Variant{}).Store(&result); err != nil {
+		log.Warnf("[SecretAgent] Failed to save 802.1x identity: %v", err)
+		return
+	}
+	log.Infof("[SecretAgent] Saved 802.1x identity to connection profile")
 }
 
 func readSSID(conn map[string]nmVariantMap) string {
@@ -564,17 +614,55 @@ func readConnTypeAndName(conn map[string]nmVariantMap) (string, string, string) 
 	return connType, name, svc
 }
 
-func fieldsNeeded(setting string, hints []string) []string {
+func fieldsNeeded(setting string, hints []string, conn map[string]nmVariantMap) []string {
 	switch setting {
 	case "802-11-wireless-security":
 		return []string{"psk"}
 	case "802-1x":
-		return []string{"identity", "password"}
+		if len(hints) > 0 {
+			return hints
+		}
+		return infer8021xFields(conn)
 	case "vpn":
 		return hints
 	default:
 		return []string{}
 	}
+}
+
+func infer8021xFields(conn map[string]nmVariantMap) []string {
+	dot1x, ok := conn["802-1x"]
+	if !ok {
+		return []string{"identity", "password"}
+	}
+
+	var fields []string
+
+	if v, ok := dot1x["identity"]; ok {
+		if id, ok := v.Value().(string); ok && id != "" {
+			// identity already stored, don't ask again
+		} else {
+			fields = append(fields, "identity")
+		}
+	} else {
+		fields = append(fields, "identity")
+	}
+
+	var eapMethods []string
+	if v, ok := dot1x["eap"]; ok {
+		if methods, ok := v.Value().([]string); ok {
+			eapMethods = methods
+		}
+	}
+
+	switch {
+	case len(eapMethods) > 0 && eapMethods[0] == "tls":
+		fields = append(fields, "private-key-password")
+	default:
+		fields = append(fields, "password")
+	}
+
+	return fields
 }
 
 func buildFieldsInfo(setting string, fields []string, vpnService string) []FieldInfo {
@@ -630,12 +718,25 @@ func inferVPNFields(conn map[string]nmVariantMap, vpnService string) []string {
 
 	switch {
 	case strings.Contains(vpnService, "openconnect"):
+		protocol := dataMap["protocol"]
 		authType := dataMap["authtype"]
-		userCert := dataMap["usercert"]
-		if authType == "cert" && strings.HasPrefix(userCert, "pkcs11:") {
+		username := dataMap["username"]
+
+		if authType == "cert" && strings.HasPrefix(dataMap["usercert"], "pkcs11:") {
 			return []string{"key_pass"}
 		}
-		if dataMap["username"] == "" {
+
+		if needsExternalBrowserAuth(protocol, authType, username, dataMap) {
+			switch protocol {
+			case "gp":
+				log.Infof("[SecretAgent] GlobalProtect SAML auth detected")
+				return []string{"gp-saml"}
+			default:
+				log.Infof("[SecretAgent] External browser auth detected for protocol '%s' but only GlobalProtect (gp) SAML is currently supported, falling back to credentials", protocol)
+			}
+		}
+
+		if username == "" {
 			fields = []string{"username", "password"}
 		}
 	case strings.Contains(vpnService, "openvpn"):
@@ -654,8 +755,31 @@ func inferVPNFields(conn map[string]nmVariantMap, vpnService string) []string {
 	return fields
 }
 
+func needsExternalBrowserAuth(protocol, authType, username string, data map[string]string) bool {
+	if method, ok := data["saml-auth-method"]; ok {
+		if method == "REDIRECT" || method == "POST" {
+			return true
+		}
+	}
+
+	if authType != "" && authType != "password" && authType != "cert" {
+		return true
+	}
+
+	switch protocol {
+	case "gp":
+		if authType == "" && username == "" {
+			return true
+		}
+	}
+
+	return false
+}
+
 func vpnFieldMeta(field, vpnService string) (label string, isSecret bool) {
 	switch field {
+	case "gp-saml":
+		return "GlobalProtect SAML/SSO", false
 	case "key_pass":
 		return "PIN", true
 	case "password":
@@ -755,4 +879,19 @@ func reasonFromFlags(flags uint32) string {
 		return "user-requested"
 	}
 	return "required"
+}
+
+func buildGPSamlSecretsResponse(settingName, cookie, host, fingerprint string) nmSettingMap {
+	out := nmSettingMap{}
+	vpnSec := nmVariantMap{}
+
+	secrets := map[string]string{
+		"cookie":  cookie,
+		"gateway": host,
+		"gwcert":  fingerprint,
+	}
+	vpnSec["secrets"] = dbus.MakeVariant(secrets)
+
+	out[settingName] = vpnSec
+	return out
 }

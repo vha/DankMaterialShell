@@ -19,10 +19,11 @@ Singleton {
     readonly property string historyFile: Paths.strip(Paths.cache) + "/notification_history.json"
     readonly property string imageCacheDir: Paths.strip(Paths.cache) + "/notification_images"
     property bool historyLoaded: false
+    property int historyEntryCounter: 0
 
     property list<NotifWrapper> notificationQueue: []
     property list<NotifWrapper> visibleNotifications: []
-    property int maxVisibleNotifications: 3
+    property int maxVisibleNotifications: 4
     property bool addGateBusy: false
     property int enterAnimMs: 400
     property int seqCounter: 0
@@ -73,6 +74,12 @@ Singleton {
         onTriggered: root.performSaveHistory()
     }
 
+    function _makeHistoryEntryId(sourceId, timestamp) {
+        historyEntryCounter += 1;
+        const safeSource = sourceId && sourceId !== "" ? sourceId : "notification";
+        return safeSource + "_" + (timestamp || Date.now()) + "_" + historyEntryCounter;
+    }
+
     function getImageCachePath(wrapper) {
         const ts = wrapper.time ? wrapper.time.getTime() : Date.now();
         const id = wrapper.notification?.id?.toString() || "0";
@@ -80,12 +87,13 @@ Singleton {
     }
 
     function updateHistoryImage(wrapperId, imagePath) {
-        const idx = historyList.findIndex(n => n.id === wrapperId);
+        const idx = historyList.findIndex(n => n.sourceNotificationId === wrapperId || n.id === wrapperId);
         if (idx < 0)
             return;
         const item = historyList[idx];
         const updated = {
             id: item.id,
+            sourceNotificationId: item.sourceNotificationId || item.id,
             summary: item.summary,
             body: item.body,
             htmlBody: item.htmlBody,
@@ -113,8 +121,11 @@ Singleton {
         } else if (imageUrl && !imageUrl.startsWith("image://qsimage/")) {
             persistableImage = imageUrl;
         }
+        const sourceNotificationId = wrapper.notification?.id?.toString() || "";
+        const timestamp = wrapper.time.getTime();
         const data = {
-            id: wrapper.notification?.id?.toString() || Date.now().toString(),
+            id: _makeHistoryEntryId(sourceNotificationId, timestamp),
+            sourceNotificationId: sourceNotificationId,
             summary: wrapper.summary || "",
             body: wrapper.body || "",
             htmlBody: wrapper.htmlBody || wrapper.body || "",
@@ -122,7 +133,7 @@ Singleton {
             appIcon: wrapper.appIcon || "",
             image: persistableImage,
             urgency: urg,
-            timestamp: wrapper.time.getTime(),
+            timestamp: timestamp,
             desktopEntry: wrapper.desktopEntry || ""
         };
         let newList = [data, ...historyList];
@@ -152,18 +163,30 @@ Singleton {
             const now = Date.now();
             const maxAgeMs = maxAgeDays > 0 ? maxAgeDays * 24 * 60 * 60 * 1000 : 0;
             const loaded = [];
+            const seenIds = {};
+            let needsRewrite = false;
 
             for (const item of historyAdapter.notifications || []) {
                 if (maxAgeMs > 0 && (now - item.timestamp) > maxAgeMs)
                     continue;
                 const urg = typeof item.urgency === "number" ? item.urgency : 1;
                 const body = item.body || "";
-                let htmlBody = item.htmlBody || "";
-                if (!htmlBody && body) {
-                    htmlBody = (body.includes('<') && body.includes('>')) ? body : Markdown2Html.markdownToHtml(body);
+                let htmlBody = item.htmlBody || _resolveHtmlBody(body);
+                if (htmlBody) {
+                    htmlBody = htmlBody.replace(/<img\b[^>]*>/gi, "");
                 }
+                const sourceNotificationId = (item.sourceNotificationId || item.id || "").toString();
+                let historyId = (item.id || "").toString();
+                if (!historyId || seenIds[historyId]) {
+                    historyId = _makeHistoryEntryId(sourceNotificationId, item.timestamp || now);
+                    needsRewrite = true;
+                }
+                if (!item.sourceNotificationId)
+                    needsRewrite = true;
+                seenIds[historyId] = true;
                 loaded.push({
-                    id: item.id || "",
+                    id: historyId,
+                    sourceNotificationId: sourceNotificationId,
                     summary: item.summary || "",
                     body: body,
                     htmlBody: htmlBody,
@@ -177,7 +200,7 @@ Singleton {
             }
             historyList = loaded;
             historyLoaded = true;
-            if (maxAgeMs > 0 && loaded.length !== (historyAdapter.notifications || []).length)
+            if ((maxAgeMs > 0 && loaded.length !== (historyAdapter.notifications || []).length) || needsRewrite)
                 saveHistory();
         } catch (e) {
             console.warn("NotificationService: load history failed:", e);
@@ -251,9 +274,15 @@ Singleton {
         const timeStr = SettingsData.use24HourClock ? date.toLocaleTimeString(Qt.locale(), "HH:mm") : date.toLocaleTimeString(Qt.locale(), "h:mm AP");
         if (daysDiff === 0)
             return timeStr;
-        if (daysDiff === 1)
-            return I18n.tr("yesterday") + ", " + timeStr;
-        return I18n.tr("%1 days ago").arg(daysDiff);
+        try {
+            const localeName = (typeof I18n !== "undefined" && I18n.locale) ? I18n.locale().name : "en-US";
+            const weekday = date.toLocaleDateString(localeName, {
+                weekday: "long"
+            });
+            return weekday + ", " + timeStr;
+        } catch (e) {
+            return timeStr;
+        }
     }
 
     function _nowSec() {
@@ -484,7 +513,7 @@ Singleton {
 
     Timer {
         id: addGate
-        interval: enterAnimMs + 50
+        interval: 80
         running: false
         repeat: false
         onTriggered: {
@@ -688,11 +717,15 @@ Singleton {
                 return formatTime(time);
             }
 
-            if (daysDiff === 1) {
-                return `yesterday, ${formatTime(time)}`;
+            try {
+                const localeName = (typeof I18n !== "undefined" && I18n.locale) ? I18n.locale().name : "en-US";
+                const weekday = time.toLocaleDateString(localeName, {
+                    weekday: "long"
+                });
+                return `${weekday}, ${formatTime(time)}`;
+            } catch (e) {
+                return formatTime(time);
             }
-
-            return `${daysDiff} days ago`;
         }
 
         function formatTime(date) {
@@ -713,15 +746,9 @@ Singleton {
         }
 
         required property Notification notification
-        readonly property string summary: notification?.summary ?? ""
-        readonly property string body: notification?.body ?? ""
-        readonly property string htmlBody: {
-            if (!body)
-                return "";
-            if (body.includes('<') && body.includes('>'))
-                return body;
-            return Markdown2Html.markdownToHtml(body);
-        }
+        readonly property string summary: (notification?.summary ?? "").replace(/<img\b[^>]*>/gi, "")
+        readonly property string body: (notification?.body ?? "").replace(/<img\b[^>]*>/gi, "")
+        readonly property string htmlBody: root._resolveHtmlBody(body)
         readonly property string appIcon: notification?.appIcon ?? ""
         readonly property string appName: {
             if (!notification)
@@ -837,39 +864,54 @@ Singleton {
         }
     }
 
-    function processQueue() {
-        if (addGateBusy) {
-            return;
-        }
-        if (popupsDisabled) {
-            return;
-        }
-        if (SessionData.doNotDisturb) {
-            return;
-        }
-        if (notificationQueue.length === 0) {
-            return;
-        }
+    property bool _processingQueue: false
 
-        const activePopupCount = visibleNotifications.filter(n => n && n.popup).length;
-        if (activePopupCount >= 4) {
+    function processQueue() {
+        if (addGateBusy || _processingQueue)
             return;
-        }
+        if (popupsDisabled)
+            return;
+        if (SessionData.doNotDisturb)
+            return;
+        if (notificationQueue.length === 0)
+            return;
+
+        _processingQueue = true;
 
         const next = notificationQueue.shift();
-        if (!next)
+        if (!next) {
+            _processingQueue = false;
             return;
+        }
 
         next.seq = ++seqCounter;
-        visibleNotifications = [...visibleNotifications, next];
+
+        const activePopups = visibleNotifications.filter(n => n && n.popup);
+        let evicted = null;
+        if (activePopups.length >= maxVisibleNotifications) {
+            const unhovered = activePopups.filter(n => n.timer?.running);
+            const pool = unhovered.length > 0 ? unhovered : activePopups;
+            evicted = pool.reduce((min, n) => (n.seq < min.seq) ? n : min, pool[0]);
+            if (evicted)
+                evicted.removedByLimit = true;
+        }
+
+        if (evicted) {
+            visibleNotifications = [...visibleNotifications.filter(n => n !== evicted), next];
+        } else {
+            visibleNotifications = [...visibleNotifications, next];
+        }
+
+        if (evicted)
+            evicted.popup = false;
         next.popup = true;
 
-        if (next.timer.interval > 0) {
+        if (next.timer.interval > 0)
             next.timer.start();
-        }
 
         addGateBusy = true;
         addGate.restart();
+        _processingQueue = false;
     }
 
     function removeFromVisibleNotifications(wrapper) {
@@ -888,6 +930,108 @@ Singleton {
                 } catch (e) {}
             });
         }
+    }
+
+    function _decodeEntities(s) {
+        s = s.replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)));
+        s = s.replace(/&#x([0-9a-fA-F]+);/g, (_, n) => String.fromCodePoint(parseInt(n, 16)));
+        return s.replace(/&([a-zA-Z][a-zA-Z0-9]*);/g, (match, name) => {
+            switch (name) {
+            case "amp":
+                return "&";
+            case "lt":
+                return "<";
+            case "gt":
+                return ">";
+            case "quot":
+                return "\"";
+            case "apos":
+                return "'";
+            case "nbsp":
+                return "\u00A0";
+            case "ndash":
+                return "\u2013";
+            case "mdash":
+                return "\u2014";
+            case "lsquo":
+                return "\u2018";
+            case "rsquo":
+                return "\u2019";
+            case "ldquo":
+                return "\u201C";
+            case "rdquo":
+                return "\u201D";
+            case "bull":
+                return "\u2022";
+            case "hellip":
+                return "\u2026";
+            case "trade":
+                return "\u2122";
+            case "copy":
+                return "\u00A9";
+            case "reg":
+                return "\u00AE";
+            case "deg":
+                return "\u00B0";
+            case "plusmn":
+                return "\u00B1";
+            case "times":
+                return "\u00D7";
+            case "divide":
+                return "\u00F7";
+            case "micro":
+                return "\u00B5";
+            case "middot":
+                return "\u00B7";
+            case "laquo":
+                return "\u00AB";
+            case "raquo":
+                return "\u00BB";
+            case "larr":
+                return "\u2190";
+            case "rarr":
+                return "\u2192";
+            case "uarr":
+                return "\u2191";
+            case "darr":
+                return "\u2193";
+            default:
+                return match;
+            }
+        });
+    }
+
+    function _resolveHtmlBody(body) {
+        if (!body)
+            return "";
+
+        let result = body;
+
+        if (/<\/?[a-z][\s\S]*>/i.test(body)) {
+            result = body;
+        } else {
+            // Decode percent-encoded URLs (e.g. https%3A%2F%2F → https://)
+            let processed = body.replace(/\bhttps?%3A%2F%2F[^\s]+/gi, match => {
+                try {
+                    return decodeURIComponent(match);
+                } catch (e) {
+                    return match;
+                }
+            });
+
+            if (/&(#\d+|#x[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]+);/.test(processed)) {
+                const decoded = _decodeEntities(processed);
+                if (/<\/?[a-z][\s\S]*>/i.test(decoded))
+                    result = decoded;
+                else
+                    result = Markdown2Html.markdownToHtml(decoded);
+            } else {
+                result = Markdown2Html.markdownToHtml(processed);
+            }
+        }
+
+        // Strip out image tags to prevent IP tracking
+        return result.replace(/<img\b[^>]*>/gi, "");
     }
 
     function getGroupKey(wrapper) {

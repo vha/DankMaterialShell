@@ -130,24 +130,17 @@ Item {
         if (!entry || entry.isHeader)
             return;
         var rowIndex = _flatIndexToRowMap[index];
-        if (rowIndex === undefined || rowIndex >= _cumulativeHeights.length)
-            return;
-        var row = _visualRows[rowIndex];
-        if (!row)
+        if (rowIndex === undefined)
             return;
 
-        var rowY = _cumulativeHeights[rowIndex];
-        var rowHeight = row.height;
-        var scrollY = mainListView.contentY - mainListView.originY;
-        var viewHeight = mainListView.height;
-        var headerH = stickyHeader.height;
+        mainListView.positionViewAtIndex(rowIndex, ListView.Contain);
 
-        if (rowY < scrollY + headerH) {
-            mainListView.contentY = Math.max(mainListView.originY, rowY - headerH + mainListView.originY);
-            return;
-        }
-        if (rowY + rowHeight > scrollY + viewHeight) {
-            mainListView.contentY = rowY + rowHeight - viewHeight + mainListView.originY;
+        if (stickyHeader.visible && rowIndex < _cumulativeHeights.length) {
+            var rowY = _cumulativeHeights[rowIndex];
+            var scrollY = mainListView.contentY - mainListView.originY;
+            if (rowY < scrollY + stickyHeader.height) {
+                mainListView.contentY = Math.max(mainListView.originY, rowY - stickyHeader.height + mainListView.originY);
+            }
         }
     }
 
@@ -442,7 +435,15 @@ Item {
                     var mode = root.controller?.searchMode ?? "all";
                     switch (mode) {
                     case "files":
-                        return "folder_open";
+                        var fileType = root.controller?.fileSearchType ?? "all";
+                        switch (fileType) {
+                        case "dir":
+                            return "folder_open";
+                        case "file":
+                            return "insert_drive_file";
+                        default:
+                            return "folder_open";
+                        }
                     case "plugins":
                         return "extension";
                     case "apps":
@@ -467,12 +468,20 @@ Item {
                     switch (mode) {
                     case "files":
                         if (!DSearchService.dsearchAvailable)
-                            return I18n.tr("File search requires dsearch\nInstall from github.com/morelazers/dsearch");
+                            return I18n.tr("File search requires dsearch\nInstall from github.com/AvengeMedia/danksearch");
                         if (!hasQuery)
                             return I18n.tr("Type to search files");
                         if (root.controller.searchQuery.length < 2)
                             return I18n.tr("Type at least 2 characters");
-                        return I18n.tr("No files found");
+                        var fileType = root.controller?.fileSearchType ?? "all";
+                        switch (fileType) {
+                        case "dir":
+                            return I18n.tr("No folders found");
+                        case "file":
+                            return I18n.tr("No files found");
+                        default:
+                            return I18n.tr("No results found");
+                        }
                     case "plugins":
                         return hasQuery ? I18n.tr("No plugin results") : I18n.tr("Browse or search plugins");
                     case "apps":
