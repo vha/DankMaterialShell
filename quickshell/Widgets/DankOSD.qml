@@ -107,6 +107,16 @@ PanelWindow {
     }
     WlrLayershell.exclusiveZone: -1
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+
+    WindowBlur {
+        targetWindow: root
+        blurX: shadowBuffer
+        blurY: shadowBuffer
+        blurWidth: shouldBeVisible ? alignedWidth : 0
+        blurHeight: shouldBeVisible ? alignedHeight : 0
+        blurRadius: Theme.cornerRadius
+    }
+
     color: "transparent"
 
     readonly property real dpr: CompositorService.getScreenScale(screen)
@@ -256,15 +266,15 @@ PanelWindow {
         scale: shouldBeVisible ? 1 : 0.9
 
         property bool childHovered: false
-        readonly property real popupSurfaceAlpha: SettingsData.popupTransparency
+        readonly property real popupSurfaceAlpha: Theme.popupTransparency
 
         Rectangle {
             id: background
             anchors.fill: parent
             radius: Theme.cornerRadius
             color: Theme.withAlpha(Theme.surfaceContainer, osdContainer.popupSurfaceAlpha)
-            border.color: Theme.outlineMedium
-            border.width: 1
+            border.color: BlurService.enabled ? BlurService.borderColor : Theme.outlineMedium
+            border.width: BlurService.enabled ? BlurService.borderWidth : 1
             z: -1
         }
 
@@ -276,7 +286,7 @@ PanelWindow {
             level: Theme.elevationLevel3
             fallbackOffset: 6
             targetRadius: Theme.cornerRadius
-            targetColor: Theme.surfaceContainer
+            targetColor: Theme.withAlpha(Theme.surfaceContainer, osdContainer.popupSurfaceAlpha)
             borderColor: Theme.outlineMedium
             borderWidth: 1
             shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1"

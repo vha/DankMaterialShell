@@ -14,6 +14,8 @@ Item {
     required property var rootWindow
     required property var barConfig
 
+    readonly property var blurBarWindow: barWindow
+
     property var leftWidgetsModel
     property var centerWidgetsModel
     property var rightWidgetsModel
@@ -408,6 +410,12 @@ Item {
                 value: topBarContent.barConfig
                 restoreMode: Binding.RestoreNone
             }
+            Binding {
+                target: hLeftSection
+                property: "blurBarWindow"
+                value: topBarContent.blurBarWindow
+                restoreMode: Binding.RestoreNone
+            }
 
             RightSection {
                 id: hRightSection
@@ -434,6 +442,12 @@ Item {
                 value: topBarContent.barConfig
                 restoreMode: Binding.RestoreNone
             }
+            Binding {
+                target: hRightSection
+                property: "blurBarWindow"
+                value: topBarContent.blurBarWindow
+                restoreMode: Binding.RestoreNone
+            }
 
             CenterSection {
                 id: hCenterSection
@@ -458,6 +472,12 @@ Item {
                 target: hCenterSection
                 property: "barConfig"
                 value: topBarContent.barConfig
+                restoreMode: Binding.RestoreNone
+            }
+            Binding {
+                target: hCenterSection
+                property: "blurBarWindow"
+                value: topBarContent.blurBarWindow
                 restoreMode: Binding.RestoreNone
             }
         }
@@ -493,6 +513,12 @@ Item {
                 value: topBarContent.barConfig
                 restoreMode: Binding.RestoreNone
             }
+            Binding {
+                target: vLeftSection
+                property: "blurBarWindow"
+                value: topBarContent.blurBarWindow
+                restoreMode: Binding.RestoreNone
+            }
 
             CenterSection {
                 id: vCenterSection
@@ -518,6 +544,12 @@ Item {
                 target: vCenterSection
                 property: "barConfig"
                 value: topBarContent.barConfig
+                restoreMode: Binding.RestoreNone
+            }
+            Binding {
+                target: vCenterSection
+                property: "blurBarWindow"
+                value: topBarContent.blurBarWindow
                 restoreMode: Binding.RestoreNone
             }
 
@@ -546,6 +578,12 @@ Item {
                 target: vRightSection
                 property: "barConfig"
                 value: topBarContent.barConfig
+                restoreMode: Binding.RestoreNone
+            }
+            Binding {
+                target: vRightSection
+                property: "blurBarWindow"
+                value: topBarContent.blurBarWindow
                 restoreMode: Binding.RestoreNone
             }
         }
@@ -931,6 +969,7 @@ Item {
             axis: barWindow.axis
             barSpacing: barConfig?.spacing ?? 4
             barConfig: topBarContent.barConfig
+            widgetData: parent.widgetData
             isAutoHideBar: topBarContent.barConfig?.autoHide ?? false
             isAtBottom: barWindow.axis?.edge === "bottom"
             visible: SettingsData.getFilteredScreens("systemTray").includes(barWindow.screen) && SystemTray.items.values.length > 0
@@ -1399,12 +1438,21 @@ Item {
             parentScreen: barWindow.screen
             onClicked: {
                 systemUpdateLoader.active = true;
+                if (!systemUpdateLoader.item)
+                    return;
+                const popout = systemUpdateLoader.item;
                 const effectiveBarConfig = topBarContent.barConfig;
                 const barPosition = barWindow.axis?.edge === "left" ? 2 : (barWindow.axis?.edge === "right" ? 3 : (barWindow.axis?.edge === "top" ? 0 : 1));
-                if (systemUpdateLoader.item && systemUpdateLoader.item.setBarContext) {
-                    systemUpdateLoader.item.setBarContext(barPosition, effectiveBarConfig?.bottomGap ?? 0);
+                if (popout.setBarContext) {
+                    popout.setBarContext(barPosition, effectiveBarConfig?.bottomGap ?? 0);
                 }
-                systemUpdateLoader.item?.toggle();
+                if (popout.setTriggerPosition) {
+                    const globalPos = visualContent.mapToItem(null, 0, 0);
+                    const currentScreen = parentScreen || Screen;
+                    const pos = SettingsData.getPopupTriggerPosition(globalPos, currentScreen, barWindow.effectiveBarThickness, visualWidth, effectiveBarConfig?.spacing ?? 4, barPosition, effectiveBarConfig);
+                    popout.setTriggerPosition(pos.x, pos.y, pos.width, section, currentScreen, barPosition, barWindow.effectiveBarThickness, effectiveBarConfig?.spacing ?? 4, effectiveBarConfig);
+                }
+                PopoutManager.requestPopout(popout, undefined, "systemUpdate");
             }
         }
     }

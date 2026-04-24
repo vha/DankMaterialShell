@@ -7,6 +7,10 @@
       url = "git+https://git.outfoxxed.me/quickshell/quickshell?rev=41828c4180fb921df7992a5405f5ff05d2ac2fff";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    flake-compat = {
+      url = "github:NixOS/flake-compat";
+      flake = false;
+    };
   };
 
   outputs =
@@ -149,6 +153,9 @@
 
                   substituteInPlace $out/share/quickshell/dms/assets/pam/fprint \
                     --replace-fail pam_fprintd.so ${pkgs.fprintd}/lib/security/pam_fprintd.so
+
+                  substituteInPlace $out/share/quickshell/dms/assets/pam/u2f \
+                    --replace-fail pam_u2f.so ${pkgs.pam_u2f}/lib/security/pam_u2f.so
 
                   installShellCompletion --cmd dms \
                     --bash <($out/bin/dms completion bash) \

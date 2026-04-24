@@ -6,10 +6,11 @@ Rectangle {
     id: root
 
     property bool expanded: false
-    readonly property real contentHeight: contentColumn.height + Theme.spacingL * 2
+    property real maxAllowedHeight: 0
+    readonly property real naturalContentHeight: contentColumn.height + Theme.spacingL * 2
 
     width: parent.width
-    height: expanded ? contentHeight : 0
+    height: expanded ? (maxAllowedHeight > 0 ? Math.min(naturalContentHeight, maxAllowedHeight) : naturalContentHeight) : 0
     visible: expanded
     clip: true
     radius: Theme.cornerRadius
@@ -85,7 +86,7 @@ Rectangle {
 
     function getTimeoutText(value) {
         if (value === undefined || value === null || isNaN(value)) {
-            return "5 seconds";
+            return I18n.tr("5 seconds");
         }
 
         for (let i = 0; i < timeoutOptions.length; i++) {
@@ -94,24 +95,33 @@ Rectangle {
             }
         }
         if (value === 0) {
-            return "Never";
+            return I18n.tr("Never");
         }
         if (value < 1000) {
             return value + "ms";
         }
         if (value < 60000) {
-            return Math.round(value / 1000) + " seconds";
+            return Math.round(value / 1000) + " " + I18n.tr("seconds");
         }
-        return Math.round(value / 60000) + " minutes";
+        return Math.round(value / 60000) + " " + I18n.tr("minutes");
     }
 
-    Column {
-        id: contentColumn
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.margins: Theme.spacingL
-        spacing: Theme.spacingM
+    Flickable {
+        id: settingsFlickable
+        anchors.fill: parent
+        contentHeight: contentColumn.height + Theme.spacingL * 2
+        clip: true
+        flickableDirection: Flickable.VerticalFlick
+        boundsBehavior: Flickable.DragAndOvershootBounds
+        interactive: root.naturalContentHeight > root.height
+
+        Column {
+            id: contentColumn
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.margins: Theme.spacingL
+            spacing: Theme.spacingM
 
         StyledText {
             text: I18n.tr("Notification Settings")
@@ -169,7 +179,7 @@ Rectangle {
 
         DankDropdown {
             text: I18n.tr("Low Priority")
-            description: "Timeout for low priority notifications"
+            description: I18n.tr("Timeout for low priority notifications")
             currentValue: getTimeoutText(SettingsData.notificationTimeoutLow)
             options: timeoutOptions.map(opt => opt.text)
             onValueChanged: value => {
@@ -184,7 +194,7 @@ Rectangle {
 
         DankDropdown {
             text: I18n.tr("Normal Priority")
-            description: "Timeout for normal priority notifications"
+            description: I18n.tr("Timeout for normal priority notifications")
             currentValue: getTimeoutText(SettingsData.notificationTimeoutNormal)
             options: timeoutOptions.map(opt => opt.text)
             onValueChanged: value => {
@@ -199,7 +209,7 @@ Rectangle {
 
         DankDropdown {
             text: I18n.tr("Critical Priority")
-            description: "Timeout for critical priority notifications"
+            description: I18n.tr("Timeout for critical priority notifications")
             currentValue: getTimeoutText(SettingsData.notificationTimeoutCritical)
             options: timeoutOptions.map(opt => opt.text)
             onValueChanged: value => {
@@ -225,6 +235,8 @@ Rectangle {
             Row {
                 id: overlayRow
                 anchors.left: parent.left
+                anchors.right: overlayToggle.left
+                anchors.rightMargin: Theme.spacingM
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.spacingM
 
@@ -238,17 +250,22 @@ Rectangle {
                 Column {
                     spacing: 2
                     anchors.verticalCenter: parent.verticalCenter
+                    width: overlayRow.width - Theme.iconSizeSmall - Theme.spacingM
 
                     StyledText {
+                        width: parent.width
                         text: I18n.tr("Notification Overlay")
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceText
+                        wrapMode: Text.Wrap
                     }
 
                     StyledText {
+                        width: parent.width
                         text: I18n.tr("Display all priorities over fullscreen apps")
                         font.pixelSize: Theme.fontSizeSmall - 1
                         color: Theme.surfaceVariantText
+                        wrapMode: Text.Wrap
                     }
                 }
             }
@@ -269,6 +286,8 @@ Rectangle {
             Row {
                 id: privacyRow
                 anchors.left: parent.left
+                anchors.right: privacyToggle.left
+                anchors.rightMargin: Theme.spacingM
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.spacingM
 
@@ -282,17 +301,22 @@ Rectangle {
                 Column {
                     spacing: 2
                     anchors.verticalCenter: parent.verticalCenter
+                    width: privacyRow.width - Theme.iconSizeSmall - Theme.spacingM
 
                     StyledText {
+                        width: parent.width
                         text: I18n.tr("Privacy Mode")
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceText
+                        wrapMode: Text.Wrap
                     }
 
                     StyledText {
+                        width: parent.width
                         text: I18n.tr("Hide notification content until expanded")
                         font.pixelSize: Theme.fontSizeSmall - 1
                         color: Theme.surfaceVariantText
+                        wrapMode: Text.Wrap
                     }
                 }
             }
@@ -420,5 +444,6 @@ Rectangle {
                 onToggled: toggled => SettingsData.set("notificationHistorySaveCritical", toggled)
             }
         }
+    }
     }
 }

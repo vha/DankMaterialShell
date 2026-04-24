@@ -57,7 +57,7 @@ Item {
         const id = activePlayer.identity.toLowerCase();
         return id.includes("chrome") || id.includes("chromium");
     }
-    readonly property bool volumeAvailable: (activePlayer && activePlayer.volumeSupported && !__isChromeBrowser) || (AudioService.sink && AudioService.sink.audio)
+    readonly property bool volumeAvailable: !!((activePlayer && activePlayer.volumeSupported && !__isChromeBrowser) || (AudioService.sink && AudioService.sink.audio))
     readonly property bool usePlayerVolume: activePlayer && activePlayer.volumeSupported && !__isChromeBrowser
     readonly property real currentVolume: usePlayerVolume ? activePlayer.volume : (AudioService.sink?.audio?.volume ?? 0)
 
@@ -105,7 +105,7 @@ Item {
         return Math.max(0, Math.min(1, calculatedRatio));
     }
 
-    implicitWidth: 700
+    implicitWidth: SettingsData.showWeekNumber ? 736 : 700
     implicitHeight: playerContent.height + playerContent.anchors.topMargin * 2
 
     Connections {
@@ -320,7 +320,7 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
 
                     StyledText {
-                        text: activePlayer?.trackTitle || "Unknown Track"
+                        text: activePlayer?.trackTitle || I18n.tr("Unknown Track")
                         font.pixelSize: Theme.fontSizeLarge
                         font.weight: Font.Bold
                         color: Theme.surfaceText
@@ -332,7 +332,7 @@ Item {
                     }
 
                     StyledText {
-                        text: activePlayer?.trackArtist || "Unknown Artist"
+                        text: activePlayer?.trackTitle || I18n.tr("Unknown Artist")
                         font.pixelSize: Theme.fontSizeMedium
                         color: Qt.rgba(Theme.surfaceText.r, Theme.surfaceText.g, Theme.surfaceText.b, 0.8)
                         width: parent.width
@@ -487,17 +487,7 @@ Item {
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        if (!activePlayer) {
-                                            return;
-                                        }
-
-                                        if (activePlayer.position > 8 && activePlayer.canSeek) {
-                                            activePlayer.position = 0;
-                                        } else {
-                                            activePlayer.previous();
-                                        }
-                                    }
+                                    onClicked: MprisController.previousOrRewind()
                                 }
                             }
                         }
@@ -669,7 +659,7 @@ Item {
                 const screenY = popoutY + contentOffsetY + btnY;
                 showPlayersDropdown(Qt.point(screenX, screenY), targetScreen, buttonsOnRight, activePlayer, allPlayers);
             }
-            onEntered: sharedTooltip.show("Media Players", playerSelectorButton, 0, 0, isRightEdge ? "right" : "left")
+            onEntered: sharedTooltip.show(I18n.tr("Media Players"), playerSelectorButton, 0, 0, isRightEdge ? "right" : "left")
             onExited: sharedTooltip.hide()
         }
     }
@@ -788,7 +778,7 @@ Item {
                 const screenY = popoutY + contentOffsetY + btnY;
                 showAudioDevicesDropdown(Qt.point(screenX, screenY), targetScreen, buttonsOnRight);
             }
-            onEntered: sharedTooltip.show("Output Device", audioDevicesButton, 0, 0, isRightEdge ? "right" : "left")
+            onEntered: sharedTooltip.show(I18n.tr("Output Device"), audioDevicesButton, 0, 0, isRightEdge ? "right" : "left")
             onExited: sharedTooltip.hide()
         }
     }

@@ -34,14 +34,14 @@ Scope {
         u2fPendingTimeout.running = false;
         passwdActiveTimeout.running = false;
         unlockRequestTimeout.running = false;
-        u2fPending = false;
-        u2fState = "";
-        unlockInProgress = false;
+        root.u2fPending = false;
+        root.u2fState = "";
+        root.unlockInProgress = false;
     }
 
     function recoverFromAuthStall(newState: string): void {
         resetAuthFlows();
-        state = newState;
+        root.state = newState;
         flashMsg();
         stateReset.restart();
         fprint.checkAvail();
@@ -49,16 +49,16 @@ Scope {
     }
 
     function completeUnlock(): void {
-        if (!unlockInProgress) {
-            unlockInProgress = true;
+        if (!root.unlockInProgress) {
+            root.unlockInProgress = true;
             passwd.abort();
             fprint.abort();
             u2f.abort();
             errorRetry.running = false;
             u2fErrorRetry.running = false;
             u2fPendingTimeout.running = false;
-            u2fPending = false;
-            u2fState = "";
+            root.u2fPending = false;
+            root.u2fState = "";
             unlockRequestTimeout.restart();
             unlockRequested();
         }
@@ -73,13 +73,13 @@ Scope {
     }
 
     function cancelU2fPending(): void {
-        if (!u2fPending)
+        if (!root.u2fPending)
             return;
         u2f.abort();
         u2fErrorRetry.running = false;
         u2fPendingTimeout.running = false;
-        u2fPending = false;
-        u2fState = "";
+        root.u2fPending = false;
+        root.u2fState = "";
         fprint.checkAvail();
     }
 
@@ -91,9 +91,9 @@ Scope {
     }
 
     FileView {
-        id: loginConfigWatcher
+        id: nixosMarker
 
-        path: "/etc/pam.d/login"
+        path: "/etc/NIXOS"
         printErrors: false
     }
 
@@ -104,17 +104,23 @@ Scope {
         printErrors: false
     }
 
+    // Detects Nix-installed DMS on non-NixOS systems
+    readonly property bool runningFromNixStore: Quickshell.shellDir.startsWith("/nix/store/")
+
     PamContext {
         id: passwd
 
         config: dankshellConfigWatcher.loaded ? "dankshell" : "login"
-        configDirectory: dankshellConfigWatcher.loaded || loginConfigWatcher.loaded ? "/etc/pam.d" : Quickshell.shellDir + "/assets/pam"
+        configDirectory: (dankshellConfigWatcher.loaded || nixosMarker.loaded || root.runningFromNixStore) ? "/etc/pam.d" : Quickshell.shellDir + "/assets/pam"
 
         onMessageChanged: {
-            if (message.startsWith("The account is locked"))
+            if (message.startsWith("The account is locked")) {
                 root.lockMessage = message;
-            else if (root.lockMessage && message.endsWith(" left to unlock)"))
+            } else if (root.lockMessage && message.endsWith(" left to unlock)")) {
                 root.lockMessage += "\n" + message;
+            } else if (root.lockMessage && message && message.length > 0) {
+                root.lockMessage = "";
+            }
         }
 
         onResponseRequiredChanged: {
@@ -176,6 +182,8 @@ Scope {
                 abort();
                 return;
             }
+            if (active)
+                return;
 
             tries = 0;
             errorTries = 0;
@@ -189,22 +197,23 @@ Scope {
             if (!available)
                 return;
 
-            if (res === PamResult.Success) {
+            switch (res) {
+            case PamResult.Success:
                 if (!root.unlockInProgress) {
                     passwd.abort();
                     root.proceedAfterPrimaryAuth();
                 }
                 return;
-            }
-
-            if (res === PamResult.Error) {
-                root.fprintState = "error";
+            case PamResult.Error:
                 errorTries++;
-                if (errorTries < 5) {
+                if (errorTries < 200) {
                     abort();
                     errorRetry.restart();
+                    return;
                 }
-            } else if (res === PamResult.MaxTries) {
+                abort();
+                return;
+            case PamResult.MaxTries:
                 tries++;
                 if (tries < SettingsData.maxFprintTries) {
                     root.fprintState = "fail";
@@ -213,6 +222,9 @@ Scope {
                     root.fprintState = "max";
                     abort();
                 }
+                break;
+            default:
+                return;
             }
 
             root.flashMsg();
@@ -252,7 +264,7 @@ Scope {
         configDirectory: u2fConfigWatcher.loaded ? "/etc/pam.d" : Quickshell.shellDir + "/assets/pam"
 
         onMessageChanged: {
-            if (message !== "")
+            if (message.toLowerCase().includes("touch"))
                 root.u2fState = "waiting";
         }
 
@@ -291,7 +303,7 @@ Scope {
     Timer {
         id: errorRetry
 
-        interval: 800
+        interval: 1500
         onTriggered: fprint.start()
     }
 
@@ -343,26 +355,22 @@ Scope {
         id: fprintStateReset
 
         interval: 4000
-        onTriggered: {
-            root.fprintState = "";
-            fprint.errorTries = 0;
-        }
+        onTriggered: root.fprintState = ""
     }
 
     onLockSecuredChanged: {
-        if (lockSecured) {
-            SettingsData.refreshAuthAvailability();
-            root.state = "";
-            root.fprintState = "";
-            root.u2fState = "";
-            root.u2fPending = false;
-            root.lockMessage = "";
+        if (!lockSecured) {
             root.resetAuthFlows();
-            fprint.checkAvail();
-            u2f.checkAvail();
-        } else {
-            root.resetAuthFlows();
+            return;
         }
+        root.state = "";
+        root.fprintState = "";
+        root.u2fState = "";
+        root.u2fPending = false;
+        root.lockMessage = "";
+        root.resetAuthFlows();
+        fprint.checkAvail();
+        u2f.checkAvail();
     }
 
     Connections {

@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/blur"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/clipboard"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/config"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/distros"
@@ -82,7 +83,7 @@ func (ds *DoctorStatus) OKCount() int {
 }
 
 var (
-	quickshellVersionRegex = regexp.MustCompile(`quickshell (\d+\.\d+\.\d+)`)
+	quickshellVersionRegex = regexp.MustCompile(`(?i)quickshell (\d+\.\d+\.\d+)`)
 	hyprlandVersionRegex   = regexp.MustCompile(`v?(\d+\.\d+\.\d+)`)
 	niriVersionRegex       = regexp.MustCompile(`niri (\d+\.\d+)`)
 	swayVersionRegex       = regexp.MustCompile(`sway version (\d+\.\d+)`)
@@ -90,6 +91,7 @@ var (
 	wayfireVersionRegex    = regexp.MustCompile(`wayfire (\d+\.\d+)`)
 	labwcVersionRegex      = regexp.MustCompile(`labwc (\d+\.\d+\.\d+)`)
 	mangowcVersionRegex    = regexp.MustCompile(`mango (\d+\.\d+\.\d+)`)
+	miracleVersionRegex    = regexp.MustCompile(`miracle-wm v?(\d+\.\d+\.\d+)`)
 )
 
 var doctorCmd = &cobra.Command{
@@ -468,6 +470,7 @@ func checkWindowManagers() []checkResult {
 		{"Wayfire", "wayfire", "--version", wayfireVersionRegex, []string{"wayfire"}},
 		{"labwc", "labwc", "--version", labwcVersionRegex, []string{"labwc"}},
 		{"mangowc", "mango", "-v", mangowcVersionRegex, []string{"mango"}},
+		{"Miracle WM", "miracle-wm", "--version", miracleVersionRegex, []string{"miracle-wm"}},
 	}
 
 	var results []checkResult
@@ -500,7 +503,7 @@ func checkWindowManagers() []checkResult {
 		results = append(results, checkResult{
 			catCompositor, "Compositor", statusError,
 			"No supported Wayland compositor found",
-			"Install Hyprland, niri, Sway, River, or Wayfire",
+			"Install Hyprland, niri, Sway, River, Wayfire, or miracle-wm",
 			doctorDocsURL + "#compositor-checks",
 		})
 	}
@@ -509,7 +512,22 @@ func checkWindowManagers() []checkResult {
 		results = append(results, checkResult{catCompositor, "Active", statusInfo, wm, "", doctorDocsURL + "#compositor"})
 	}
 
+	results = append(results, checkCompositorBlurSupport())
+
 	return results
+}
+
+func checkCompositorBlurSupport() checkResult {
+	supported, err := blur.ProbeSupport()
+	if err != nil {
+		return checkResult{catCompositor, "Background Blur", statusInfo, "Unable to verify", err.Error(), doctorDocsURL + "#compositor-checks"}
+	}
+
+	if supported {
+		return checkResult{catCompositor, "Background Blur", statusOK, "Supported", "Compositor supports ext-background-effect-v1", doctorDocsURL + "#compositor-checks"}
+	}
+
+	return checkResult{catCompositor, "Background Blur", statusWarn, "Unsupported", "Compositor does not support ext-background-effect-v1", doctorDocsURL + "#compositor-checks"}
 }
 
 func getVersionFromCommand(cmd, arg string, regex *regexp.Regexp) string {
@@ -535,6 +553,8 @@ func detectRunningWM() string {
 		return "Hyprland"
 	case os.Getenv("NIRI_SOCKET") != "":
 		return "niri"
+	case os.Getenv("MIRACLESOCK") != "":
+		return "Miracle WM"
 	case os.Getenv("XDG_CURRENT_DESKTOP") != "":
 		return os.Getenv("XDG_CURRENT_DESKTOP")
 	}
@@ -553,6 +573,7 @@ func checkQuickshellFeatures() ([]checkResult, bool) {
 	qmlContent := `
 import QtQuick
 import Quickshell
+import Quickshell.Wayland
 
 ShellRoot {
 	id: root
@@ -561,6 +582,7 @@ ShellRoot {
 	property bool idleMonitorAvailable: false
 	property bool idleInhibitorAvailable: false
 	property bool shortcutInhibitorAvailable: false
+	property bool backgroundBlurAvailable: false
 
 	Timer {
 		interval: 50
@@ -578,16 +600,18 @@ ShellRoot {
 
 			try {
 				var testItem = Qt.createQmlObject(
-					'import Quickshell.Wayland; import QtQuick; QtObject { ' +
+					'import Quickshell; import Quickshell.Wayland; import QtQuick; QtObject { ' +
 					'readonly property bool hasIdleMonitor: typeof IdleMonitor !== "undefined"; ' +
 					'readonly property bool hasIdleInhibitor: typeof IdleInhibitor !== "undefined"; ' +
-					'readonly property bool hasShortcutInhibitor: typeof ShortcutInhibitor !== "undefined" ' +
+					'readonly property bool hasShortcutInhibitor: typeof ShortcutInhibitor !== "undefined"; ' +
+					'readonly property bool hasBackgroundBlur: typeof BackgroundEffect !== "undefined" ' +
 					'}',
 					root
 				)
 				root.idleMonitorAvailable = testItem.hasIdleMonitor
 				root.idleInhibitorAvailable = testItem.hasIdleInhibitor
 				root.shortcutInhibitorAvailable = testItem.hasShortcutInhibitor
+				root.backgroundBlurAvailable = testItem.hasBackgroundBlur
 				testItem.destroy()
 			} catch (e) {}
 
@@ -595,6 +619,8 @@ ShellRoot {
 			console.warn(root.idleMonitorAvailable ? "FEATURE:IdleMonitor:OK" : "FEATURE:IdleMonitor:UNAVAILABLE")
 			console.warn(root.idleInhibitorAvailable ? "FEATURE:IdleInhibitor:OK" : "FEATURE:IdleInhibitor:UNAVAILABLE")
 			console.warn(root.shortcutInhibitorAvailable ? "FEATURE:ShortcutInhibitor:OK" : "FEATURE:ShortcutInhibitor:UNAVAILABLE")
+
+			console.warn(root.backgroundBlurAvailable ? "FEATURE:BackgroundBlur:OK" : "FEATURE:BackgroundBlur:UNAVAILABLE")
 
 			Quickshell.execDetached(["kill", "-TERM", String(Quickshell.processId)])
 		}
@@ -616,6 +642,7 @@ ShellRoot {
 		{"IdleMonitor", "Idle detection"},
 		{"IdleInhibitor", "Prevent idle/sleep"},
 		{"ShortcutInhibitor", "Allow shortcut management (niri)"},
+		{"BackgroundBlur", "Background blur API support in Quickshell"},
 	}
 
 	var results []checkResult
@@ -820,10 +847,14 @@ func checkOptionalDependencies() []checkResult {
 	results = append(results, checkImageFormatPlugins()...)
 
 	terminals := []string{"ghostty", "kitty", "alacritty", "foot", "wezterm"}
-	if idx := slices.IndexFunc(terminals, utils.CommandExists); idx >= 0 {
-		results = append(results, checkResult{catOptionalFeatures, "Terminal", statusOK, terminals[idx], "", optionalFeaturesURL})
+	terminals = slices.DeleteFunc(terminals, func(t string) bool {
+		return !utils.CommandExists(t)
+	})
+
+	if len(terminals) > 0 {
+		results = append(results, checkResult{catOptionalFeatures, "Terminal", statusOK, strings.Join(terminals, ", "), "", optionalFeaturesURL})
 	} else {
-		results = append(results, checkResult{catOptionalFeatures, "Terminal", statusWarn, "None found", "Install ghostty, kitty, or alacritty", optionalFeaturesURL})
+		results = append(results, checkResult{catOptionalFeatures, "Terminal", statusWarn, "None found", "Install ghostty, kitty, foot or alacritty", optionalFeaturesURL})
 	}
 
 	networkResult, err := network.DetectNetworkStack()

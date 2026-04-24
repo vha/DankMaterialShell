@@ -606,6 +606,8 @@ Item {
                 property var allLauncherPlugins: {
                     SettingsData.launcherPluginVisibility;
                     SettingsData.launcherPluginOrder;
+                    SettingsData.dankLauncherV2IncludeFilesInAll;
+                    SettingsData.dankLauncherV2IncludeFoldersInAll;
                     var plugins = [];
                     var builtIn = AppSearchService.getBuiltInLauncherPlugins() || {};
                     for (var pluginId in builtIn) {
@@ -616,6 +618,7 @@ Item {
                             icon: plugin.cornerIcon || "extension",
                             iconType: "material",
                             isBuiltIn: true,
+                            isVirtual: false,
                             trigger: AppSearchService.getBuiltInPluginTrigger(pluginId) || ""
                         });
                     }
@@ -629,7 +632,30 @@ Item {
                             icon: rawIcon.startsWith("material:") ? rawIcon.substring(9) : rawIcon.startsWith("unicode:") ? rawIcon.substring(8) : rawIcon,
                             iconType: rawIcon.startsWith("unicode:") ? "unicode" : "material",
                             isBuiltIn: false,
+                            isVirtual: false,
                             trigger: PluginService.getPluginTrigger(pluginId) || ""
+                        });
+                    }
+                    if (SettingsData.dankLauncherV2IncludeFilesInAll) {
+                        plugins.push({
+                            id: "__files",
+                            name: I18n.tr("Files"),
+                            icon: "insert_drive_file",
+                            iconType: "material",
+                            isBuiltIn: false,
+                            isVirtual: true,
+                            trigger: "/"
+                        });
+                    }
+                    if (SettingsData.dankLauncherV2IncludeFoldersInAll) {
+                        plugins.push({
+                            id: "__folders",
+                            name: I18n.tr("Folders"),
+                            icon: "folder",
+                            iconType: "material",
+                            isBuiltIn: false,
+                            isVirtual: true,
+                            trigger: "/"
                         });
                     }
                     return SettingsData.getOrderedLauncherPlugins(plugins);
@@ -750,9 +776,27 @@ Item {
                                     anchors.right: parent.right
                                     anchors.rightMargin: Theme.spacingM
                                     anchors.verticalCenter: parent.verticalCenter
-                                    checked: SettingsData.getPluginAllowWithoutTrigger(visibilityDelegateItem.modelData.id)
+                                    checked: {
+                                        switch (visibilityDelegateItem.modelData.id) {
+                                        case "__files":
+                                            return SettingsData.dankLauncherV2IncludeFilesInAll;
+                                        case "__folders":
+                                            return SettingsData.dankLauncherV2IncludeFoldersInAll;
+                                        default:
+                                            return SettingsData.getPluginAllowWithoutTrigger(visibilityDelegateItem.modelData.id);
+                                        }
+                                    }
                                     onToggled: function (isChecked) {
-                                        SettingsData.setPluginAllowWithoutTrigger(visibilityDelegateItem.modelData.id, isChecked);
+                                        switch (visibilityDelegateItem.modelData.id) {
+                                        case "__files":
+                                            SettingsData.set("dankLauncherV2IncludeFilesInAll", isChecked);
+                                            break;
+                                        case "__folders":
+                                            SettingsData.set("dankLauncherV2IncludeFoldersInAll", isChecked);
+                                            break;
+                                        default:
+                                            SettingsData.setPluginAllowWithoutTrigger(visibilityDelegateItem.modelData.id, isChecked);
+                                        }
                                     }
                                 }
                             }
@@ -830,6 +874,33 @@ Item {
                     description: I18n.tr("Include desktop actions (shortcuts) in search results.")
                     checked: SessionData.searchAppActions
                     onToggled: checked => SessionData.setSearchAppActions(checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "rememberLastQuery"
+                    tags: ["launcher", "remember", "last", "search", "query"]
+                    text: I18n.tr("Remember Last Query")
+                    description: I18n.tr("Autofill last remembered query when opened")
+                    checked: SettingsData.rememberLastQuery
+                    onToggled: checked => SettingsData.set("rememberLastQuery", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "dankLauncherV2IncludeFilesInAll"
+                    tags: ["launcher", "files", "dsearch", "all", "results", "indexed"]
+                    text: I18n.tr("Include Files in All Tab")
+                    description: I18n.tr("Merge indexed file results into the All tab (requires dsearch).")
+                    checked: SettingsData.dankLauncherV2IncludeFilesInAll
+                    onToggled: checked => SettingsData.set("dankLauncherV2IncludeFilesInAll", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "dankLauncherV2IncludeFoldersInAll"
+                    tags: ["launcher", "folders", "dirs", "dsearch", "all", "results", "indexed"]
+                    text: I18n.tr("Include Folders in All Tab")
+                    description: I18n.tr("Merge indexed folder results into the All tab (requires dsearch).")
+                    checked: SettingsData.dankLauncherV2IncludeFoldersInAll
+                    onToggled: checked => SettingsData.set("dankLauncherV2IncludeFoldersInAll", checked)
                 }
             }
 
@@ -1189,17 +1260,11 @@ Item {
                                             if (diffMins < 1)
                                                 return I18n.tr("Last launched just now");
                                             if (diffMins < 60)
-                                                return diffMins === 1
-                                                    ? I18n.tr("Last launched %1 minute ago").arg(diffMins)
-                                                    : I18n.tr("Last launched %1 minutes ago").arg(diffMins);
+                                                return diffMins === 1 ? I18n.tr("Last launched %1 minute ago").arg(diffMins) : I18n.tr("Last launched %1 minutes ago").arg(diffMins);
                                             if (diffHours < 24)
-                                                return diffHours === 1
-                                                    ? I18n.tr("Last launched %1 hour ago").arg(diffHours)
-                                                    : I18n.tr("Last launched %1 hours ago").arg(diffHours);
+                                                return diffHours === 1 ? I18n.tr("Last launched %1 hour ago").arg(diffHours) : I18n.tr("Last launched %1 hours ago").arg(diffHours);
                                             if (diffDays < 7)
-                                                return diffDays === 1
-                                                    ? I18n.tr("Last launched %1 day ago").arg(diffDays)
-                                                    : I18n.tr("Last launched %1 days ago").arg(diffDays);
+                                                return diffDays === 1 ? I18n.tr("Last launched %1 day ago").arg(diffDays) : I18n.tr("Last launched %1 days ago").arg(diffDays);
                                             return I18n.tr("Last launched %1").arg(date.toLocaleDateString());
                                         }
                                         font.pixelSize: Theme.fontSizeSmall

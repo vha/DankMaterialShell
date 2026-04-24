@@ -29,8 +29,32 @@ Singleton {
 
     property bool isLightMode: false
     property bool doNotDisturb: false
+    property real doNotDisturbUntil: 0
     property bool isSwitchingMode: false
     property bool suppressOSD: true
+
+    Timer {
+        id: dndExpireTimer
+        repeat: false
+        running: false
+        onTriggered: root.setDoNotDisturb(false)
+    }
+
+    function _armDndExpireTimer() {
+        dndExpireTimer.stop();
+        if (!doNotDisturb || doNotDisturbUntil <= 0)
+            return;
+        const remaining = doNotDisturbUntil - Date.now();
+        if (remaining <= 0) {
+            setDoNotDisturb(false);
+            return;
+        }
+        dndExpireTimer.interval = remaining;
+        dndExpireTimer.start();
+    }
+
+    onDoNotDisturbChanged: _armDndExpireTimer()
+    onDoNotDisturbUntilChanged: _armDndExpireTimer()
 
     Timer {
         id: osdSuppressTimer
@@ -49,6 +73,7 @@ Singleton {
         function onSessionResumed() {
             root.suppressOSD = true;
             osdSuppressTimer.restart();
+            root._applyDndExpirySanity();
         }
     }
 
@@ -124,6 +149,8 @@ Singleton {
 
     property string vpnLastConnected: ""
 
+    property string lastPlayerIdentity: ""
+
     property var deviceMaxVolumes: ({})
     property var hiddenOutputDeviceNames: []
     property var hiddenInputDeviceNames: []
@@ -132,8 +159,12 @@ Singleton {
     property string timeLocale: ""
 
     property string launcherLastMode: "all"
+    property string launcherLastQuery: ""
+    property var launcherQueryHistory: []
     property string appDrawerLastMode: "apps"
     property string niriOverviewLastMode: "apps"
+    property string settingsSidebarExpandedIds: ","
+    property string settingsSidebarCollapsedIds: ","
 
     Component.onCompleted: {
         if (!isGreeterMode) {
@@ -184,6 +215,7 @@ Singleton {
             }
 
             Store.parse(root, obj);
+            _applyDndExpirySanity();
 
             _loadedSessionSnapshot = getCurrentSessionJson();
             _hasLoaded = true;
@@ -265,6 +297,7 @@ Singleton {
             }
 
             Store.parse(root, obj);
+            _applyDndExpirySanity();
 
             _loadedSessionSnapshot = getCurrentSessionJson();
             _hasLoaded = true;
@@ -280,6 +313,16 @@ Singleton {
             console.error("SessionData: Failed to parse session.json - file will not be overwritten.");
             Qt.callLater(() => ToastService.showError(I18n.tr("Failed to parse session.json"), msg));
         }
+    }
+
+    function _applyDndExpirySanity() {
+        if (doNotDisturb && doNotDisturbUntil > 0 && Date.now() >= doNotDisturbUntil) {
+            doNotDisturb = false;
+            doNotDisturbUntil = 0;
+        } else if (!doNotDisturb && doNotDisturbUntil !== 0) {
+            doNotDisturbUntil = 0;
+        }
+        _armDndExpireTimer();
     }
 
     function saveSettings() {
@@ -343,16 +386,29 @@ Singleton {
 
     function setLightMode(lightMode) {
         isSwitchingMode = true;
+        syncWallpaperForCurrentMode(lightMode);
         isLightMode = lightMode;
-        syncWallpaperForCurrentMode();
         saveSettings();
         Qt.callLater(() => {
             isSwitchingMode = false;
         });
     }
 
-    function setDoNotDisturb(enabled) {
+    function setDoNotDisturb(enabled, durationMinutes) {
+        const minutes = Number(durationMinutes) || 0;
         doNotDisturb = enabled;
+        doNotDisturbUntil = (enabled && minutes > 0) ? Date.now() + minutes * 60 * 1000 : 0;
+        saveSettings();
+    }
+
+    function setDoNotDisturbUntilTimestamp(timestampMs) {
+        const target = Number(timestampMs) || 0;
+        if (target <= Date.now()) {
+            setDoNotDisturb(false);
+            return;
+        }
+        doNotDisturb = true;
+        doNotDisturbUntil = target;
         saveSettings();
     }
 
@@ -1094,6 +1150,43 @@ Singleton {
         saveSettings();
     }
 
+    function setLauncherLastQuery(query) {
+        launcherLastQuery = query;
+        saveSettings();
+    }
+
+    function addLauncherHistory(query) {
+        let q = query.trim();
+
+        setLauncherLastQuery(q);
+
+        if (!q)
+            return;
+
+        if (launcherQueryHistory.length > 0 && launcherQueryHistory[0] === q) {
+            return;
+        }
+
+        let history = [...launcherQueryHistory];
+
+        let idx = history.indexOf(q);
+        if (idx !== -1)
+            history.splice(idx, 1);
+
+        history.unshift(q);
+        if (history.length > 50)
+            history = history.slice(0, 50);
+
+        launcherQueryHistory = history;
+        saveSettings();
+    }
+
+    function clearLauncherHistory() {
+        launcherLastQuery = "";
+        launcherSearchHistory = [];
+        saveSettings();
+    }
+
     function setAppDrawerLastMode(mode) {
         appDrawerLastMode = mode;
         saveSettings();
@@ -1104,15 +1197,22 @@ Singleton {
         saveSettings();
     }
 
-    function syncWallpaperForCurrentMode() {
+    function setSettingsSidebarState(expandedIds, collapsedIds) {
+        settingsSidebarExpandedIds = expandedIds;
+        settingsSidebarCollapsedIds = collapsedIds;
+        saveSettings();
+    }
+
+    function syncWallpaperForCurrentMode(mode) {
         if (!perModeWallpaper)
             return;
+        var light = (mode !== undefined) ? mode : isLightMode;
         if (perMonitorWallpaper) {
-            monitorWallpapers = isLightMode ? Object.assign({}, monitorWallpapersLight) : Object.assign({}, monitorWallpapersDark);
+            monitorWallpapers = light ? Object.assign({}, monitorWallpapersLight) : Object.assign({}, monitorWallpapersDark);
             return;
         }
 
-        wallpaperPath = isLightMode ? wallpaperPathLight : wallpaperPathDark;
+        wallpaperPath = light ? wallpaperPathLight : wallpaperPathDark;
     }
 
     function _findMonitorValue(map, screenName) {

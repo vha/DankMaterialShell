@@ -9,6 +9,15 @@ import qs.Widgets
 PanelWindow {
     id: root
 
+    WindowBlur {
+        targetWindow: root
+        blurX: menuContainer.x
+        blurY: menuContainer.y
+        blurWidth: root.visible ? menuContainer.width : 0
+        blurHeight: root.visible ? menuContainer.height : 0
+        blurRadius: Theme.cornerRadius
+    }
+
     WlrLayershell.namespace: "dms:dock-context-menu"
 
     property var appData: null
@@ -17,7 +26,7 @@ PanelWindow {
     property int margin: 10
     property bool hidePin: false
     property var desktopEntry: null
-    property bool isDmsWindow: appData?.appId === "org.quickshell"
+    property bool isDmsWindow: appData?.appId === "org.quickshell" || appData?.appId === "com.danklinux.dms"
     property var dockApps: null
 
     function showForButton(button, data, dockHeight, hidePinOption, entry, dockScreen, parentDockApps) {
@@ -168,8 +177,8 @@ PanelWindow {
         height: menuColumn.implicitHeight + Theme.spacingS * 2
         color: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
         radius: Theme.cornerRadius
-        border.color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.08)
-        border.width: 1
+        border.color: BlurService.enabled ? BlurService.borderColor : Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.08)
+        border.width: BlurService.enabled ? BlurService.borderWidth : 1
 
         opacity: root.visible ? 1 : 0
         visible: opacity > 0
@@ -221,7 +230,7 @@ PanelWindow {
                     width: parent.width
                     height: 28
                     radius: Theme.cornerRadius
-                    color: windowArea.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : "transparent"
+                    color: windowArea.containsMouse ? BlurService.hoverColor(Theme.widgetBaseHoverColor) : "transparent"
 
                     StyledText {
                         anchors.left: parent.left
@@ -311,7 +320,7 @@ PanelWindow {
                     width: parent.width
                     height: 28
                     radius: Theme.cornerRadius
-                    color: actionArea.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : "transparent"
+                    color: actionArea.containsMouse ? BlurService.hoverColor(Theme.widgetBaseHoverColor) : "transparent"
 
                     Row {
                         anchors.left: parent.left
@@ -386,7 +395,7 @@ PanelWindow {
                 width: parent.width
                 height: 28
                 radius: Theme.cornerRadius
-                color: pinArea.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : "transparent"
+                color: pinArea.containsMouse ? BlurService.hoverColor(Theme.widgetBaseHoverColor) : "transparent"
 
                 Row {
                     anchors.left: parent.left
@@ -459,7 +468,7 @@ PanelWindow {
                 width: parent.width
                 height: 28
                 radius: Theme.cornerRadius
-                color: nvidiaArea.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : "transparent"
+                color: nvidiaArea.containsMouse ? BlurService.hoverColor(Theme.widgetBaseHoverColor) : "transparent"
 
                 Row {
                     anchors.left: parent.left

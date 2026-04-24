@@ -5,6 +5,7 @@ package main
 import (
 	"os"
 
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/clipboard"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
 )
 
@@ -17,18 +18,22 @@ func init() {
 	runCmd.Flags().MarkHidden("daemon-child")
 
 	greeterCmd.AddCommand(greeterInstallCmd, greeterSyncCmd, greeterEnableCmd, greeterStatusCmd, greeterUninstallCmd)
+	authCmd.AddCommand(authSyncCmd)
 	setupCmd.AddCommand(setupBindsCmd, setupLayoutCmd, setupColorsCmd, setupAlttabCmd, setupOutputsCmd, setupCursorCmd, setupWindowrulesCmd)
 	updateCmd.AddCommand(updateCheckCmd)
 	pluginsCmd.AddCommand(pluginsBrowseCmd, pluginsListCmd, pluginsInstallCmd, pluginsUninstallCmd, pluginsUpdateCmd)
 	rootCmd.AddCommand(getCommonCommands()...)
 
+	rootCmd.AddCommand(authCmd)
 	rootCmd.AddCommand(updateCmd)
 
 	rootCmd.SetHelpTemplate(getHelpTemplate())
 }
 
 func main() {
-	if os.Geteuid() == 0 {
+	clipboard.MaybeServeAndExit()
+
+	if os.Geteuid() == 0 && !isReadOnlyCommand(os.Args) {
 		log.Fatal("This program should not be run as root. Exiting.")
 	}
 

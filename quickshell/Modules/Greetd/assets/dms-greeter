@@ -87,8 +87,7 @@ exec_compositor() {
         exec "$@" > >(systemd-cat -t "dms-greeter/$log_tag" -p info) 2>&1
     fi
 
-    local log_file="$CACHE_DIR/$log_tag.log"
-    exec "$@" >> "$log_file" 2>&1
+    exec "$@"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -180,19 +179,10 @@ export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 export EGL_PLATFORM=gbm
 export DMS_RUN_GREETER=1
 
-ensure_cache_tree() {
-    local base="$1"
-    mkdir -p "$base/.local/state" "$base/.local/state/wireplumber" "$base/.local/share" "$base/.cache"
-}
-
-if ! ensure_cache_tree "$CACHE_DIR" 2>/dev/null; then
-    FALLBACK_CACHE_DIR="/tmp/dms-greeter-${UID:-$(id -u)}"
-    echo "Warning: cache directory '$CACHE_DIR' is not writable; falling back to '$FALLBACK_CACHE_DIR'" >&2
-    CACHE_DIR="$FALLBACK_CACHE_DIR"
-    if ! ensure_cache_tree "$CACHE_DIR"; then
-        echo "Error: failed to initialize fallback cache directory '$CACHE_DIR'" >&2
-        exit 1
-    fi
+if [[ ! -d "$CACHE_DIR" ]]; then
+    echo "Error: cache directory '$CACHE_DIR' does not exist." >&2
+    echo "  Run 'dms greeter sync' to initialize it, or pass --cache-dir to an existing directory." >&2
+    exit 1
 fi
 
 export DMS_GREET_CFG_DIR="$CACHE_DIR"
@@ -224,18 +214,6 @@ export XDG_STATE_HOME="$CACHE_DIR/.local/state"
 export XDG_DATA_HOME="$CACHE_DIR/.local/share"
 export XDG_CACHE_HOME="$CACHE_DIR/.cache"
 
-# Propagate correct XDG dirs into the systemd user session so socket-activated
-# services (e.g. wireplumber) don't inherit HOME=/ from /etc/passwd.
-if command -v systemctl >/dev/null 2>&1; then
-    systemctl --user set-environment \
-        HOME="$CACHE_DIR" \
-        XDG_STATE_HOME="$CACHE_DIR/.local/state" \
-        XDG_DATA_HOME="$CACHE_DIR/.local/share" \
-        XDG_CACHE_HOME="$CACHE_DIR/.cache" 2>/dev/null || true
-    if systemctl --user is-active --quiet wireplumber.service 2>/dev/null; then
-        systemctl --user restart wireplumber.service 2>/dev/null || true
-    fi
-fi
 
 # Keep greeter VT clean by default; callers can override via env or --debug.
 if [[ -z "${RUST_LOG:-}" ]]; then
@@ -283,10 +261,6 @@ hotkey-overlay {
 
 environment {
     DMS_RUN_GREETER "1"
-    HOME "$CACHE_DIR"
-    XDG_STATE_HOME "$CACHE_DIR/.local/state"
-    XDG_DATA_HOME "$CACHE_DIR/.local/share"
-    XDG_CACHE_HOME "$CACHE_DIR/.cache"
 }
 
 debug {
@@ -340,16 +314,11 @@ NIRI_EOF
             TEMP_CONFIG=$(mktemp)
             cat > "$TEMP_CONFIG" << HYPRLAND_EOF
 env = DMS_RUN_GREETER,1
-env = HOME,$CACHE_DIR
-env = XDG_STATE_HOME,$CACHE_DIR/.local/state
-env = XDG_DATA_HOME,$CACHE_DIR/.local/share
-env = XDG_CACHE_HOME,$CACHE_DIR/.cache
 
 misc {
     disable_hyprland_logo = true
 }
 
-exec-once = systemctl --user import-environment HOME XDG_STATE_HOME XDG_DATA_HOME XDG_CACHE_HOME 2>/dev/null || true
 exec-once = sh -c "$QS_CMD; hyprctl dispatch exit"
 HYPRLAND_EOF
             COMPOSITOR_CONFIG="$TEMP_CONFIG"
@@ -358,11 +327,6 @@ HYPRLAND_EOF
             cat "$COMPOSITOR_CONFIG" > "$TEMP_CONFIG"
             cat >> "$TEMP_CONFIG" << HYPRLAND_EOF
 
-env = HOME,$CACHE_DIR
-env = XDG_STATE_HOME,$CACHE_DIR/.local/state
-env = XDG_DATA_HOME,$CACHE_DIR/.local/share
-env = XDG_CACHE_HOME,$CACHE_DIR/.cache
-exec-once = systemctl --user import-environment HOME XDG_STATE_HOME XDG_DATA_HOME XDG_CACHE_HOME 2>/dev/null || true
 exec-once = sh -c "$QS_CMD; hyprctl dispatch exit"
 HYPRLAND_EOF
             COMPOSITOR_CONFIG="$TEMP_CONFIG"
@@ -379,7 +343,6 @@ HYPRLAND_EOF
         if [[ -z "$COMPOSITOR_CONFIG" ]]; then
             TEMP_CONFIG=$(mktemp)
             cat > "$TEMP_CONFIG" << SWAY_EOF
-exec --no-startup-id dbus-update-activation-environment --systemd HOME XDG_STATE_HOME XDG_DATA_HOME XDG_CACHE_HOME
 exec "$QS_CMD; swaymsg exit"
 SWAY_EOF
             COMPOSITOR_CONFIG="$TEMP_CONFIG"
@@ -388,7 +351,6 @@ SWAY_EOF
             cat "$COMPOSITOR_CONFIG" > "$TEMP_CONFIG"
             cat >> "$TEMP_CONFIG" << SWAY_EOF
 
-exec --no-startup-id dbus-update-activation-environment --systemd HOME XDG_STATE_HOME XDG_DATA_HOME XDG_CACHE_HOME
 exec "$QS_CMD; swaymsg exit"
 SWAY_EOF
             COMPOSITOR_CONFIG="$TEMP_CONFIG"
@@ -401,7 +363,6 @@ SWAY_EOF
         if [[ -z "$COMPOSITOR_CONFIG" ]]; then
             TEMP_CONFIG=$(mktemp)
             cat > "$TEMP_CONFIG" << SCROLL_EOF
-exec --no-startup-id dbus-update-activation-environment --systemd HOME XDG_STATE_HOME XDG_DATA_HOME XDG_CACHE_HOME
 exec "$QS_CMD; scrollmsg exit"
 SCROLL_EOF
             COMPOSITOR_CONFIG="$TEMP_CONFIG"
@@ -410,7 +371,6 @@ SCROLL_EOF
             cat "$COMPOSITOR_CONFIG" > "$TEMP_CONFIG"
             cat >> "$TEMP_CONFIG" << SCROLL_EOF
 
-exec --no-startup-id dbus-update-activation-environment --systemd HOME XDG_STATE_HOME XDG_DATA_HOME XDG_CACHE_HOME
 exec "$QS_CMD; scrollmsg exit"
 SCROLL_EOF
             COMPOSITOR_CONFIG="$TEMP_CONFIG"

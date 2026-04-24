@@ -4,6 +4,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/distros"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/errdefs"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/privesc"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/version"
 	"github.com/spf13/cobra"
@@ -109,14 +111,35 @@ func updateArchLinux() error {
 	}
 
 	var packageName string
-	if isArchPackageInstalled("dms-shell-bin") {
-		packageName = "dms-shell-bin"
+	var isAUR bool
+	if isArchPackageInstalled("dms-shell") {
+		packageName = "dms-shell"
 	} else if isArchPackageInstalled("dms-shell-git") {
 		packageName = "dms-shell-git"
+		isAUR = true
+	} else if isArchPackageInstalled("dms-shell-bin") {
+		packageName = "dms-shell-bin"
+		isAUR = true
 	} else {
-		fmt.Println("Info: Neither dms-shell-bin nor dms-shell-git package found.")
+		fmt.Println("Info: No dms-shell package found.")
 		fmt.Println("Info: Falling back to git-based update method...")
 		return updateOtherDistros()
+	}
+
+	if !isAUR {
+		fmt.Printf("This will update %s using pacman.\n", packageName)
+		if !confirmUpdate() {
+			return errdefs.ErrUpdateCancelled
+		}
+
+		fmt.Printf("\nRunning: pacman -S %s\n", packageName)
+		if err := privesc.Run(context.Background(), "", "pacman", "-S", "--noconfirm", packageName); err != nil {
+			fmt.Printf("Error: Failed to update using pacman: %v\n", err)
+			return err
+		}
+
+		fmt.Println("dms successfully updated")
+		return nil
 	}
 
 	var helper string
@@ -454,11 +477,7 @@ func updateDMSBinary() error {
 
 	fmt.Printf("Installing to %s...\n", currentPath)
 
-	replaceCmd := exec.Command("sudo", "install", "-m", "0755", decompressedPath, currentPath)
-	replaceCmd.Stdin = os.Stdin
-	replaceCmd.Stdout = os.Stdout
-	replaceCmd.Stderr = os.Stderr
-	if err := replaceCmd.Run(); err != nil {
+	if err := privesc.Run(context.Background(), "", "install", "-m", "0755", decompressedPath, currentPath); err != nil {
 		return fmt.Errorf("failed to replace binary: %w", err)
 	}
 

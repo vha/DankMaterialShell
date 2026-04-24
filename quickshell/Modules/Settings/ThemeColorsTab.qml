@@ -125,6 +125,15 @@ Item {
         return Theme.warning;
     }
 
+    function openBlurBorderColorPicker() {
+        PopoutService.colorPickerModal.selectedColor = SettingsData.blurBorderCustomColor ?? "#ffffff";
+        PopoutService.colorPickerModal.pickerTitle = I18n.tr("Blur Border Color");
+        PopoutService.colorPickerModal.onColorSelectedCallback = function (color) {
+            SettingsData.set("blurBorderCustomColor", color.toString());
+        };
+        PopoutService.colorPickerModal.open();
+    }
+
     function openM3ShadowColorPicker() {
         PopoutService.colorPickerModal.selectedColor = SettingsData.m3ElevationCustomColor ?? "#000000";
         PopoutService.colorPickerModal.pickerTitle = I18n.tr("Shadow Color");
@@ -517,7 +526,24 @@ Item {
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
                             wrapMode: Text.WordWrap
-                            width: parent.width
+                            width: parent.width - Theme.spacingM * 2
+                            x: Theme.spacingM
+                        }
+
+                        SettingsSliderRow {
+                            tab: "theme"
+                            tags: ["matugen", "contrast", "dynamic"]
+                            settingKey: "matugenContrast"
+                            text: I18n.tr("Matugen Contrast")
+                            description: I18n.tr("Adjusts contrast of generated colors (-100 = minimum, 0 = standard, 100 = maximum)")
+                            value: Math.round(SettingsData.matugenContrast * 100)
+                            minimum: -100
+                            maximum: 100
+                            unit: "%"
+                            defaultValue: 0
+                            enabled: Theme.matugenAvailable
+                            opacity: enabled ? 1 : 0.4
+                            onSliderDragFinished: finalValue => SettingsData.setMatugenContrast(finalValue / 100)
                         }
                     }
 
@@ -1801,6 +1827,77 @@ Item {
 
             SettingsCard {
                 tab: "theme"
+                tags: ["blur", "background", "transparency", "glass", "frosted"]
+                title: I18n.tr("Background Blur")
+                settingKey: "blurEnabled"
+                iconName: "blur_on"
+
+                SettingsToggleRow {
+                    tab: "theme"
+                    tags: ["blur", "background", "transparency", "glass", "frosted"]
+                    settingKey: "blurEnabled"
+                    text: I18n.tr("Background Blur")
+                    description: BlurService.available ? I18n.tr("Blur the background behind bars, popouts, modals, and notifications. Requires compositor support and configuration.") : I18n.tr("Requires a newer version of Quickshell")
+                    checked: SettingsData.blurEnabled ?? false
+                    enabled: BlurService.available
+                    onToggled: checked => SettingsData.set("blurEnabled", checked)
+                }
+
+                SettingsDropdownRow {
+                    tab: "theme"
+                    tags: ["blur", "border", "outline", "edge"]
+                    settingKey: "blurBorderColor"
+                    text: I18n.tr("Blur Border Color")
+                    description: I18n.tr("Border color around blurred surfaces")
+                    visible: SettingsData.blurEnabled
+                    options: [I18n.tr("Outline", "blur border color"), I18n.tr("Primary", "blur border color"), I18n.tr("Secondary", "blur border color"), I18n.tr("Text Color", "blur border color"), I18n.tr("Custom", "blur border color")]
+                    currentValue: {
+                        switch (SettingsData.blurBorderColor) {
+                        case "primary":
+                            return I18n.tr("Primary", "blur border color");
+                        case "secondary":
+                            return I18n.tr("Secondary", "blur border color");
+                        case "surfaceText":
+                            return I18n.tr("Text Color", "blur border color");
+                        case "custom":
+                            return I18n.tr("Custom", "blur border color");
+                        default:
+                            return I18n.tr("Outline", "blur border color");
+                        }
+                    }
+                    onValueChanged: value => {
+                        if (value === I18n.tr("Primary", "blur border color")) {
+                            SettingsData.set("blurBorderColor", "primary");
+                        } else if (value === I18n.tr("Secondary", "blur border color")) {
+                            SettingsData.set("blurBorderColor", "secondary");
+                        } else if (value === I18n.tr("Text Color", "blur border color")) {
+                            SettingsData.set("blurBorderColor", "surfaceText");
+                        } else if (value === I18n.tr("Custom", "blur border color")) {
+                            SettingsData.set("blurBorderColor", "custom");
+                            openBlurBorderColorPicker();
+                        } else {
+                            SettingsData.set("blurBorderColor", "outline");
+                        }
+                    }
+                }
+
+                SettingsSliderRow {
+                    tab: "theme"
+                    tags: ["blur", "border", "opacity"]
+                    settingKey: "blurBorderOpacity"
+                    text: I18n.tr("Blur Border Opacity")
+                    visible: SettingsData.blurEnabled
+                    value: Math.round((SettingsData.blurBorderOpacity ?? 1.0) * 100)
+                    minimum: 0
+                    maximum: 100
+                    unit: "%"
+                    defaultValue: 100
+                    onSliderValueChanged: newValue => SettingsData.set("blurBorderOpacity", newValue / 100)
+                }
+            }
+
+            SettingsCard {
+                tab: "theme"
                 tags: ["niri", "layout", "gaps", "radius", "window", "border"]
                 title: I18n.tr("Niri Layout Overrides").replace("Niri", "niri")
                 settingKey: "niriLayout"
@@ -2585,7 +2682,6 @@ Item {
                     onToggled: checked => SettingsData.set("matugenTemplateNeovim", checked)
                 }
 
-
                 SettingsDropdownRow {
                     text: I18n.tr("Dark mode base")
                     tab: "theme"
@@ -2652,6 +2748,15 @@ Item {
                         settings.light.harmony = value / 100;
                         SettingsData.set("matugenTemplateNeovimSettings", settings);
                     }
+                }
+
+                SettingsToggleRow {
+                    text: I18n.tr("Follow DMS background color")
+                    tags: ["matugen", "neovim", "terminal", "template"]
+                    settingKey: "matugenTemplateNeovimSetBackground"
+                    visible: neovimThemeToggle.visible && neovimThemeToggle.checked
+                    checked: SettingsData.matugenTemplateNeovimSetBackground ?? true
+                    onToggled: checked => SettingsData.set("matugenTemplateNeovimSetBackground", checked)
                 }
 
                 SettingsDivider {
@@ -2854,7 +2959,7 @@ Item {
                 }
 
                 StyledText {
-                    text: I18n.tr(`Generate baseline GTK3/4 or QT5/QT6 (requires qt6ct-kde) configurations to follow DMS colors. Only needed once.<br /><br />It is recommended to configure <a href="https://github.com/AvengeMedia/DankMaterialShell/blob/master/README.md#Theming" style="text-decoration:none; color:${Theme.primary};">adw-gtk3</a> prior to applying GTK themes.`)
+                    text: I18n.tr('Generate baseline GTK3/4 or QT5/QT6 (requires qt6ct-kde) configurations to follow DMS colors. Only needed once.<br /><br />It is recommended to configure <a href="https://github.com/AvengeMedia/DankMaterialShell/blob/master/README.md#Theming" style="text-decoration:none; color:%1;">adw-gtk3</a> prior to applying GTK themes.').arg(Theme.primary)
                     textFormat: Text.RichText
                     linkColor: Theme.primary
                     onLinkActivated: url => Qt.openUrlExternally(url)

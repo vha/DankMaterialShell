@@ -341,19 +341,6 @@ Singleton {
 
     Connections {
         target: DMSService
-        enabled: typeof DMSService !== "undefined" && typeof SessionData !== "undefined"
-
-        function onLoginctlEvent(event) {
-            if (!SessionData.themeModeAutoEnabled)
-                return;
-            if (event.event === "unlock" || event.event === "resume") {
-                if (!themeAutoBackendAvailable()) {
-                    root.evaluateThemeMode();
-                    return;
-                }
-                DMSService.sendRequest("theme.auto.trigger", {});
-            }
-        }
 
         function onThemeAutoStateUpdate(data) {
             if (!SessionData.themeModeAutoEnabled) {
@@ -412,6 +399,27 @@ Singleton {
                 }
             }
         }
+    }
+
+    Connections {
+        target: SessionService
+        enabled: SessionData.themeModeAutoEnabled
+
+        function onSessionUnlocked() {
+            root.triggerThemeAutomationRefresh();
+        }
+
+        function onSessionResumed() {
+            root.triggerThemeAutomationRefresh();
+        }
+    }
+
+    function triggerThemeAutomationRefresh() {
+        if (!themeAutoBackendAvailable()) {
+            root.evaluateThemeMode();
+            return;
+        }
+        DMSService.sendRequest("theme.auto.trigger", {});
     }
 
     function applyGreeterTheme(themeName) {
@@ -1248,7 +1256,8 @@ Singleton {
             if (themeData.variants.type === "multi" && themeData.variants.flavors && themeData.variants.accents) {
                 const defaults = themeData.variants.defaults || {};
                 const modeDefaults = defaults[colorMode] || defaults.dark || {};
-                const stored = typeof SettingsData !== "undefined" ? SettingsData.getRegistryThemeMultiVariant(themeId, modeDefaults, colorMode) : modeDefaults;
+                const isGreeterMode = typeof SessionData !== "undefined" && SessionData.isGreeterMode;
+                const stored = isGreeterMode ? (GreetdSettings.registryThemeVariants[themeId]?.[colorMode] || modeDefaults) : (typeof SettingsData !== "undefined" ? SettingsData.getRegistryThemeMultiVariant(themeId, modeDefaults, colorMode) : modeDefaults);
                 var flavorId = stored.flavor || modeDefaults.flavor || "";
                 const accentId = stored.accent || modeDefaults.accent || "";
                 var flavor = findVariant(themeData.variants.flavors, flavorId);
@@ -1274,7 +1283,8 @@ Singleton {
             }
 
             if (themeData.variants.options && themeData.variants.options.length > 0) {
-                const selectedVariantId = typeof SettingsData !== "undefined" ? SettingsData.getRegistryThemeVariant(themeId, themeData.variants.default) : themeData.variants.default;
+                const isGreeterMode = typeof SessionData !== "undefined" && SessionData.isGreeterMode;
+                const selectedVariantId = isGreeterMode ? (typeof GreetdSettings.registryThemeVariants[themeId] === "string" ? GreetdSettings.registryThemeVariants[themeId] : themeData.variants.default) : (typeof SettingsData !== "undefined" ? SettingsData.getRegistryThemeVariant(themeId, themeData.variants.default) : themeData.variants.default);
                 const variant = findVariant(themeData.variants.options, selectedVariantId);
                 if (variant) {
                     const variantColors = variant[colorMode] || variant.dark || variant.light || {};
@@ -1319,7 +1329,7 @@ Singleton {
     }
 
     function loadCustomThemeFromFile(filePath) {
-        customThemeFileView.path = filePath;
+        customThemeFileView.path = Paths.expandTilde(filePath);
     }
 
     function reloadCustomThemeVariant() {
@@ -1547,6 +1557,9 @@ Singleton {
         if (typeof SettingsData !== "undefined" && SettingsData.terminalsAlwaysDark) {
             args.push("--terminals-always-dark");
         }
+        if (typeof SettingsData !== "undefined" && SettingsData.matugenContrast !== 0) {
+            args.push("--contrast", SettingsData.matugenContrast.toString());
+        }
 
         if (typeof SettingsData !== "undefined") {
             const skipTemplates = [];
@@ -1646,8 +1659,9 @@ Singleton {
                         const defaults = customThemeRawData.variants.defaults || {};
                         const darkDefaults = defaults.dark || {};
                         const lightDefaults = defaults.light || defaults.dark || {};
-                        const storedDark = typeof SettingsData !== "undefined" ? SettingsData.getRegistryThemeMultiVariant(themeId, darkDefaults, "dark") : darkDefaults;
-                        const storedLight = typeof SettingsData !== "undefined" ? SettingsData.getRegistryThemeMultiVariant(themeId, lightDefaults, "light") : lightDefaults;
+                        const isGreeterMode = typeof SessionData !== "undefined" && SessionData.isGreeterMode;
+                        const storedDark = isGreeterMode ? (GreetdSettings.registryThemeVariants[themeId]?.dark || darkDefaults) : (typeof SettingsData !== "undefined" ? SettingsData.getRegistryThemeMultiVariant(themeId, darkDefaults, "dark") : darkDefaults);
+                        const storedLight = isGreeterMode ? (GreetdSettings.registryThemeVariants[themeId]?.light || lightDefaults) : (typeof SettingsData !== "undefined" ? SettingsData.getRegistryThemeMultiVariant(themeId, lightDefaults, "light") : lightDefaults);
                         const darkFlavorId = storedDark.flavor || darkDefaults.flavor || "";
                         const lightFlavorId = storedLight.flavor || lightDefaults.flavor || "";
                         const accentId = storedDark.accent || darkDefaults.accent || "";
@@ -1665,7 +1679,8 @@ Singleton {
                                 lightTheme = mergeColors(lightTheme, accent[lightFlavor.id] || {});
                         }
                     } else if (customThemeRawData.variants.options) {
-                        const selectedVariantId = typeof SettingsData !== "undefined" ? SettingsData.getRegistryThemeVariant(themeId, customThemeRawData.variants.default) : customThemeRawData.variants.default;
+                        const isGreeterMode = typeof SessionData !== "undefined" && SessionData.isGreeterMode;
+                        const selectedVariantId = isGreeterMode ? (typeof GreetdSettings.registryThemeVariants[themeId] === "string" ? GreetdSettings.registryThemeVariants[themeId] : customThemeRawData.variants.default) : (typeof SettingsData !== "undefined" ? SettingsData.getRegistryThemeVariant(themeId, customThemeRawData.variants.default) : customThemeRawData.variants.default);
                         const variant = findVariant(customThemeRawData.variants.options, selectedVariantId);
                         if (variant) {
                             darkTheme = mergeColors(darkTheme, variant.dark || {});
@@ -1960,6 +1975,7 @@ Singleton {
 
     FileView {
         id: customThemeFileView
+        blockLoading: false
         watchChanges: currentTheme === "custom"
 
         function parseAndLoadTheme() {
@@ -1993,6 +2009,7 @@ Singleton {
             const colorsPath = SessionData.isGreeterMode ? greetCfgDir + "/colors.json" : stateDir + "/dms-colors.json";
             return colorsPath;
         }
+        blockLoading: false
         watchChanges: !SessionData.isGreeterMode
 
         function parseAndLoadColors() {

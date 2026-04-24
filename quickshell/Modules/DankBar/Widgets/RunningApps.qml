@@ -271,9 +271,9 @@ BasePill {
                         radius: Theme.cornerRadius
                         color: {
                             if (isFocused) {
-                                return mouseArea.containsMouse ? Theme.primarySelected : Theme.withAlpha(Theme.primary, 0.2);
+                                return mouseArea.containsMouse ? Theme.primarySelected : Theme.withAlpha(Theme.primary, 0.45);
                             }
-                            return mouseArea.containsMouse ? Theme.widgetBaseHoverColor : "transparent";
+                            return mouseArea.containsMouse ? BlurService.hoverColor(Theme.widgetBaseHoverColor) : "transparent";
                         }
 
                         // App icon
@@ -296,7 +296,7 @@ BasePill {
                             mipmap: true
                             asynchronous: true
                             visible: status === Image.Ready
-                            layer.enabled: appId === "org.quickshell"
+                            layer.enabled: appId === "org.quickshell" || appId === "com.danklinux.dms"
                             layer.smooth: true
                             layer.mipmap: true
                             layer.effect: MultiEffect {
@@ -526,9 +526,9 @@ BasePill {
                         radius: Theme.cornerRadius
                         color: {
                             if (isFocused) {
-                                return mouseArea.containsMouse ? Theme.primarySelected : Theme.withAlpha(Theme.primary, 0.2);
+                                return mouseArea.containsMouse ? Theme.primarySelected : Theme.withAlpha(Theme.primary, 0.45);
                             }
-                            return mouseArea.containsMouse ? Theme.widgetBaseHoverColor : "transparent";
+                            return mouseArea.containsMouse ? BlurService.hoverColor(Theme.widgetBaseHoverColor) : "transparent";
                         }
 
                         IconImage {
@@ -550,7 +550,7 @@ BasePill {
                             mipmap: true
                             asynchronous: true
                             visible: status === Image.Ready
-                            layer.enabled: appId === "org.quickshell"
+                            layer.enabled: appId === "org.quickshell" || appId === "com.danklinux.dms"
                             layer.smooth: true
                             layer.mipmap: true
                             layer.effect: MultiEffect {
@@ -738,6 +738,15 @@ BasePill {
         sourceComponent: PanelWindow {
             id: contextMenuWindow
 
+            WindowBlur {
+                targetWindow: contextMenuWindow
+                blurX: contextMenuRect.x
+                blurY: contextMenuRect.y
+                blurWidth: contextMenuWindow.isVisible ? contextMenuRect.width : 0
+                blurHeight: contextMenuWindow.isVisible ? contextMenuRect.height : 0
+                blurRadius: Theme.cornerRadius
+            }
+
             property var currentWindow: null
             property bool isVisible: false
             property point anchorPos: Qt.point(0, 0)
@@ -830,6 +839,7 @@ BasePill {
             }
 
             Rectangle {
+                id: contextMenuRect
                 x: {
                     if (contextMenuWindow.isVertical) {
                         if (contextMenuWindow.edge === "left") {
@@ -858,13 +868,13 @@ BasePill {
                 height: 32
                 color: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
                 radius: Theme.cornerRadius
-                border.width: 1
-                border.color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.12)
+                border.width: BlurService.enabled ? BlurService.borderWidth : 1
+                border.color: BlurService.enabled ? BlurService.borderColor : Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.12)
 
                 Rectangle {
                     anchors.fill: parent
                     radius: parent.radius
-                    color: closeMouseArea.containsMouse ? Theme.widgetBaseHoverColor : "transparent"
+                    color: closeMouseArea.containsMouse ? BlurService.hoverColor(Theme.widgetBaseHoverColor) : "transparent"
                 }
 
                 StyledText {

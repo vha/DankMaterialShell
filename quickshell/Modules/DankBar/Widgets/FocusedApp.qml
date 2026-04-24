@@ -17,7 +17,7 @@ BasePill {
     property int availableWidth: 400
     readonly property int maxNormalWidth: 456
     readonly property int maxCompactWidth: 288
-    readonly property Toplevel activeWindow: ToplevelManager.activeToplevel
+    property Toplevel activeWindow: null
     property var activeDesktopEntry: null
     property bool isHovered: mouseArea.containsMouse
     property bool isAutoHideBar: false
@@ -38,8 +38,42 @@ BasePill {
         return 0;
     }
 
+    function updateActiveWindow() {
+        const active = ToplevelManager.activeToplevel;
+
+        if (!active) {
+            // Only clear if our tracked window is no longer alive
+            if (activeWindow) {
+                const alive = ToplevelManager.toplevels?.values;
+                if (alive && !Array.from(alive).some(t => t === activeWindow))
+                    activeWindow = null;
+            }
+            return;
+        }
+
+        if (!parentScreen || CompositorService.filterCurrentDisplay([active], parentScreen?.name)?.length > 0) {
+            activeWindow = active;
+        }
+        // else: active window is on a different screen so keep the previous value
+    }
+
     Component.onCompleted: {
+        updateActiveWindow();
         updateDesktopEntry();
+    }
+
+    Connections {
+        target: ToplevelManager
+        function onActiveToplevelChanged() {
+            root.updateActiveWindow();
+        }
+    }
+
+    Connections {
+        target: CompositorService
+        function onToplevelsChanged() {
+            root.updateActiveWindow();
+        }
     }
 
     Connections {
@@ -87,11 +121,11 @@ BasePill {
             }
 
             const workspaceWindows = NiriService.windows.filter(w => w.workspace_id === currentWorkspaceId);
-            return workspaceWindows.length > 0 && activeWindow && activeWindow.title;
+            return workspaceWindows.length > 0 && activeWindow && (activeWindow.title || activeWindow.appId);
         }
 
         if (CompositorService.isHyprland) {
-            if (!Hyprland.focusedWorkspace || !activeWindow || !activeWindow.title) {
+            if (!Hyprland.focusedWorkspace || !activeWindow || !(activeWindow.title || activeWindow.appId)) {
                 return false;
             }
 
@@ -111,7 +145,7 @@ BasePill {
             }
         }
 
-        return activeWindow && activeWindow.title;
+        return activeWindow && (activeWindow.title || activeWindow.appId);
     }
 
     width: hasWindowsOnCurrentWorkspace ? (isVerticalOrientation ? barThickness : visualWidth) : 0
@@ -145,7 +179,7 @@ BasePill {
                 smooth: true
                 mipmap: true
                 asynchronous: true
-                layer.enabled: activeWindow && activeWindow.appId === "org.quickshell"
+                layer.enabled: activeWindow && (activeWindow.appId === "org.quickshell" || activeWindow.appId === "com.danklinux.dms")
                 layer.smooth: true
                 layer.mipmap: true
                 layer.effect: MultiEffect {
@@ -212,17 +246,19 @@ BasePill {
                         const title = activeWindow && activeWindow.title ? activeWindow.title : "";
                         const appName = appText.text;
 
-                        if (compactMode && title === appName) {
+                        if (compactMode) {
+                            if (!title || title === appName)
+                                return title || appName;
+                            if (title.endsWith(appName))
+                                return title.substring(0, title.length - appName.length).replace(/ (-|—) $/, "") || appName;
                             return title;
                         }
 
-                        if (!title || !appName) {
+                        if (!title || !appName)
                             return title;
-                        }
 
-                        if (title.endsWith(appName)) {
+                        if (title.endsWith(appName))
                             return title.substring(0, title.length - appName.length).replace(/ (-|—) $/, "");
-                        }
 
                         return title;
                     }

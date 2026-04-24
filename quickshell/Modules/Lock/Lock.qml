@@ -14,6 +14,7 @@ Scope {
     property bool shouldLock: false
 
     onShouldLockChanged: {
+        IdleService.isShellLocked = shouldLock;
         if (shouldLock && lockPowerOffArmed) {
             lockStateCheck.restart();
         }
@@ -146,6 +147,13 @@ Scope {
         }
     }
 
+    Pam {
+        id: sharedPam
+        lockSecured: root.shouldLock
+        buffer: root.sharedPasswordBuffer
+        onUnlockRequested: root.unlock()
+    }
+
     WlSessionLock {
         id: sessionLock
 
@@ -169,6 +177,7 @@ Scope {
                 anchors.fill: parent
                 visible: lockSurface.isActiveScreen
                 lock: sessionLock
+                pam: sharedPam
                 sharedPasswordBuffer: root.sharedPasswordBuffer
                 screenName: lockSurface.currentScreenName
                 isLocked: shouldLock

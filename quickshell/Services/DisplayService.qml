@@ -40,6 +40,7 @@ Singleton {
     property bool nightModeEnabled: false
     property bool automationAvailable: false
     property bool gammaControlAvailable: false
+    property int resumeRecoveryAttempt: 0
 
     property var gammaState: ({})
     property int gammaCurrentTemp: gammaState?.currentTemp ?? 0
@@ -672,6 +673,15 @@ Singleton {
         }
     }
 
+    function runResumeRecoveryPass() {
+        checkGammaControlAvailability();
+        rescanDevices();
+
+        if (nightModeEnabled) {
+            evaluateNightMode();
+        }
+    }
+
     function checkGammaControlAvailability() {
         if (!DMSService.isConnected) {
             return;
@@ -727,6 +737,31 @@ Singleton {
                 applyNightModeDirectly();
             }
             nextAction = "";
+        }
+    }
+
+    Timer {
+        id: resumeRecoveryTimer
+        interval: 400
+        repeat: false
+
+        onTriggered: {
+            runResumeRecoveryPass();
+            resumeRecoveryAttempt++;
+
+            switch (resumeRecoveryAttempt) {
+            case 1:
+                interval = 1400;
+                restart();
+                return;
+            case 2:
+                interval = 2600;
+                restart();
+                return;
+            }
+
+            resumeRecoveryAttempt = 0;
+            interval = 400;
         }
     }
 
@@ -815,15 +850,20 @@ Singleton {
             updateSingleDevice(device);
         }
 
-        function onLoginctlEvent(event) {
-            if (event.event === "unlock" || event.event === "resume") {
-                suppressOsd = true;
-                osdSuppressTimer.restart();
-            }
-        }
-
         function onGammaStateUpdate(data) {
             root.gammaState = data;
+        }
+    }
+
+    Connections {
+        target: SessionService
+
+        function onSessionResumed() {
+            suppressOsd = true;
+            osdSuppressTimer.restart();
+            resumeRecoveryAttempt = 0;
+            resumeRecoveryTimer.interval = 400;
+            resumeRecoveryTimer.restart();
         }
     }
 
@@ -1032,7 +1072,6 @@ Singleton {
         target: "brightness"
     }
 
-    // IPC Handler for night mode control
     IpcHandler {
         function toggle(): string {
             root.toggleNightMode();
@@ -1050,43 +1089,119 @@ Singleton {
         }
 
         function status(): string {
-            return root.nightModeEnabled ? "Night mode is enabled" : "Night mode is disabled";
+            if (!root.gammaControlAvailable)
+                return "Night mode: unavailable (no gamma control)";
+
+            const parts = ["Night mode: " + (root.nightModeEnabled ? "enabled" : "disabled")];
+
+            if (root.gammaCurrentTemp > 0)
+                parts.push("Current temperature: " + root.gammaCurrentTemp + "K");
+
+            parts.push("Target night temperature: " + SessionData.nightModeTemperature + "K");
+
+            if (SessionData.nightModeAutoEnabled) {
+                parts.push("Target day temperature: " + SessionData.nightModeHighTemperature + "K");
+                parts.push("Automation: " + SessionData.nightModeAutoMode);
+                parts.push("Period: " + (root.gammaIsDay ? "day" : "night"));
+
+                if (root.gammaNextTransition)
+                    parts.push("Next transition: " + root.gammaNextTransition);
+                if (root.gammaSunriseTime)
+                    parts.push("Sunrise: " + root.gammaSunriseTime);
+                if (root.gammaSunsetTime)
+                    parts.push("Sunset: " + root.gammaSunsetTime);
+            }
+
+            return parts.join("\n");
         }
 
-        function temperature(value: string): string {
-            if (!value) {
-                return "Current temperature: " + SessionData.nightModeTemperature + "K";
-            }
+        function getCurrentTemp(): string {
+            if (!root.gammaControlAvailable)
+                return "Gamma control not available";
+            if (root.gammaCurrentTemp <= 0)
+                return "No current temperature reported";
+            return root.gammaCurrentTemp.toString();
+        }
+
+        function getTargetTemp(): string {
+            return SessionData.nightModeTemperature.toString();
+        }
+
+        function getDayTemp(): string {
+            return SessionData.nightModeHighTemperature.toString();
+        }
+
+        function setTargetTemp(value: string): string {
+            if (!value)
+                return "Usage: night setTargetTemp <2500-6000>";
 
             const temp = parseInt(value);
-            if (isNaN(temp)) {
-                return "Invalid temperature. Use a value between 2500 and 6000 (in steps of 500)";
-            }
-
-            // Validate temperature is in valid range and steps
-            if (temp < 2500 || temp > 6000) {
+            if (isNaN(temp))
+                return "Invalid temperature: " + value;
+            if (temp < 2500 || temp > 6000)
                 return "Temperature must be between 2500K and 6000K";
-            }
 
-            // Round to nearest 500
             const rounded = Math.round(temp / 500) * 500;
-
             SessionData.setNightModeTemperature(rounded);
 
-            // Restart night mode with new temperature if active
             if (root.nightModeEnabled) {
-                if (SessionData.nightModeAutoEnabled) {
+                switch (true) {
+                case SessionData.nightModeAutoEnabled:
                     root.startAutomation();
-                } else {
+                    break;
+                default:
                     root.applyNightModeDirectly();
+                    break;
                 }
             }
 
-            if (rounded !== temp) {
-                return "Night mode temperature set to " + rounded + "K (rounded from " + temp + "K)";
-            } else {
-                return "Night mode temperature set to " + rounded + "K";
-            }
+            if (rounded !== temp)
+                return "Night temperature set to " + rounded + "K (rounded from " + temp + "K)";
+            return "Night temperature set to " + rounded + "K";
+        }
+
+        function setDayTemp(value: string): string {
+            if (!value)
+                return "Usage: night setDayTemp <2500-6500>";
+
+            const temp = parseInt(value);
+            if (isNaN(temp))
+                return "Invalid temperature: " + value;
+            if (temp < 2500 || temp > 6500)
+                return "Temperature must be between 2500K and 6500K";
+
+            const rounded = Math.round(temp / 500) * 500;
+            SessionData.setNightModeHighTemperature(rounded);
+
+            if (root.nightModeEnabled && SessionData.nightModeAutoEnabled)
+                root.startAutomation();
+
+            if (rounded !== temp)
+                return "Day temperature set to " + rounded + "K (rounded from " + temp + "K)";
+            return "Day temperature set to " + rounded + "K";
+        }
+
+        function getSchedule(): string {
+            if (!SessionData.nightModeAutoEnabled)
+                return "Automation disabled";
+
+            const parts = ["Mode: " + SessionData.nightModeAutoMode];
+            parts.push("Period: " + (root.gammaIsDay ? "day" : "night"));
+
+            if (root.gammaDawnTime)
+                parts.push("Dawn: " + root.gammaDawnTime);
+            if (root.gammaSunriseTime)
+                parts.push("Sunrise: " + root.gammaSunriseTime);
+            if (root.gammaSunsetTime)
+                parts.push("Sunset: " + root.gammaSunsetTime);
+            if (root.gammaNightTime)
+                parts.push("Night: " + root.gammaNightTime);
+            if (root.gammaNextTransition)
+                parts.push("Next transition: " + root.gammaNextTransition);
+            if (root.gammaSunPosition > 0)
+                parts.push("Sun position: " + root.gammaSunPosition.toFixed(2) + "°");
+
+            return parts.join("\n");
         }
 
         target: "night"

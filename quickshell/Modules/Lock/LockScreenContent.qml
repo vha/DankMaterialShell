@@ -23,6 +23,7 @@ Item {
 
     property string passwordBuffer: ""
     property bool demoMode: false
+    property var pam: demoPam
     property string screenName: ""
     property bool unlocking: false
     property string pamState: ""
@@ -39,6 +40,36 @@ Item {
         lockerReadyArmed = true;
         unlocking = false;
         pamState = "";
+        if (pam)
+            pam.lockMessage = "";
+    }
+
+    function currentAuthFeedbackText() {
+        if (!pam)
+            return "";
+        if (pam.u2fState === "insert" && !pam.u2fPending)
+            return I18n.tr("Insert your security key...");
+        if (pam.u2fState === "waiting" && !pam.u2fPending)
+            return I18n.tr("Touch your security key...");
+        if (pam.lockMessage && pam.lockMessage.length > 0)
+            return pam.lockMessage;
+        if (root.pamState === "error")
+            return I18n.tr("Authentication error - try again");
+        if (root.pamState === "max")
+            return I18n.tr("Too many attempts - locked out");
+        if (root.pamState === "fail")
+            return I18n.tr("Incorrect password - try again");
+        if (pam.fprintState === "error")
+            return I18n.tr("Fingerprint error");
+        if (pam.fprintState === "max")
+            return I18n.tr("Maximum fingerprint attempts reached. Please use password.");
+        if (pam.fprintState === "fail")
+            return I18n.tr("Fingerprint not recognized (%1/%2). Please try again or use password.").arg(pam.fprint.tries).arg(SettingsData.maxFprintTries);
+        return "";
+    }
+
+    function authFeedbackIsHint() {
+        return pam && (pam.u2fState === "waiting" || pam.u2fState === "insert") && !pam.u2fPending;
     }
 
     Component.onCompleted: {
@@ -713,13 +744,6 @@ Item {
                                     easing.type: Theme.standardEasing
                                 }
                             }
-
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: Theme.shortDuration
-                                    easing.type: Theme.standardEasing
-                                }
-                            }
                         }
                     }
 
@@ -1045,30 +1069,18 @@ Item {
             }
 
             StyledText {
+                id: authFeedbackText
+
                 Layout.fillWidth: true
-                Layout.preferredHeight: 20
-                text: {
-                    if (pam.u2fState === "insert" && !pam.u2fPending) {
-                        return "Insert your security key...";
-                    }
-                    if (pam.u2fState === "waiting" && !pam.u2fPending) {
-                        return "Touch your security key...";
-                    }
-                    if (root.pamState === "error") {
-                        return "Authentication error - try again";
-                    }
-                    if (root.pamState === "max") {
-                        return "Too many attempts - locked out";
-                    }
-                    if (root.pamState === "fail") {
-                        return "Incorrect password - try again";
-                    }
-                    return "";
-                }
-                color: (pam.u2fState === "waiting" || pam.u2fState === "insert") ? Theme.outline : Theme.error
+                Layout.preferredHeight: text.length > 0 ? Math.min(implicitHeight, Math.ceil(Theme.fontSizeSmall * 4.5)) : 0
+                text: root.currentAuthFeedbackText()
+                color: root.authFeedbackIsHint() ? Theme.outline : Theme.error
                 font.pixelSize: Theme.fontSizeSmall
                 horizontalAlignment: Text.AlignHCenter
-                opacity: (root.pamState !== "" || ((pam.u2fState === "waiting" || pam.u2fState === "insert") && !pam.u2fPending)) ? 1 : 0
+                wrapMode: Text.WordWrap
+                maximumLineCount: 3
+                elide: Text.ElideRight
+                opacity: text.length > 0 ? 1 : 0
 
                 Behavior on opacity {
                     NumberAnimation {
@@ -1318,7 +1330,7 @@ Item {
                             enabled: MprisController.activePlayer?.canGoPrevious ?? false
                             hoverEnabled: enabled
                             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            onClicked: MprisController.activePlayer?.previous()
+                            onClicked: MprisController.previousOrRewind()
                         }
                     }
 
@@ -1619,47 +1631,44 @@ Item {
     }
 
     Pam {
-        id: pam
-        lockSecured: !demoMode
-        onUnlockRequested: {
+        id: demoPam
+        lockSecured: false
+    }
+
+    Connections {
+        target: root.pam
+
+        function onUnlockRequested() {
             root.unlocking = true;
             lockerReadyArmed = false;
             passwordField.text = "";
             root.passwordBuffer = "";
             root.unlockRequested();
         }
-        onStateChanged: {
-            root.pamState = state;
-            if (state !== "") {
-                root.unlocking = false;
-                placeholderDelay.restart();
-                passwordField.text = "";
-                root.passwordBuffer = "";
-            }
-        }
-        onU2fPendingChanged: {
-            if (u2fPending) {
-                passwordField.text = "";
-                root.passwordBuffer = "";
-                if (keyboardController.isKeyboardActive)
-                    keyboardController.hide();
-            }
-        }
-    }
 
-    Connections {
-        target: pam
+        function onStateChanged() {
+            root.pamState = root.pam.state;
+            if (root.pam.state === "")
+                return;
+            root.unlocking = false;
+            placeholderDelay.restart();
+            passwordField.text = "";
+            root.passwordBuffer = "";
+        }
+
+        function onU2fPendingChanged() {
+            if (!root.pam.u2fPending)
+                return;
+            passwordField.text = "";
+            root.passwordBuffer = "";
+            if (keyboardController.isKeyboardActive)
+                keyboardController.hide();
+        }
 
         function onUnlockInProgressChanged() {
-            if (!pam.unlockInProgress && root.unlocking)
+            if (!root.pam.unlockInProgress && root.unlocking)
                 root.unlocking = false;
         }
-    }
-
-    Binding {
-        target: pam
-        property: "buffer"
-        value: root.passwordBuffer
     }
 
     Timer {

@@ -138,7 +138,7 @@ Item {
             {
                 "id": "gpuTemp",
                 "text": I18n.tr("GPU Temperature"),
-                "description": "",
+                "description": I18n.tr("GPU temperature display"),
                 "icon": "auto_awesome_mosaic",
                 "warning": !DgopService.dgopAvailable ? I18n.tr("Requires 'dgop' tool") : I18n.tr("This widget prevents GPU power off states, which can significantly impact battery life on laptops. It is not recommended to use this on laptops with hybrid graphics."),
                 "enabled": DgopService.dgopAvailable
@@ -391,6 +391,7 @@ Item {
             widgetObj.showBatteryIcon = SettingsData.controlCenterShowBatteryIcon;
             widgetObj.showPrinterIcon = SettingsData.controlCenterShowPrinterIcon;
             widgetObj.showScreenSharingIcon = SettingsData.controlCenterShowScreenSharingIcon;
+            widgetObj.controlCenterGroupOrder = ["network", "vpn", "bluetooth", "audio", "microphone", "brightness", "battery", "printer", "screenSharing"];
         }
         if (widgetId === "runningApps") {
             widgetObj.runningAppsCompactMode = SettingsData.runningAppsCompactMode;
@@ -429,7 +430,7 @@ Item {
             "id": widget.id,
             "enabled": widget.enabled
         };
-        var keys = ["size", "selectedGpuIndex", "pciId", "mountPath", "diskUsageMode", "minimumWidth", "showSwap", "showInGb", "mediaSize", "clockCompactMode", "focusedWindowCompactMode", "runningAppsCompactMode", "keyboardLayoutNameCompactMode", "runningAppsGroupByApp", "runningAppsCurrentWorkspace", "runningAppsCurrentMonitor", "showNetworkIcon", "showBluetoothIcon", "showAudioIcon", "showAudioPercent", "showVpnIcon", "showBrightnessIcon", "showBrightnessPercent", "showMicIcon", "showMicPercent", "showBatteryIcon", "showPrinterIcon", "showScreenSharingIcon", "barMaxVisibleApps", "barMaxVisibleRunningApps", "barShowOverflowBadge"];
+        var keys = ["size", "selectedGpuIndex", "pciId", "mountPath", "diskUsageMode", "minimumWidth", "showSwap", "showInGb", "mediaSize", "clockCompactMode", "focusedWindowCompactMode", "runningAppsCompactMode", "keyboardLayoutNameCompactMode", "runningAppsGroupByApp", "runningAppsCurrentWorkspace", "runningAppsCurrentMonitor", "showNetworkIcon", "showBluetoothIcon", "showAudioIcon", "showAudioPercent", "showVpnIcon", "showBrightnessIcon", "showBrightnessPercent", "showMicIcon", "showMicPercent", "showBatteryIcon", "showPrinterIcon", "showScreenSharingIcon", "controlCenterGroupOrder", "barMaxVisibleApps", "barMaxVisibleRunningApps", "barShowOverflowBadge", "trayUseInlineExpansion"];
         for (var i = 0; i < keys.length; i++) {
             if (widget[keys[i]] !== undefined)
                 result[keys[i]] = widget[keys[i]];
@@ -498,6 +499,32 @@ Item {
             return;
         var newWidget = cloneWidgetData(widgets[widgetIndex]);
         newWidget[settingName] = value;
+
+        if (!value) {
+            switch (settingName) {
+            case "showAudioIcon":
+                newWidget.showAudioPercent = false;
+                break;
+            case "showMicIcon":
+                newWidget.showMicPercent = false;
+                break;
+            case "showBrightnessIcon":
+                newWidget.showBrightnessPercent = false;
+                break;
+            }
+        }
+
+        widgets[widgetIndex] = newWidget;
+        setWidgetsForSection(sectionId, widgets);
+    }
+
+    function handleControlCenterGroupOrderChanged(sectionId, widgetIndex, groupOrder) {
+        var widgets = getWidgetsForSection(sectionId).slice();
+        if (widgetIndex < 0 || widgetIndex >= widgets.length)
+            return;
+        var previousWidget = widgets[widgetIndex];
+        var newWidget = cloneWidgetData(previousWidget);
+        newWidget.controlCenterGroupOrder = groupOrder.slice();
         widgets[widgetIndex] = newWidget;
         setWidgetsForSection(sectionId, widgets);
     }
@@ -655,6 +682,8 @@ Item {
                     item.showPrinterIcon = widget.showPrinterIcon;
                 if (widget.showScreenSharingIcon !== undefined)
                     item.showScreenSharingIcon = widget.showScreenSharingIcon;
+                if (widget.controlCenterGroupOrder !== undefined)
+                    item.controlCenterGroupOrder = widget.controlCenterGroupOrder;
                 if (widget.minimumWidth !== undefined)
                     item.minimumWidth = widget.minimumWidth;
                 if (widget.showSwap !== undefined)
@@ -683,6 +712,8 @@ Item {
                     item.barMaxVisibleRunningApps = widget.barMaxVisibleRunningApps;
                 if (widget.barShowOverflowBadge !== undefined)
                     item.barShowOverflowBadge = widget.barShowOverflowBadge;
+                if (widget.trayUseInlineExpansion !== undefined)
+                    item.trayUseInlineExpansion = widget.trayUseInlineExpansion;
             }
             widgets.push(item);
         });
@@ -948,6 +979,9 @@ Item {
                         onControlCenterSettingChanged: (sectionId, index, setting, value) => {
                             widgetsTab.handleControlCenterSettingChanged(sectionId, index, setting, value);
                         }
+                        onControlCenterGroupOrderChanged: (sectionId, index, groupOrder) => {
+                            widgetsTab.handleControlCenterGroupOrderChanged(sectionId, index, groupOrder);
+                        }
                         onPrivacySettingChanged: (sectionId, index, setting, value) => {
                             widgetsTab.handlePrivacySettingChanged(sectionId, index, setting, value);
                         }
@@ -1012,6 +1046,9 @@ Item {
                         onControlCenterSettingChanged: (sectionId, index, setting, value) => {
                             widgetsTab.handleControlCenterSettingChanged(sectionId, index, setting, value);
                         }
+                        onControlCenterGroupOrderChanged: (sectionId, index, groupOrder) => {
+                            widgetsTab.handleControlCenterGroupOrderChanged(sectionId, index, groupOrder);
+                        }
                         onPrivacySettingChanged: (sectionId, index, setting, value) => {
                             widgetsTab.handlePrivacySettingChanged(sectionId, index, setting, value);
                         }
@@ -1075,6 +1112,9 @@ Item {
                         }
                         onControlCenterSettingChanged: (sectionId, index, setting, value) => {
                             widgetsTab.handleControlCenterSettingChanged(sectionId, index, setting, value);
+                        }
+                        onControlCenterGroupOrderChanged: (sectionId, index, groupOrder) => {
+                            widgetsTab.handleControlCenterGroupOrderChanged(sectionId, index, groupOrder);
                         }
                         onPrivacySettingChanged: (sectionId, index, setting, value) => {
                             widgetsTab.handlePrivacySettingChanged(sectionId, index, setting, value);

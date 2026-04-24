@@ -3,6 +3,7 @@
 var SPEC = {
     isLightMode: { def: false },
     doNotDisturb: { def: false },
+    doNotDisturbUntil: { def: 0 },
 
     wallpaperPath: { def: "" },
     perMonitorWallpaper: { def: false },
@@ -75,6 +76,8 @@ var SPEC = {
 
     vpnLastConnected: { def: "" },
 
+    lastPlayerIdentity: { def: "" },
+
     deviceMaxVolumes: { def: {} },
     hiddenOutputDeviceNames: { def: [] },
     hiddenInputDeviceNames: { def: [] },
@@ -83,8 +86,13 @@ var SPEC = {
     timeLocale: { def: "" },
 
     launcherLastMode: { def: "all" },
+    launcherLastQuery: { def: "" },
+    launcherQueryHistory: { def: [] },
     appDrawerLastMode: { def: "apps" },
-    niriOverviewLastMode: { def: "apps" }
+    niriOverviewLastMode: { def: "apps" },
+
+    settingsSidebarExpandedIds: { def: "," },
+    settingsSidebarCollapsedIds: { def: "," }
 };
 
 function getValidKeys() {

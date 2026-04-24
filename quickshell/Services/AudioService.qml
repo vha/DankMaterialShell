@@ -26,6 +26,7 @@ Singleton {
     property var powerUnplugSound: null
     property var normalNotificationSound: null
     property var criticalNotificationSound: null
+    property var loginSound: null
     property real notificationsVolume: 1.0
     property bool notificationsAudioMuted: false
 
@@ -67,9 +68,49 @@ Singleton {
         }
     }
 
+    // Used in playLoginSoundIfApplicable()
+    Process {
+        id: loginSoundChecker
+        onExited: exitCode => {
+            if (exitCode === 0) {
+                playLoginSound();
+            }
+        }
+    }
+
     function getAvailableSinks() {
         const hidden = SessionData.hiddenOutputDeviceNames ?? [];
         return Pipewire.nodes.values.filter(node => node.audio && node.isSink && !node.isStream && !hidden.includes(node.name));
+    }
+
+    // Resolve a PwNode by name from the live typed list and assign it as the
+    // default sink. Going through Pipewire.nodes.values directly (no .filter
+    // / spread / .sort / property var) avoids QML type erasure to QObject*,
+    // which newer quickshell rejects when assigning to preferredDefaultAudioSink.
+    function setDefaultSinkByName(name) {
+        if (!name)
+            return false;
+        for (let i = 0; i < Pipewire.nodes.values.length; i++) {
+            const node = Pipewire.nodes.values[i];
+            if (node && node.name === name && node.audio && node.isSink && !node.isStream) {
+                Pipewire.preferredDefaultAudioSink = node;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function setDefaultSourceByName(name) {
+        if (!name)
+            return false;
+        for (let i = 0; i < Pipewire.nodes.values.length; i++) {
+            const node = Pipewire.nodes.values[i];
+            if (node && node.name === name && node.audio && !node.isSink && !node.isStream) {
+                Pipewire.preferredDefaultAudioSource = node;
+                return true;
+            }
+        }
+        return false;
     }
 
     function cycleAudioOutput() {
@@ -81,7 +122,8 @@ Singleton {
         const currentIndex = sinks.findIndex(s => s.name === currentName);
         const nextIndex = (currentIndex + 1) % sinks.length;
         const nextSink = sinks[nextIndex];
-        Pipewire.preferredDefaultAudioSink = nextSink;
+        if (!setDefaultSinkByName(nextSink.name))
+            Pipewire.preferredDefaultAudioSink = nextSink;
         const name = displayName(nextSink);
         audioOutputCycled(name, sinkIcon(nextSink));
         return name;
@@ -395,7 +437,7 @@ EOFCONFIG
         const themesToSearch = themeName !== "freedesktop" ? `${themeName} freedesktop` : themeName;
 
         const script = `
-            for event_key in audio-volume-change power-plug power-unplug message message-new-instant; do
+            for event_key in audio-volume-change power-plug power-unplug message message-new-instant desktop-login; do
                 found=0
 
                 case "$event_key" in
@@ -457,7 +499,8 @@ EOFCONFIG
             "power-plug": "../assets/sounds/plasma/power-plug.wav",
             "power-unplug": "../assets/sounds/plasma/power-unplug.wav",
             "message": "../assets/sounds/freedesktop/message.wav",
-            "message-new-instant": "../assets/sounds/freedesktop/message-new-instant.wav"
+            "message-new-instant": "../assets/sounds/freedesktop/message-new-instant.wav",
+            "desktop-login": "../assets/sounds/freedesktop/desktop-login.wav"
         };
 
         const specialConditions = {
@@ -551,6 +594,10 @@ EOFCONFIG
             criticalNotificationSound.destroy();
             criticalNotificationSound = null;
         }
+        if (loginSound) {
+            loginSound.destroy();
+            loginSound = null;
+        }
     }
 
     function createSoundPlayers() {
@@ -622,6 +669,18 @@ EOFCONFIG
                     }
                 }
             `, root, "AudioService.CriticalNotificationSound");
+
+            const loginPath = getSoundPath("desktop-login");
+            loginSound = Qt.createQmlObject(`
+                import QtQuick
+                import QtMultimedia
+                MediaPlayer {
+                    source: "${loginPath}"
+                    audioOutput: AudioOutput {
+                        ${deviceProperty}volume: notificationsVolume
+                    }
+                }
+            `, root, "AudioService.LoginSound");
         } catch (e) {
             console.warn("AudioService: Error creating sound players:", e);
         }
@@ -659,6 +718,32 @@ EOFCONFIG
         if (!soundsAvailable || !criticalNotificationSound || SessionData.doNotDisturb || notificationsAudioMuted || isMediaPlaying())
             return;
         criticalNotificationSound.play();
+    }
+
+    function playLoginSound() {
+        if (!soundsAvailable || !loginSound || notificationsAudioMuted || isMediaPlaying()) {
+            return;
+        }
+        loginSound.play();
+    }
+
+    function playLoginSoundIfApplicable() {
+        if (SettingsData.soundsEnabled && SettingsData.soundLogin && !notificationsAudioMuted) {
+            // plays login sound on session start, but only if a specific file doesn't exist,
+            // to prevent it from playing on every DMS restart during the session
+            const runtimeDir = Quickshell.env("XDG_RUNTIME_DIR");
+            const sessionId = Quickshell.env("XDG_SESSION_ID") || "0";
+
+            if (!runtimeDir)
+                return;
+
+            const loginFile = `${runtimeDir}/danklinux.login-${sessionId}`;
+
+            // if file doesn't exist, touch it (0)
+            // If it exists, do nothing (1)
+            loginSoundChecker.command = ["sh", "-c", `[ ! -f ${loginFile} ] && touch ${loginFile}`];
+            loginSoundChecker.running = true;
+        }
     }
 
     function playVolumeChangeSoundIfEnabled() {

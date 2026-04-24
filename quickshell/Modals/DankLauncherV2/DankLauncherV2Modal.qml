@@ -1,10 +1,10 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs.Common
 import qs.Services
+import qs.Widgets
 
 Item {
     id: root
@@ -17,7 +17,6 @@ Item {
     property var spotlightContent: launcherContentLoader.item
     property bool openedFromOverview: false
     property bool isClosing: false
-    property bool _windowEnabled: true
     property bool _pendingInitialize: false
     property string _pendingQuery: ""
     property string _pendingMode: ""
@@ -99,8 +98,16 @@ Item {
         contentVisible = true;
         spotlightContent.searchField.forceActiveFocus();
 
+        var targetQuery = "";
+
+        if (query) {
+            targetQuery = query;
+        } else if (SettingsData.rememberLastQuery) {
+            targetQuery = SessionData.launcherLastQuery || "";
+        }
+
         if (spotlightContent.searchField) {
-            spotlightContent.searchField.text = query;
+            spotlightContent.searchField.text = targetQuery;
         }
         if (spotlightContent.controller) {
             var targetMode = mode || SessionData.launcherLastMode || "all";
@@ -115,12 +122,10 @@ Item {
             spotlightContent.controller.collapsedSections = {};
             spotlightContent.controller.selectedFlatIndex = 0;
             spotlightContent.controller.selectedItem = null;
-            if (query) {
-                spotlightContent.controller.setSearchQuery(query);
-            } else {
-                spotlightContent.controller.searchQuery = "";
-                spotlightContent.controller.performSearch();
-            }
+            spotlightContent.controller.historyIndex = -1;
+            spotlightContent.controller.searchQuery = targetQuery;
+
+            spotlightContent.controller.performSearch();
         }
         if (spotlightContent.resetScroll) {
             spotlightContent.resetScroll();
@@ -130,40 +135,47 @@ Item {
         }
     }
 
-    function show() {
-        closeCleanupTimer.stop();
+    function _finishShow(query, mode) {
+        spotlightOpen = true;
         isClosing = false;
         openedFromOverview = false;
 
-        var focusedScreen = CompositorService.getFocusedScreen();
-        if (focusedScreen)
-            launcherWindow.screen = focusedScreen;
-
-        spotlightOpen = true;
         keyboardActive = true;
         ModalManager.openModal(root);
         if (useHyprlandFocusGrab)
             focusGrab.active = true;
 
-        _ensureContentLoadedAndInitialize("", "");
+        _ensureContentLoadedAndInitialize(query || "", mode || "");
+    }
+
+    function show() {
+        closeCleanupTimer.stop();
+
+        var focusedScreen = CompositorService.getFocusedScreen();
+        if (focusedScreen && launcherWindow.screen !== focusedScreen) {
+            spotlightOpen = false;
+            isClosing = false;
+            launcherWindow.screen = focusedScreen;
+            Qt.callLater(() => root._finishShow("", ""));
+            return;
+        }
+
+        _finishShow("", "");
     }
 
     function showWithQuery(query) {
         closeCleanupTimer.stop();
-        isClosing = false;
-        openedFromOverview = false;
 
         var focusedScreen = CompositorService.getFocusedScreen();
-        if (focusedScreen)
+        if (focusedScreen && launcherWindow.screen !== focusedScreen) {
+            spotlightOpen = false;
+            isClosing = false;
             launcherWindow.screen = focusedScreen;
+            Qt.callLater(() => root._finishShow(query, ""));
+            return;
+        }
 
-        spotlightOpen = true;
-        keyboardActive = true;
-        ModalManager.openModal(root);
-        if (useHyprlandFocusGrab)
-            focusGrab.active = true;
-
-        _ensureContentLoadedAndInitialize(query, "");
+        _finishShow(query, "");
     }
 
     function hide() {
@@ -187,14 +199,20 @@ Item {
 
     function showWithMode(mode) {
         closeCleanupTimer.stop();
+
+        var focusedScreen = CompositorService.getFocusedScreen();
+        if (focusedScreen && launcherWindow.screen !== focusedScreen) {
+            spotlightOpen = false;
+            isClosing = false;
+            launcherWindow.screen = focusedScreen;
+            Qt.callLater(() => root._finishShow("", mode));
+            return;
+        }
+
+        spotlightOpen = true;
         isClosing = false;
         openedFromOverview = false;
 
-        var focusedScreen = CompositorService.getFocusedScreen();
-        if (focusedScreen)
-            launcherWindow.screen = focusedScreen;
-
-        spotlightOpen = true;
         keyboardActive = true;
         ModalManager.openModal(root);
         if (useHyprlandFocusGrab)
@@ -233,6 +251,7 @@ Item {
 
     Connections {
         target: spotlightContent?.controller ?? null
+
         function onModeChanged(mode) {
             if (spotlightContent.controller.autoSwitchedToFiles)
                 return;
@@ -267,40 +286,38 @@ Item {
             if (Quickshell.screens.length === 0)
                 return;
 
-            const screen = launcherWindow.screen;
-            const screenName = screen?.name;
-
-            let needsReset = !screen || !screenName;
-            if (!needsReset) {
-                needsReset = true;
+            const screenName = launcherWindow.screen?.name;
+            if (screenName) {
                 for (let i = 0; i < Quickshell.screens.length; i++) {
-                    if (Quickshell.screens[i].name === screenName) {
-                        needsReset = false;
-                        break;
-                    }
+                    if (Quickshell.screens[i].name === screenName)
+                        return;
                 }
             }
 
-            if (!needsReset)
-                return;
+            if (spotlightOpen)
+                hide();
 
             const newScreen = CompositorService.getFocusedScreen() ?? Quickshell.screens[0];
-            if (!newScreen)
-                return;
-
-            root._windowEnabled = false;
-            launcherWindow.screen = newScreen;
-            Qt.callLater(() => {
-                root._windowEnabled = true;
-            });
+            if (newScreen)
+                launcherWindow.screen = newScreen;
         }
     }
 
     PanelWindow {
         id: launcherWindow
-        visible: root._windowEnabled && (spotlightOpen || isClosing)
+        visible: spotlightOpen || isClosing
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
+
+        WindowBlur {
+            targetWindow: launcherWindow
+            readonly property real s: Math.min(1, modalContainer.scale)
+            blurX: root.modalX + root.modalWidth * (1 - s) * 0.5
+            blurY: root.modalY + root.modalHeight * (1 - s) * 0.5
+            blurWidth: (contentVisible && modalContainer.opacity > 0) ? root.modalWidth * s : 0
+            blurHeight: (contentVisible && modalContainer.opacity > 0) ? root.modalHeight * s : 0
+            blurRadius: root.cornerRadius
+        }
 
         WlrLayershell.namespace: "dms:spotlight"
         WlrLayershell.layer: {
@@ -434,6 +451,14 @@ Item {
                     root.hide();
                     event.accepted = true;
                 }
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: root.cornerRadius
+                color: "transparent"
+                border.color: BlurService.borderColor
+                border.width: BlurService.borderWidth
             }
         }
     }

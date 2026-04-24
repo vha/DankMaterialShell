@@ -97,6 +97,112 @@ PanelWindow {
         }
     }
 
+    property var blurRegion: null
+    property var _blurWidgetItems: []
+
+    function registerBlurWidget(item) {
+        if (_blurWidgetItems.indexOf(item) >= 0)
+            return;
+        _blurWidgetItems = _blurWidgetItems.concat([item]);
+        _blurRebuildTimer.restart();
+    }
+
+    function unregisterBlurWidget(item) {
+        const idx = _blurWidgetItems.indexOf(item);
+        if (idx < 0)
+            return;
+        const arr = _blurWidgetItems.slice();
+        arr.splice(idx, 1);
+        _blurWidgetItems = arr;
+        _blurRebuildTimer.restart();
+    }
+
+    Timer {
+        id: _blurRebuildTimer
+        interval: 1
+        onTriggered: barBlur.rebuild()
+    }
+
+    Item {
+        id: barBlur
+        visible: false
+
+        readonly property bool barHasTransparency: barWindow._backgroundAlpha > 0 && barWindow._backgroundAlpha < 1
+
+        function rebuild() {
+            teardown();
+            if (!BlurService.enabled || !BlurService.available)
+                return;
+
+            const widgets = barWindow._blurWidgetItems.filter(w => w && w.visible && w.width > 0 && w.height > 0);
+            const hasBar = barHasTransparency;
+            if (!hasBar && widgets.length === 0)
+                return;
+
+            const cr = Theme.cornerRadius;
+            let qml = 'import QtQuick; import Quickshell; Region {';
+            for (let i = 0; i < widgets.length; i++) {
+                qml += ` property Item w${i}; Region { item: w${i}; radius: ${cr} }`;
+            }
+            qml += '}';
+
+            try {
+                const region = Qt.createQmlObject(qml, barWindow, "BarBlurRegion");
+
+                if (hasBar) {
+                    region.x = Qt.binding(() => topBarMouseArea.x + barUnitInset.x + topBarSlide.x);
+                    region.y = Qt.binding(() => topBarMouseArea.y + barUnitInset.y + topBarSlide.y);
+                    region.width = Qt.binding(() => barUnitInset.width);
+                    region.height = Qt.binding(() => barUnitInset.height);
+                    region.radius = Qt.binding(() => barBackground.rt);
+                }
+
+                for (let i = 0; i < widgets.length; i++) {
+                    region[`w${i}`] = widgets[i];
+                }
+
+                barWindow.BackgroundEffect.blurRegion = region;
+                barWindow.blurRegion = region;
+            } catch (e) {
+                console.warn("BarBlur: Failed to create blur region:", e);
+            }
+        }
+
+        function teardown() {
+            if (!barWindow.blurRegion)
+                return;
+            try {
+                barWindow.BackgroundEffect.blurRegion = null;
+            } catch (e) {}
+            barWindow.blurRegion.destroy();
+            barWindow.blurRegion = null;
+        }
+
+        onBarHasTransparencyChanged: _blurRebuildTimer.restart()
+
+        Connections {
+            target: BlurService
+            function onEnabledChanged() {
+                barBlur.rebuild();
+            }
+        }
+
+        Connections {
+            target: topBarSlide
+            function onXChanged() {
+                if (barWindow.blurRegion)
+                    barWindow.blurRegion.changed();
+            }
+            function onYChanged() {
+                if (barWindow.blurRegion)
+                    barWindow.blurRegion.changed();
+            }
+        }
+
+        Component.onCompleted: rebuild()
+        Component.onDestruction: teardown()
+    }
+
     WlrLayershell.layer: dBarLayer
     WlrLayershell.namespace: "dms:bar"
 
@@ -157,6 +263,7 @@ PanelWindow {
     property string screenName: modelData.name
 
     property bool hasMaximizedToplevel: false
+    property bool hasFullscreenToplevel: false
     property bool shouldHideForWindows: false
 
     function _updateHasMaximizedToplevel() {
@@ -177,6 +284,25 @@ PanelWindow {
             }
         }
         hasMaximizedToplevel = false;
+    }
+
+    function _updateHasFullscreenToplevel() {
+        if (!CompositorService.isHyprland) {
+            hasFullscreenToplevel = false;
+            return;
+        }
+
+        const filtered = CompositorService.filterCurrentWorkspace(CompositorService.sortedToplevels, screenName);
+        for (let i = 0; i < filtered.length; i++) {
+            if (filtered[i]?.fullscreen) {
+                // On niri, fullscreen windows in inactive columns should not hide the bar
+                if (CompositorService.isNiri && !filtered[i]?.activated)
+                    continue;
+                hasFullscreenToplevel = true;
+                return;
+            }
+        }
+        hasFullscreenToplevel = false;
     }
 
     function _updateShouldHideForWindows() {
@@ -289,7 +415,7 @@ PanelWindow {
             const onThisScreen = bc.screenPreferences.includes(screenName) || bc.screenPreferences.length === 0 || bc.screenPreferences.includes("all");
             if (!onThisScreen)
                 return false;
-            if (bc.showOnLastDisplay && screenName !== barWindow.screen.name)
+            if (bc.showOnLastDisplay && screenName !== barWindow.screenName)
                 return false;
             return true;
         });
@@ -312,7 +438,7 @@ PanelWindow {
             const onThisScreen = bc.screenPreferences.includes(screenName) || bc.screenPreferences.length === 0 || bc.screenPreferences.includes("all");
             if (!onThisScreen)
                 return false;
-            if (bc.showOnLastDisplay && screenName !== barWindow.screen.name)
+            if (bc.showOnLastDisplay && screenName !== barWindow.screenName)
                 return false;
             return true;
         });
@@ -336,7 +462,7 @@ PanelWindow {
             const onThisScreen = bc.screenPreferences.includes(screenName) || bc.screenPreferences.length === 0 || bc.screenPreferences.includes("all");
             if (!onThisScreen)
                 return false;
-            if (bc.showOnLastDisplay && screenName !== barWindow.screen.name)
+            if (bc.showOnLastDisplay && screenName !== barWindow.screenName)
                 return false;
             return true;
         });
@@ -360,7 +486,7 @@ PanelWindow {
             const onThisScreen = bc.screenPreferences.includes(screenName) || bc.screenPreferences.length === 0 || bc.screenPreferences.includes("all");
             if (!onThisScreen)
                 return false;
-            if (bc.showOnLastDisplay && screenName !== barWindow.screen.name)
+            if (bc.showOnLastDisplay && screenName !== barWindow.screenName)
                 return false;
             return true;
         });
@@ -485,6 +611,7 @@ PanelWindow {
         target: CompositorService
         function onToplevelsChanged() {
             barWindow._updateHasMaximizedToplevel();
+            barWindow._updateHasFullscreenToplevel();
             barWindow._updateShouldHideForWindows();
         }
     }
@@ -493,6 +620,7 @@ PanelWindow {
         target: NiriService
         function onAllWorkspacesChanged() {
             barWindow._updateHasMaximizedToplevel();
+            barWindow._updateHasFullscreenToplevel();
             barWindow._updateShouldHideForWindows();
         }
     }
@@ -668,6 +796,9 @@ PanelWindow {
             if (inOverviewWithShow)
                 return true;
 
+            if (barWindow.hasFullscreenToplevel)
+                return false;
+
             const showOnWindowsSetting = barConfig?.showOnWindowsOpen ?? false;
             if (showOnWindowsSetting && autoHide && (CompositorService.isNiri || CompositorService.isHyprland)) {
                 if (barWindow.shouldHideForWindows)
@@ -686,6 +817,8 @@ PanelWindow {
         onHasActivePopoutChanged: evaluateReveal()
 
         function updateActivePopoutState() {
+            if (!barWindow.screen)
+                return;
             const screenName = barWindow.screen.name;
             const activePopout = PopoutManager.currentPopoutsByScreen[screenName];
             const activeTrayMenu = TrayMenuManager.activeTrayMenus[screenName];

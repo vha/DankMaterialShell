@@ -90,7 +90,7 @@ DankPopout {
         if (!lc)
             return;
 
-        const query = _pendingQuery;
+        const query = _pendingQuery || (SettingsData.rememberLastQuery ? SessionData.launcherLastQuery : "") || "";
         const mode = _pendingMode || SessionData.appDrawerLastMode || "apps";
         _pendingMode = "";
         _pendingQuery = "";
@@ -102,12 +102,9 @@ DankPopout {
         if (lc.controller) {
             lc.controller.searchMode = mode;
             lc.controller.pluginFilter = "";
-            lc.controller.searchQuery = "";
-            if (query) {
-                lc.controller.setSearchQuery(query);
-            } else {
-                lc.controller.performSearch();
-            }
+            lc.controller.searchQuery = query;
+
+            lc.controller.performSearch();
         }
         lc.resetScroll?.();
         lc.actionPanel?.hide();
@@ -136,7 +133,7 @@ DankPopout {
             QtObject {
                 id: modalAdapter
                 property bool spotlightOpen: appDrawerPopout.shouldBeVisible
-                property bool isClosing: false
+                readonly property bool isClosing: !appDrawerPopout.shouldBeVisible
 
                 function hide() {
                     appDrawerPopout.close();

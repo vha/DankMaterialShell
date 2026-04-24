@@ -132,7 +132,7 @@ DankModal {
 
     modalWidth: 680
     modalHeight: contentLoader.item ? contentLoader.item.implicitHeight + Theme.spacingM * 2 : 680
-    backgroundColor: Theme.surfaceContainer
+    backgroundColor: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
     cornerRadius: Theme.cornerRadius
     borderColor: Theme.outlineMedium
     borderWidth: 1
@@ -145,6 +145,13 @@ DankModal {
       function open(): string {
         root.show();
         return "COLOR_PICKER_MODAL_OPEN_SUCCESS";
+      }
+
+      function openColor(color: string): string {
+        root.selectedColor = Qt.color(color);
+        root.currentColor = Qt.color(color);
+        root.updateFromColor(Qt.color(color));
+        return open();
       }
 
       function close(): string {

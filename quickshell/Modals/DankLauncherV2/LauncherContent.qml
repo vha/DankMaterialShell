@@ -41,6 +41,7 @@ FocusScope {
         editCommentField.text = existing?.comment || "";
         editEnvVarsField.text = existing?.envVars || "";
         editExtraFlagsField.text = existing?.extraFlags || "";
+        editDgpuToggle.checked = existing?.launchOnDgpu || false;
         editMode = true;
         Qt.callLater(() => editNameField.forceActiveFocus());
     }
@@ -64,6 +65,8 @@ FocusScope {
             override.envVars = editEnvVarsField.text.trim();
         if (editExtraFlagsField.text.trim())
             override.extraFlags = editExtraFlagsField.text.trim();
+        if (editDgpuToggle.checked)
+            override.launchOnDgpu = true;
         SessionData.setAppOverride(editAppId, override);
         closeEditMode();
     }
@@ -146,10 +149,18 @@ FocusScope {
             event.accepted = false;
             return;
         case Qt.Key_Down:
-            controller.selectNext();
+            if (hasCtrl) {
+                controller.navigateHistory("down");
+            } else {
+                controller.selectNext();
+            }
             return;
         case Qt.Key_Up:
-            controller.selectPrevious();
+            if (hasCtrl) {
+                controller.navigateHistory("up");
+            } else {
+                controller.selectPrevious();
+            }
             return;
         case Qt.Key_PageDown:
             controller.selectPageDown(8);
@@ -158,6 +169,10 @@ FocusScope {
             controller.selectPageUp(8);
             return;
         case Qt.Key_Right:
+            if (hasCtrl) {
+                controller.cycleMode();
+                return;
+            }
             if (controller.getCurrentSectionViewMode() !== "list") {
                 controller.selectRight();
                 return;
@@ -165,8 +180,21 @@ FocusScope {
             event.accepted = false;
             return;
         case Qt.Key_Left:
+            if (hasCtrl) {
+                const reverse = true;
+                controller.cycleMode(reverse);
+                return;
+            }
             if (controller.getCurrentSectionViewMode() !== "list") {
                 controller.selectLeft();
+                return;
+            }
+            event.accepted = false;
+            return;
+        case Qt.Key_H:
+            if (hasCtrl) {
+                const reverse = true;
+                controller.cycleMode(reverse);
                 return;
             }
             event.accepted = false;
@@ -181,6 +209,13 @@ FocusScope {
         case Qt.Key_K:
             if (hasCtrl) {
                 controller.selectPrevious();
+                return;
+            }
+            event.accepted = false;
+            return;
+        case Qt.Key_L:
+            if (hasCtrl) {
+                controller.cycleMode();
                 return;
             }
             event.accepted = false;
@@ -200,13 +235,19 @@ FocusScope {
             event.accepted = false;
             return;
         case Qt.Key_Tab:
-            if (actionPanel.hasActions) {
+            if (hasCtrl && actionPanel.hasActions) {
                 actionPanel.expanded ? actionPanel.cycleAction() : actionPanel.show();
+                return;
             }
+            controller.selectNext();
             return;
         case Qt.Key_Backtab:
-            if (actionPanel.expanded)
-                actionPanel.hide();
+            if (hasCtrl && actionPanel.expanded) {
+                const reverse = true;
+                actionPanel.expanded ? actionPanel.cycleAction(reverse) : actionPanel.show();
+                return;
+            }
+            controller.selectPrevious();
             return;
         case Qt.Key_Return:
         case Qt.Key_Enter:
@@ -270,7 +311,7 @@ FocusScope {
 
     Item {
         anchors.fill: parent
-        visible: !editMode
+        visible: !editMode && !(root.parentModal?.isClosing ?? false)
 
         Item {
             id: footerBar
@@ -388,7 +429,7 @@ FocusScope {
 
                 StyledText {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Tab " + I18n.tr("actions")
+                    text: "Ctrl-Tab " + I18n.tr("actions")
                     font.pixelSize: Theme.fontSizeSmall - 1
                     color: Theme.surfaceVariantText
                     visible: actionPanel.hasActions
@@ -548,7 +589,6 @@ FocusScope {
                         }
                     }
                 }
-
             }
 
             Item {
@@ -697,8 +737,6 @@ FocusScope {
             Item {
                 width: parent.width
                 height: parent.height - searchField.height - categoryRow.height - fileFilterRow.height - actionPanel.height - Theme.spacingXS * ((categoryRow.visible ? 1 : 0) + (fileFilterRow.visible ? 1 : 0) + 2)
-                opacity: root.parentModal?.isClosing ? 0 : 1
-
                 ResultsList {
                     id: resultsList
                     anchors.fill: parent
@@ -731,6 +769,7 @@ FocusScope {
         }
         function onSearchQueryRequested(query) {
             searchField.text = query;
+            searchField.cursorPosition = query.length;
         }
         function onModeChanged() {
             extFilterField.text = "";
@@ -940,6 +979,15 @@ FocusScope {
                             keyNavigationTab: editNameField
                             keyNavigationBacktab: editEnvVarsField
                         }
+                    }
+
+                    DankToggle {
+                        id: editDgpuToggle
+                        width: parent.width
+                        text: I18n.tr("Launch on dGPU by default")
+                        visible: SessionService.nvidiaCommand.length > 0
+                        checked: false
+                        onToggled: checked => editDgpuToggle.checked = checked
                     }
                 }
             }

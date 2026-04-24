@@ -99,7 +99,9 @@ type Options struct {
 	Mode                ColorMode
 	IconTheme           string
 	MatugenType         string
+	Contrast            float64
 	RunUserTemplates    bool
+	ColorsOnly          bool
 	StockColors         string
 	SyncModeWithPortal  bool
 	TerminalsAlwaysDark bool
@@ -227,6 +229,7 @@ func buildOnce(opts *Options) (bool, error) {
 
 		log.Info("Running matugen color hex with stock color overrides")
 		args := []string{"color", "hex", primaryDark, "-m", string(opts.Mode), "-t", opts.MatugenType, "-c", cfgFile.Name()}
+		args = appendContrastArg(args, opts.Contrast)
 		args = append(args, importArgs...)
 		if err := runMatugen(args); err != nil {
 			return false, err
@@ -263,6 +266,7 @@ func buildOnce(opts *Options) (bool, error) {
 			args = []string{opts.Kind, opts.Value}
 		}
 		args = append(args, "-m", string(opts.Mode), "-t", opts.MatugenType, "-c", cfgFile.Name())
+		args = appendContrastArg(args, opts.Contrast)
 		args = append(args, importArgs...)
 		if err := runMatugen(args); err != nil {
 			return false, err
@@ -272,6 +276,10 @@ func buildOnce(opts *Options) (bool, error) {
 	newColors, _ := os.ReadFile(opts.ColorsOutput())
 	if bytes.Equal(oldColors, newColors) && len(oldColors) > 0 {
 		return false, nil
+	}
+
+	if opts.ColorsOnly {
+		return true, nil
 	}
 
 	if isDMSGTKActive(opts.ConfigDir) {
@@ -292,6 +300,13 @@ func buildOnce(opts *Options) (bool, error) {
 	signalTerminals(opts)
 
 	return true, nil
+}
+
+func appendContrastArg(args []string, contrast float64) []string {
+	if contrast == 0 {
+		return args
+	}
+	return append(args, "--contrast", strconv.FormatFloat(contrast, 'f', -1, 64))
 }
 
 func buildMergedConfig(opts *Options, cfgFile *os.File, tmpDir string) error {
@@ -330,6 +345,10 @@ input_path = '%s/matugen/templates/dank.json'
 output_path = '%s'
 
 `, opts.ShellDir, opts.ColorsOutput())
+
+	if opts.ColorsOnly {
+		return nil
+	}
 
 	homeDir, _ := os.UserHomeDir()
 	for _, tmpl := range templateRegistry {
@@ -597,10 +616,10 @@ func detectMatugenVersionLocked() (matugenFlags, error) {
 	matugenVersionOK = true
 
 	if matugenSupportsCOE {
-		log.Infof("Matugen %s supports --continue-on-error", versionStr)
+		log.Debugf("Matugen %s detected: continue-on-error support enabled", versionStr)
 	}
 	if matugenIsV4 {
-		log.Infof("Matugen %s: using v4 flags", versionStr)
+		log.Debugf("Matugen %s detected: using v4 compatibility flags", versionStr)
 	}
 	return matugenFlags{matugenSupportsCOE, matugenIsV4}, nil
 }
@@ -678,6 +697,7 @@ func execDryRun(opts *Options, flags matugenFlags) (string, error) {
 		baseArgs = []string{opts.Kind, opts.Value}
 	}
 	baseArgs = append(baseArgs, "-m", "dark", "-t", opts.MatugenType, "--json", "hex", "--dry-run")
+	baseArgs = appendContrastArg(baseArgs, opts.Contrast)
 	if flags.isV4 {
 		baseArgs = append(baseArgs, "--source-color-index", "0", "--old-json-output")
 	}

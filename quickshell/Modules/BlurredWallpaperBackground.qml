@@ -86,7 +86,7 @@ Variants {
 
             Component.onCompleted: {
                 if (typeof blurWallpaperWindow.updatesEnabled !== "undefined")
-                    blurWallpaperWindow.updatesEnabled = Qt.binding(() => root.effectActive || root._renderSettling || currentWallpaper.status === Image.Loading || nextWallpaper.status === Image.Loading);
+                    blurWallpaperWindow.updatesEnabled = Qt.binding(() => !root.source || root.effectActive || root._renderSettling || currentWallpaper.status === Image.Loading || nextWallpaper.status === Image.Loading);
                 isInitialized = true;
             }
 
@@ -100,10 +100,30 @@ Variants {
             Connections {
                 target: currentWallpaper
                 function onStatusChanged() {
-                    if (currentWallpaper.status === Image.Ready) {
-                        root._renderSettling = true;
-                        renderSettleTimer.restart();
-                    }
+                    if (currentWallpaper.status !== Image.Ready && currentWallpaper.status !== Image.Error)
+                        return;
+                    root._renderSettling = true;
+                    renderSettleTimer.restart();
+                }
+            }
+
+            Connections {
+                target: blurWallpaperWindow
+                function onWidthChanged() {
+                    root._renderSettling = true;
+                    renderSettleTimer.restart();
+                }
+                function onHeightChanged() {
+                    root._renderSettling = true;
+                    renderSettleTimer.restart();
+                }
+            }
+
+            Connections {
+                target: Quickshell
+                function onScreensChanged() {
+                    root._renderSettling = true;
+                    renderSettleTimer.restart();
                 }
             }
 
@@ -167,6 +187,8 @@ Variants {
                     transitionAnimation.stop();
                     root.transitionProgress = 0;
                     root.effectActive = false;
+                    root._renderSettling = true;
+                    renderSettleTimer.restart();
                     currentWallpaper.source = nextWallpaper.source;
                     nextWallpaper.source = "";
                 }
@@ -174,6 +196,9 @@ Variants {
                     setWallpaperImmediate(newPath);
                     return;
                 }
+
+                root._renderSettling = true;
+                renderSettleTimer.restart();
 
                 nextWallpaper.source = newPath;
 
@@ -201,6 +226,7 @@ Variants {
                 visible: false
                 opacity: 1
                 asynchronous: true
+                retainWhileLoading: true
                 smooth: true
                 cache: true
                 sourceSize: Qt.size(root.textureWidth, root.textureHeight)
@@ -213,6 +239,7 @@ Variants {
                 visible: false
                 opacity: 0
                 asynchronous: true
+                retainWhileLoading: true
                 smooth: true
                 cache: true
                 sourceSize: Qt.size(root.textureWidth, root.textureHeight)
@@ -295,6 +322,8 @@ Variants {
                     root.useNextForEffect = false;
                     nextWallpaper.source = "";
                     root.transitionProgress = 0.0;
+                    root._renderSettling = true;
+                    renderSettleTimer.restart();
                     root.effectActive = false;
                 }
             }

@@ -17,8 +17,49 @@ Item {
     property real widgetHeight: 30
     property real barThickness: 48
     property var barConfig: null
+    property var blurBarWindow: null
     property var hyprlandOverviewLoader: null
     property var parentScreen: null
+
+    readonly property real _leftMargin: {
+        if (isVertical)
+            return 0;
+        root.x;
+        if (!root.parent)
+            return 0;
+        const gap = root.mapToItem(null, 0, 0).x;
+        return (gap > 0 && gap < 30) ? gap + 5 : 0;
+    }
+    readonly property real _rightMargin: {
+        if (isVertical)
+            return 0;
+        root.x;
+        root.width;
+        if (!root.parent || !blurBarWindow)
+            return 0;
+        const gap = blurBarWindow.width - root.mapToItem(null, root.width, 0).x;
+        return (gap > 0 && gap < 30) ? gap + 5 : 0;
+    }
+    readonly property real _topMargin: {
+        if (!isVertical)
+            return 0;
+        root.y;
+        if (!root.parent)
+            return 0;
+        const gap = root.mapToItem(null, 0, 0).y;
+        return (gap > 0 && gap < 30) ? gap + 5 : 0;
+    }
+    readonly property real _bottomMargin: {
+        if (!isVertical)
+            return 0;
+        root.y;
+        root.height;
+        if (!root.parent || !blurBarWindow)
+            return 0;
+        const gap = blurBarWindow.height - root.mapToItem(null, 0, root.height).y;
+        return (gap > 0 && gap < 30) ? gap + 5 : 0;
+    }
+
     property int _desktopEntriesUpdateTrigger: 0
     readonly property var sortedToplevels: {
         return CompositorService.filterCurrentWorkspace(CompositorService.sortedToplevels, screenName);
@@ -286,7 +327,7 @@ Item {
             const key = isActiveWs || !SettingsData.groupWorkspaceApps ? `${moddedId}_${i}` : moddedId;
 
             if (!byApp[key]) {
-                const isQuickshell = keyBase === "org.quickshell";
+                const isQuickshell = keyBase === "org.quickshell" || keyBase === "com.danklinux.dms";
                 const isSteamApp = Paths.isSteamApp(moddedId);
                 const desktopEntry = DesktopEntries.heuristicLookup(moddedId);
                 const icon = Paths.getAppIcon(moddedId, desktopEntry);
@@ -538,6 +579,60 @@ Item {
         });
     }
 
+    function switchToWorkspaceByModelData(data) {
+        if (!data)
+            return;
+
+        if (root.useExtWorkspace && (data.id || data.name)) {
+            ExtWorkspaceService.activateWorkspace(data.id || data.name, data.groupID || "");
+            return;
+        }
+
+        switch (CompositorService.compositor) {
+        case "niri":
+            if (data.idx !== undefined)
+                NiriService.switchToWorkspace(data.idx);
+            break;
+        case "hyprland":
+            if (data.id)
+                Hyprland.dispatch(`workspace ${data.id}`);
+            break;
+        case "dwl":
+            if (data.tag !== undefined)
+                DwlService.switchToTag(root.screenName, data.tag);
+            break;
+        case "sway":
+        case "scroll":
+        case "miracle":
+            if (data.num)
+                try {
+                    I3.dispatch(`workspace number ${data.num}`);
+                } catch (_) {}
+            break;
+        }
+    }
+
+    function findClosestWorkspaceIndex(localX, localY) {
+        if (workspaceRepeater.count === 0)
+            return -1;
+
+        let closestIdx = -1;
+        let closestDist = Infinity;
+
+        for (let i = 0; i < workspaceRepeater.count; i++) {
+            const item = workspaceRepeater.itemAt(i);
+            if (!item)
+                continue;
+            const center = item.mapToItem(root, item.width / 2, item.height / 2);
+            const dist = isVertical ? Math.abs(localY - center.y) : Math.abs(localX - center.x);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestIdx = i;
+            }
+        }
+        return closestIdx;
+    }
+
     function switchWorkspace(direction) {
         if (useExtWorkspace) {
             const realWorkspaces = getRealWorkspaces();
@@ -751,8 +846,15 @@ Item {
     }
 
     MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.RightButton
+        id: edgeMouseArea
+        z: -1
+        x: -root._leftMargin
+        y: -root._topMargin
+        width: root.width + root._leftMargin + root._rightMargin
+        height: root.height + root._topMargin + root._bottomMargin
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
 
         property real touchpadAccumulator: 0
         property real mouseAccumulator: 0
@@ -765,16 +867,29 @@ Item {
         }
 
         onClicked: mouse => {
-            if (mouse.button === Qt.RightButton) {
+            const rootPos = edgeMouseArea.mapToItem(root, mouse.x, mouse.y);
+            switch (mouse.button) {
+            case Qt.RightButton:
                 if (CompositorService.isNiri) {
                     NiriService.toggleOverview();
                 } else if (CompositorService.isHyprland && root.hyprlandOverviewLoader?.item) {
                     root.hyprlandOverviewLoader.item.overviewOpen = !root.hyprlandOverviewLoader.item.overviewOpen;
                 }
+                break;
+            case Qt.LeftButton:
+                const idx = root.findClosestWorkspaceIndex(rootPos.x, rootPos.y);
+                if (idx >= 0)
+                    root.switchToWorkspaceByModelData(root.workspaceList[idx]);
+                break;
             }
         }
 
         onWheel: wheel => {
+            if (Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y)) {
+                wheel.accepted = false;
+                return;
+            }
+
             if (scrollInProgress)
                 return;
 
@@ -1473,7 +1588,7 @@ Item {
                                             readonly property bool appHighlightActive: SettingsData.workspaceActiveAppHighlightEnabled && modelData.active
                                             readonly property color appBorderColor: appHighlightActive ? focusedBorderColor : Theme.primarySelected
                                             readonly property color appGlyphColor: appHighlightActive ? focusedBorderColor : Theme.primary
-                                            readonly property real appOpacity: (modelData.active || isActive) ? 1.0 : rowAppMouseArea.containsMouse ? 0.8 : 0.6
+                                            readonly property real appOpacity: modelData.active ? 1.0 : rowAppMouseArea.containsMouse ? 0.8 : 0.6
 
                                             IconImage {
                                                 id: rowAppIcon
@@ -1642,7 +1757,7 @@ Item {
                                             readonly property bool appHighlightActive: SettingsData.workspaceActiveAppHighlightEnabled && modelData.active
                                             readonly property color appBorderColor: appHighlightActive ? focusedBorderColor : Theme.primarySelected
                                             readonly property color appGlyphColor: appHighlightActive ? focusedBorderColor : Theme.primary
-                                            readonly property real appOpacity: (modelData.active || isActive) ? 1.0 : colAppMouseArea.containsMouse ? 0.8 : 0.6
+                                            readonly property real appOpacity: modelData.active ? 1.0 : colAppMouseArea.containsMouse ? 0.8 : 0.6
 
                                             IconImage {
                                                 id: colAppIcon
@@ -1840,5 +1955,27 @@ Item {
         if (useExtWorkspace && !DMSService.activeSubscriptions.includes("extworkspace")) {
             DMSService.addSubscription("extworkspace");
         }
+        _updateBlurRegistration();
+    }
+
+    property bool _blurRegistered: false
+    readonly property bool _shouldBlur: BlurService.enabled && blurBarWindow && blurBarWindow.registerBlurWidget && !(barConfig?.noBackground ?? false) && root.visible && root.width > 0
+
+    on_ShouldBlurChanged: _updateBlurRegistration()
+
+    function _updateBlurRegistration() {
+        if (_shouldBlur && !_blurRegistered) {
+            blurBarWindow.registerBlurWidget(visualBackground);
+            _blurRegistered = true;
+        } else if (!_shouldBlur && _blurRegistered) {
+            if (blurBarWindow && blurBarWindow.unregisterBlurWidget)
+                blurBarWindow.unregisterBlurWidget(visualBackground);
+            _blurRegistered = false;
+        }
+    }
+
+    Component.onDestruction: {
+        if (_blurRegistered && blurBarWindow && blurBarWindow.unregisterBlurWidget)
+            blurBarWindow.unregisterBlurWidget(visualBackground);
     }
 }

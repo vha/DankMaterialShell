@@ -14,7 +14,7 @@ import "settings/SettingsStore.js" as Store
 Singleton {
     id: root
 
-    readonly property int settingsConfigVersion: 6
+    readonly property int settingsConfigVersion: 5
 
     readonly property bool isGreeterMode: Quickshell.env("DMS_RUN_GREETER") === "1" || Quickshell.env("DMS_RUN_GREETER") === "true"
 
@@ -130,6 +130,7 @@ Singleton {
     property string customThemeFile: ""
     property var registryThemeVariants: ({})
     property string matugenScheme: "scheme-tonal-spot"
+    property real matugenContrast: 0
     property bool runUserMatugenTemplates: true
     property string matugenTargetMonitor: ""
     property real popupTransparency: 1.0
@@ -150,6 +151,7 @@ Singleton {
     property int mangoLayoutBorderSize: -1
 
     property int firstDayOfWeek: -1
+    property bool showWeekNumber: false
     property bool use24HourClock: true
     property bool showSeconds: false
     property bool padHours12Hour: false
@@ -184,6 +186,14 @@ Singleton {
     onPopoutElevationEnabledChanged: saveSettings()
     property bool barElevationEnabled: true
     onBarElevationEnabledChanged: saveSettings()
+    property bool blurEnabled: false
+    onBlurEnabledChanged: saveSettings()
+    property string blurBorderColor: "outline"
+    onBlurBorderColorChanged: saveSettings()
+    property string blurBorderCustomColor: "#ffffff"
+    onBlurBorderCustomColorChanged: saveSettings()
+    property real blurBorderOpacity: 1.0
+    onBlurBorderOpacityChanged: saveSettings()
     property string wallpaperFillMode: "Fill"
     property bool blurredWallpaperLayer: false
     property bool blurWallpaperOnOverview: false
@@ -201,6 +211,7 @@ Singleton {
     property int selectedGpuIndex: 0
     property var enabledGpuPciIds: []
     property bool showSystemTray: true
+    property bool systemTrayMonochromeIcons: false
     property bool showClock: true
     property bool showNotificationButton: true
     property bool showBattery: true
@@ -291,6 +302,7 @@ Singleton {
     property var workspaceNameIcons: ({})
     property bool waveProgressEnabled: true
     property bool scrollTitleEnabled: true
+    property bool mediaAdaptiveWidthEnabled: true
     property bool audioVisualizerEnabled: true
     property string audioScrollMode: "volume"
     property int audioWheelScrollAmount: 5
@@ -336,6 +348,7 @@ Singleton {
     property bool sortAppsAlphabetically: false
     property int appLauncherGridColumns: 4
     property bool spotlightCloseNiriOverview: true
+    property bool rememberLastQuery: false
     property var spotlightSectionViewModes: ({})
     onSpotlightSectionViewModesChanged: saveSettings()
     property var appDrawerSectionViewModes: ({})
@@ -347,6 +360,8 @@ Singleton {
     property string dankLauncherV2BorderColor: "primary"
     property bool dankLauncherV2ShowFooter: true
     property bool dankLauncherV2UnloadOnClose: false
+    property bool dankLauncherV2IncludeFilesInAll: false
+    property bool dankLauncherV2IncludeFoldersInAll: false
 
     property string _legacyWeatherLocation: "New York, NY"
     property string _legacyWeatherCoordinates: "40.7128,-74.0060"
@@ -423,17 +438,20 @@ Singleton {
     property bool soundNewNotification: true
     property bool soundVolumeChanged: true
     property bool soundPluggedIn: true
+    property bool soundLogin: false
 
     property int acMonitorTimeout: 0
     property int acLockTimeout: 0
     property int acSuspendTimeout: 0
     property int acSuspendBehavior: SettingsData.SuspendBehavior.Suspend
     property string acProfileName: ""
+    property int acPostLockMonitorTimeout: 0
     property int batteryMonitorTimeout: 0
     property int batteryLockTimeout: 0
     property int batterySuspendTimeout: 0
     property int batterySuspendBehavior: SettingsData.SuspendBehavior.Suspend
     property string batteryProfileName: ""
+    property int batteryPostLockMonitorTimeout: 0
     property int batteryChargeLimit: 100
     property bool lockBeforeSuspend: false
     property bool loginctlLockIntegration: true
@@ -452,6 +470,11 @@ Singleton {
     property bool qtThemingEnabled: false
     property bool syncModeWithPortal: true
     property bool terminalsAlwaysDark: false
+
+    property string muxType: "tmux"
+    property bool muxUseCustomCommand: false
+    property string muxCustomCommand: ""
+    property string muxSessionFilter: ""
 
     property bool runDmsMatugenTemplates: true
     property bool matugenTemplateGtk: true
@@ -478,9 +501,16 @@ Singleton {
     property bool matugenTemplateZed: true
 
     property var matugenTemplateNeovimSettings: ({
-        "dark": { "baseTheme": "github_dark", "harmony": 0.5 },
-        "light": { "baseTheme": "github_light", "harmony": 0.5 }
-    })
+            "dark": {
+                "baseTheme": "github_dark",
+                "harmony": 0.5
+            },
+            "light": {
+                "baseTheme": "github_light",
+                "harmony": 0.5
+            }
+        })
+    property bool matugenTemplateNeovimSetBackground: true
 
     property bool showDock: false
     property bool dockAutoHide: false
@@ -531,24 +561,24 @@ Singleton {
 
     property bool enableFprint: false
     property int maxFprintTries: 15
-    property bool fprintdAvailable: false
-    property bool lockFingerprintCanEnable: false
-    property bool lockFingerprintReady: false
-    property string lockFingerprintReason: "probe_failed"
-    property bool greeterFingerprintCanEnable: false
-    property bool greeterFingerprintReady: false
-    property string greeterFingerprintReason: "probe_failed"
-    property string greeterFingerprintSource: "none"
+    readonly property bool fprintdAvailable: Processes.fprintdAvailable
+    readonly property bool lockFingerprintCanEnable: Processes.lockFingerprintCanEnable
+    readonly property bool lockFingerprintReady: Processes.lockFingerprintReady
+    readonly property string lockFingerprintReason: Processes.lockFingerprintReason
+    readonly property bool greeterFingerprintCanEnable: Processes.greeterFingerprintCanEnable
+    readonly property bool greeterFingerprintReady: Processes.greeterFingerprintReady
+    readonly property string greeterFingerprintReason: Processes.greeterFingerprintReason
+    readonly property string greeterFingerprintSource: Processes.greeterFingerprintSource
     property bool enableU2f: false
     property string u2fMode: "or"
-    property bool u2fAvailable: false
-    property bool lockU2fCanEnable: false
-    property bool lockU2fReady: false
-    property string lockU2fReason: "probe_failed"
-    property bool greeterU2fCanEnable: false
-    property bool greeterU2fReady: false
-    property string greeterU2fReason: "probe_failed"
-    property string greeterU2fSource: "none"
+    readonly property bool u2fAvailable: Processes.u2fAvailable
+    readonly property bool lockU2fCanEnable: Processes.lockU2fCanEnable
+    readonly property bool lockU2fReady: Processes.lockU2fReady
+    readonly property string lockU2fReason: Processes.lockU2fReason
+    readonly property bool greeterU2fCanEnable: Processes.greeterU2fCanEnable
+    readonly property bool greeterU2fReady: Processes.greeterU2fReady
+    readonly property string greeterU2fReason: Processes.greeterU2fReason
+    readonly property string greeterU2fSource: Processes.greeterU2fSource
     property string lockScreenActiveMonitor: "all"
     property string lockScreenInactiveColor: "#000000"
     property int lockScreenNotificationMode: 0
@@ -1041,7 +1071,6 @@ Singleton {
     function refreshAuthAvailability() {
         if (isGreeterMode)
             return;
-        Processes.settingsRoot = root;
         Processes.detectAuthCapabilities();
     }
 
@@ -1192,13 +1221,23 @@ Singleton {
         Quickshell.execDetached(["sh", "-lc", script]);
     }
 
+    function scheduleAuthApply() {
+        if (isGreeterMode)
+            return;
+        Qt.callLater(() => {
+            Processes.settingsRoot = root;
+            Processes.scheduleAuthApply();
+        });
+    }
+
     readonly property var _hooks: ({
             "applyStoredTheme": applyStoredTheme,
             "regenSystemThemes": regenSystemThemes,
             "updateCompositorLayout": updateCompositorLayout,
             "applyStoredIconTheme": applyStoredIconTheme,
             "updateBarConfigs": updateBarConfigs,
-            "updateCompositorCursor": updateCompositorCursor
+            "updateCompositorCursor": updateCompositorCursor,
+            "scheduleAuthApply": scheduleAuthApply
         })
 
     function set(key, value) {
@@ -1317,9 +1356,7 @@ Singleton {
             return true;
 
         const msg = String(error || "").toLowerCase();
-        return msg.indexOf("file does not exist") !== -1
-                || msg.indexOf("no such file") !== -1
-                || msg.indexOf("enoent") !== -1;
+        return msg.indexOf("file does not exist") !== -1 || msg.indexOf("no such file") !== -1 || msg.indexOf("enoent") !== -1;
     }
 
     function loadPluginSettings() {
@@ -1937,6 +1974,12 @@ Singleton {
         if (typeof Theme !== "undefined") {
             Theme.generateSystemThemesFromCurrentTheme();
         }
+    }
+
+    function setMatugenContrast(value) {
+        if (matugenContrast === value)
+            return;
+        set("matugenContrast", value);
     }
 
     function setRunUserMatugenTemplates(enabled) {

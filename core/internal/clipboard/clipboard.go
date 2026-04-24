@@ -1,7 +1,6 @@
 package clipboard
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -13,100 +12,166 @@ import (
 	wlclient "github.com/AvengeMedia/DankMaterialShell/core/pkg/go-wayland/wayland/client"
 )
 
+const envServe = "_DMS_CLIPBOARD_SERVE"
+const envMime = "_DMS_CLIPBOARD_MIME"
+const envPasteOnce = "_DMS_CLIPBOARD_PASTE_ONCE"
+const envCacheFile = "_DMS_CLIPBOARD_CACHE"
+
+// MaybeServeAndExit intercepts before cobra when re-exec'd as a clipboard
+// child. Reads source data into memory, deletes any cache file, then serves.
+func MaybeServeAndExit() {
+	if os.Getenv(envServe) == "" {
+		return
+	}
+
+	mimeType := os.Getenv(envMime)
+	pasteOnce := os.Getenv(envPasteOnce) == "1"
+	cachePath := os.Getenv(envCacheFile)
+
+	var data []byte
+	var err error
+
+	switch {
+	case cachePath != "":
+		data, err = os.ReadFile(cachePath)
+		os.Remove(cachePath)
+	default:
+		data, err = io.ReadAll(os.Stdin)
+	}
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "clipboard: read source: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := serveClipboard(data, mimeType, pasteOnce); err != nil {
+		fmt.Fprintf(os.Stderr, "clipboard: serve: %v\n", err)
+		os.Exit(1)
+	}
+	os.Exit(0)
+}
+
 func Copy(data []byte, mimeType string) error {
-	return CopyReader(bytes.NewReader(data), mimeType, false, false)
+	return copyForkCached(data, mimeType, false)
 }
 
 func CopyOpts(data []byte, mimeType string, foreground, pasteOnce bool) error {
 	if foreground {
-		return copyServeWithWriter(func(writer io.Writer) error {
-			total := 0
-			for total < len(data) {
-				n, err := writer.Write(data[total:])
-				total += n
-				if err != nil {
-					return err
-				}
-			}
-			if total != len(data) {
-				return io.ErrShortWrite
-			}
-			return nil
-		}, mimeType, pasteOnce)
+		return serveClipboard(data, mimeType, pasteOnce)
 	}
-	return CopyReader(bytes.NewReader(data), mimeType, foreground, pasteOnce)
+	return copyForkCached(data, mimeType, pasteOnce)
 }
 
 func CopyReader(data io.Reader, mimeType string, foreground, pasteOnce bool) error {
-	if !foreground {
-		return copyFork(data, mimeType, pasteOnce)
+	if foreground {
+		buf, err := io.ReadAll(data)
+		if err != nil {
+			return fmt.Errorf("read source: %w", err)
+		}
+		return serveClipboard(buf, mimeType, pasteOnce)
 	}
-	return copyServeReader(data, mimeType, pasteOnce)
+	return copyFork(data, mimeType, pasteOnce)
 }
 
-func copyFork(data io.Reader, mimeType string, pasteOnce bool) error {
-	args := []string{os.Args[0], "cl", "copy", "--foreground"}
-	if pasteOnce {
-		args = append(args, "--paste-once")
-	}
-	args = append(args, "--type", mimeType)
-
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Stdout = nil
+func newForkCmd(mimeType string, pasteOnce bool, extra ...string) *exec.Cmd {
+	cmd := exec.Command(os.Args[0])
 	cmd.Stderr = nil
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
-
-	if stdinSource, ok := data.(*os.File); ok {
-		cmd.Stdin = stdinSource
-		return cmd.Start()
+	cmd.Env = append(os.Environ(),
+		envServe+"=1",
+		envMime+"="+mimeType,
+	)
+	if pasteOnce {
+		cmd.Env = append(cmd.Env, envPasteOnce+"=1")
 	}
+	cmd.Env = append(cmd.Env, extra...)
+	return cmd
+}
 
-	stdin, err := cmd.StdinPipe()
+func waitReady(cmd *exec.Cmd) error {
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("stdin pipe: %w", err)
+		return fmt.Errorf("stdout pipe: %w", err)
 	}
-
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start: %w", err)
 	}
-
-	if _, err := io.Copy(stdin, data); err != nil {
-		stdin.Close()
-		return fmt.Errorf("write stdin: %w", err)
+	var buf [1]byte
+	if _, err := stdout.Read(buf[:]); err != nil {
+		return fmt.Errorf("waiting for clipboard ready: %w", err)
 	}
-	if err := stdin.Close(); err != nil {
-		return fmt.Errorf("close stdin: %w", err)
-	}
-
 	return nil
 }
 
-func copyServeReader(data io.Reader, mimeType string, pasteOnce bool) error {
-	cachedData, err := createClipboardCacheFile()
+func copyForkCached(data []byte, mimeType string, pasteOnce bool) error {
+	cacheFile, err := createClipboardCacheFile()
 	if err != nil {
-		return fmt.Errorf("create clipboard cache file: %w", err)
+		return fmt.Errorf("create cache file: %w", err)
 	}
-	defer os.Remove(cachedData.Name())
+	cachePath := cacheFile.Name()
 
-	if _, err := io.Copy(cachedData, data); err != nil {
-		return fmt.Errorf("cache clipboard data: %w", err)
+	if _, err := cacheFile.Write(data); err != nil {
+		cacheFile.Close()
+		os.Remove(cachePath)
+		return fmt.Errorf("write cache file: %w", err)
 	}
-	if err := cachedData.Close(); err != nil {
-		return fmt.Errorf("close temp cache file: %w", err)
+	if err := cacheFile.Close(); err != nil {
+		os.Remove(cachePath)
+		return fmt.Errorf("close cache file: %w", err)
 	}
 
-	return copyServeWithWriter(func(writer io.Writer) error {
-		cachedFile, err := os.Open(cachedData.Name())
+	cmd := newForkCmd(mimeType, pasteOnce, envCacheFile+"="+cachePath)
+	cmd.Stdin = nil
+	if err := waitReady(cmd); err != nil {
+		os.Remove(cachePath)
+		return err
+	}
+	return nil
+}
+
+func copyFork(data io.Reader, mimeType string, pasteOnce bool) error {
+	cmd := newForkCmd(mimeType, pasteOnce)
+
+	switch src := data.(type) {
+	case *os.File:
+		cmd.Stdin = src
+		return waitReady(cmd)
+
+	default:
+		stdin, err := cmd.StdinPipe()
 		if err != nil {
-			return fmt.Errorf("open temp cache file: %w", err)
+			return fmt.Errorf("stdin pipe: %w", err)
 		}
-		defer cachedFile.Close()
 
-		if _, err := io.Copy(writer, cachedFile); err != nil {
-			return fmt.Errorf("write clipboard data: %w", err)
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			return fmt.Errorf("stdout pipe: %w", err)
+		}
+
+		if err := cmd.Start(); err != nil {
+			return fmt.Errorf("start: %w", err)
+		}
+		if _, err := io.Copy(stdin, data); err != nil {
+			stdin.Close()
+			return fmt.Errorf("write stdin: %w", err)
+		}
+		if err := stdin.Close(); err != nil {
+			return fmt.Errorf("close stdin: %w", err)
+		}
+
+		var buf [1]byte
+		if _, err := stdout.Read(buf[:]); err != nil {
+			return fmt.Errorf("waiting for clipboard ready: %w", err)
 		}
 		return nil
-	}, mimeType, pasteOnce)
+	}
+}
+
+func signalReady() {
+	if os.Getenv(envServe) == "" {
+		return
+	}
+	os.Stdout.Write([]byte{1})
 }
 
 func createClipboardCacheFile() (*os.File, error) {
@@ -129,7 +194,7 @@ func createClipboardCacheFile() (*os.File, error) {
 	return os.CreateTemp("", "dms-clipboard-*")
 }
 
-func copyServeWithWriter(writeTo func(io.Writer) error, mimeType string, pasteOnce bool) error {
+func serveClipboard(data []byte, mimeType string, pasteOnce bool) error {
 	display, err := wlclient.Connect("")
 	if err != nil {
 		return fmt.Errorf("wayland connect: %w", err)
@@ -171,12 +236,10 @@ func copyServeWithWriter(writeTo func(io.Writer) error, mimeType string, pasteOn
 	if bindErr != nil {
 		return fmt.Errorf("registry bind: %w", bindErr)
 	}
-
 	if dataControlMgr == nil {
 		return fmt.Errorf("compositor does not support ext_data_control_manager_v1")
 	}
 	defer dataControlMgr.Destroy()
-
 	if seat == nil {
 		return fmt.Errorf("no seat available")
 	}
@@ -215,18 +278,12 @@ func copyServeWithWriter(writeTo func(io.Writer) error, mimeType string, pasteOn
 
 	cancelled := make(chan struct{})
 	pasted := make(chan struct{}, 1)
-	sendErr := make(chan error, 1)
 
 	source.SetSendHandler(func(e ext_data_control.ExtDataControlSourceV1SendEvent) {
-		defer syscall.Close(e.Fd)
+		_ = syscall.SetNonblock(e.Fd, false)
 		file := os.NewFile(uintptr(e.Fd), "pipe")
 		defer file.Close()
-		if err := writeTo(file); err != nil {
-			select {
-			case sendErr <- err:
-			default:
-			}
-		}
+		_, _ = file.Write(data)
 		select {
 		case pasted <- struct{}{}:
 		default:
@@ -242,13 +299,12 @@ func copyServeWithWriter(writeTo func(io.Writer) error, mimeType string, pasteOn
 	}
 
 	display.Roundtrip()
+	signalReady()
 
 	for {
 		select {
 		case <-cancelled:
 			return nil
-		case err := <-sendErr:
-			return err
 		case <-pasted:
 			if pasteOnce {
 				return nil
@@ -502,12 +558,10 @@ func copyMultiServe(offers []Offer, pasteOnce bool) error {
 	if bindErr != nil {
 		return fmt.Errorf("registry bind: %w", bindErr)
 	}
-
 	if dataControlMgr == nil {
 		return fmt.Errorf("compositor does not support ext_data_control_manager_v1")
 	}
 	defer dataControlMgr.Destroy()
-
 	if seat == nil {
 		return fmt.Errorf("no seat available")
 	}
@@ -535,12 +589,12 @@ func copyMultiServe(offers []Offer, pasteOnce bool) error {
 	pasted := make(chan struct{}, 1)
 
 	source.SetSendHandler(func(e ext_data_control.ExtDataControlSourceV1SendEvent) {
-		defer syscall.Close(e.Fd)
+		_ = syscall.SetNonblock(e.Fd, false)
 		file := os.NewFile(uintptr(e.Fd), "pipe")
 		defer file.Close()
 
 		if data, ok := offerMap[e.MimeType]; ok {
-			file.Write(data)
+			_, _ = file.Write(data)
 		}
 
 		select {

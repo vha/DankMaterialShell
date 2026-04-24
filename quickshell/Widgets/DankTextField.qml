@@ -25,7 +25,6 @@ StyledRect {
     property string placeholderText: ""
     property alias font: textInput.font
     property alias textColor: textInput.color
-    property alias enabled: textInput.enabled
     property alias echoMode: textInput.echoMode
     property alias validator: textInput.validator
     property alias maximumLength: textInput.maximumLength
@@ -158,6 +157,13 @@ StyledRect {
             }
             if (root.ignoreUpDownKeys && (event.key === Qt.Key_Up || event.key === Qt.Key_Down)) {
                 event.accepted = false;
+                for (var i = 0; i < root.keyForwardTargets.length; i++) {
+                    if (root.keyForwardTargets[i])
+                        root.keyForwardTargets[i].Keys.pressed(event);
+                }
+                return;
+            }
+            if ((event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) && root.keyForwardTargets.length > 0) {
                 for (var i = 0; i < root.keyForwardTargets.length; i++) {
                     if (root.keyForwardTargets[i])
                         root.keyForwardTargets[i].Keys.pressed(event);

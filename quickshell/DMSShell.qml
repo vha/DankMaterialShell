@@ -27,6 +27,15 @@ import qs.Services
 Item {
     id: root
 
+    property bool osdSurfacesLoaded: true
+    property int pendingOsdResumeReloads: 0
+
+    function recreateOsdSurfaces() {
+        OSDManager.currentOSDsByScreen = ({});
+        osdSurfacesLoaded = false;
+        osdSurfaceReloadTimer.restart();
+    }
+
     Instantiator {
         id: daemonPluginInstantiator
         asynchronous: true
@@ -221,10 +230,48 @@ Item {
         }
     }
 
+    Timer {
+        id: loginSoundTimer
+        // Half a second delay before playing login sound, otherwise the sound may be cut off
+        // 50 is the minimum that seems to work, but 500 is safer
+        interval: 500
+        repeat: false
+        onTriggered: {
+            AudioService.playLoginSoundIfApplicable();
+        }
+    }
+
+    Timer {
+        id: osdResumeRecreateTimer
+        interval: 400
+        repeat: false
+        onTriggered: {
+            root.recreateOsdSurfaces();
+            root.pendingOsdResumeReloads--;
+
+            if (root.pendingOsdResumeReloads <= 0) {
+                root.pendingOsdResumeReloads = 0;
+                interval = 400;
+                return;
+            }
+
+            interval = 1400;
+            restart();
+        }
+    }
+
+    Timer {
+        id: osdSurfaceReloadTimer
+        interval: 120
+        repeat: false
+        onTriggered: root.osdSurfacesLoaded = true
+    }
+
     Component.onCompleted: {
         dockRecreateDebounce.start();
         // Force PolkitService singleton to initialize
         PolkitService.polkitAvailable;
+        loginSoundTimer.start();
     }
 
     Loader {
@@ -619,6 +666,10 @@ Item {
         }
     }
 
+    MuxModal {
+        id: muxModal
+    }
+
     ClipboardHistoryModal {
         id: clipboardHistoryModalPopup
 
@@ -733,6 +784,16 @@ Item {
         }
     }
 
+    Connections {
+        target: SessionService
+
+        function onSessionResumed() {
+            root.pendingOsdResumeReloads = 2;
+            osdResumeRecreateTimer.interval = 400;
+            osdResumeRecreateTimer.restart();
+        }
+    }
+
     DankColorPickerModal {
         id: colorPickerModal
 
@@ -815,9 +876,8 @@ Item {
 
             content: Component {
                 Notepad {
-                    onHideRequested: {
-                        notepadSlideout.hide();
-                    }
+                    slideout: notepadSlideout
+                    onHideRequested: notepadSlideout.hide()
                 }
             }
 
@@ -908,51 +968,85 @@ Item {
         }
     }
 
-    Variants {
-        model: SettingsData.getFilteredScreens("osd")
+    Loader {
+        id: osdSurfacesLoader
+        active: root.osdSurfacesLoaded
+        asynchronous: false
 
-        delegate: VolumeOSD {
-            modelData: item
-        }
-    }
+        sourceComponent: Component {
+            Item {
+                Variants {
+                    model: SettingsData.getFilteredScreens("osd")
 
-    Variants {
-        model: SettingsData.getFilteredScreens("osd")
+                    delegate: VolumeOSD {
+                        modelData: item
+                    }
+                }
 
-        delegate: MediaVolumeOSD {
-            modelData: item
-        }
-    }
+                Variants {
+                    model: SettingsData.getFilteredScreens("osd")
 
-    Variants {
-        model: SettingsData.getFilteredScreens("osd")
+                    delegate: MediaVolumeOSD {
+                        modelData: item
+                    }
+                }
 
-        delegate: MediaPlaybackOSD {
-            modelData: item
-        }
-    }
+                Variants {
+                    model: SettingsData.getFilteredScreens("osd")
 
-    Variants {
-        model: SettingsData.getFilteredScreens("osd")
+                    delegate: MediaPlaybackOSD {
+                        modelData: item
+                    }
+                }
 
-        delegate: MicMuteOSD {
-            modelData: item
-        }
-    }
+                Variants {
+                    model: SettingsData.getFilteredScreens("osd")
 
-    Variants {
-        model: SettingsData.getFilteredScreens("osd")
+                    delegate: MicMuteOSD {
+                        modelData: item
+                    }
+                }
 
-        delegate: BrightnessOSD {
-            modelData: item
-        }
-    }
+                Variants {
+                    model: SettingsData.getFilteredScreens("osd")
 
-    Variants {
-        model: SettingsData.getFilteredScreens("osd")
+                    delegate: BrightnessOSD {
+                        modelData: item
+                    }
+                }
 
-        delegate: IdleInhibitorOSD {
-            modelData: item
+                Variants {
+                    model: SettingsData.getFilteredScreens("osd")
+
+                    delegate: IdleInhibitorOSD {
+                        modelData: item
+                    }
+                }
+
+                Variants {
+                    model: SettingsData.osdPowerProfileEnabled ? SettingsData.getFilteredScreens("osd") : []
+
+                    delegate: PowerProfileOSD {
+                        modelData: item
+                    }
+                }
+
+                Variants {
+                    model: SettingsData.getFilteredScreens("osd")
+
+                    delegate: CapsLockOSD {
+                        modelData: item
+                    }
+                }
+
+                Variants {
+                    model: SettingsData.getFilteredScreens("osd")
+
+                    delegate: AudioOutputOSD {
+                        modelData: item
+                    }
+                }
+            }
         }
     }
 
@@ -960,30 +1054,6 @@ Item {
         id: powerProfileWatcherLoader
         active: SettingsData.osdPowerProfileEnabled
         source: "Services/PowerProfileWatcher.qml"
-    }
-
-    Variants {
-        model: SettingsData.osdPowerProfileEnabled ? SettingsData.getFilteredScreens("osd") : []
-
-        delegate: PowerProfileOSD {
-            modelData: item
-        }
-    }
-
-    Variants {
-        model: SettingsData.getFilteredScreens("osd")
-
-        delegate: CapsLockOSD {
-            modelData: item
-        }
-    }
-
-    Variants {
-        model: SettingsData.getFilteredScreens("osd")
-
-        delegate: AudioOutputOSD {
-            modelData: item
-        }
     }
 
     LazyLoader {

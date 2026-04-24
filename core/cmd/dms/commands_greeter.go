@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -13,6 +14,8 @@ import (
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/distros"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/greeter"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	sharedpam "github.com/AvengeMedia/DankMaterialShell/core/internal/pam"
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/privesc"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
 	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
@@ -25,11 +28,16 @@ var greeterCmd = &cobra.Command{
 	Long:  "Manage DMS greeter (greetd)",
 }
 
+var (
+	greeterConfigSyncFn = greeter.SyncDMSConfigs
+	sharedAuthSyncFn    = sharedpam.SyncAuthConfig
+)
+
 var greeterInstallCmd = &cobra.Command{
 	Use:     "install",
 	Short:   "Install and configure DMS greeter",
 	Long:    "Install greetd and configure it to use DMS as the greeter interface",
-	PreRunE: requireMutableSystemCommand,
+	PreRunE: preRunPrivileged,
 	Run: func(cmd *cobra.Command, args []string) {
 		yes, _ := cmd.Flags().GetBool("yes")
 		term, _ := cmd.Flags().GetBool("terminal")
@@ -51,9 +59,10 @@ var greeterInstallCmd = &cobra.Command{
 }
 
 var greeterSyncCmd = &cobra.Command{
-	Use:   "sync",
-	Short: "Sync DMS theme and settings with greeter",
-	Long:  "Synchronize your current user's DMS theme, settings, and wallpaper configuration with the login greeter screen",
+	Use:     "sync",
+	Short:   "Sync DMS theme and settings with greeter",
+	Long:    "Synchronize your current user's DMS theme, settings, and wallpaper configuration with the login greeter screen",
+	PreRunE: preRunPrivileged,
 	Run: func(cmd *cobra.Command, args []string) {
 		yes, _ := cmd.Flags().GetBool("yes")
 		auth, _ := cmd.Flags().GetBool("auth")
@@ -82,7 +91,7 @@ var greeterEnableCmd = &cobra.Command{
 	Use:     "enable",
 	Short:   "Enable DMS greeter in greetd config",
 	Long:    "Configure greetd to use DMS as the greeter",
-	PreRunE: requireMutableSystemCommand,
+	PreRunE: preRunPrivileged,
 	Run: func(cmd *cobra.Command, args []string) {
 		yes, _ := cmd.Flags().GetBool("yes")
 		term, _ := cmd.Flags().GetBool("terminal")
@@ -118,7 +127,7 @@ var greeterUninstallCmd = &cobra.Command{
 	Use:     "uninstall",
 	Short:   "Remove DMS greeter configuration and restore previous display manager",
 	Long:    "Disable greetd, remove DMS managed configs, and restore the system to its pre-DMS-greeter state",
-	PreRunE: requireMutableSystemCommand,
+	PreRunE: preRunPrivileged,
 	Run: func(cmd *cobra.Command, args []string) {
 		yes, _ := cmd.Flags().GetBool("yes")
 		term, _ := cmd.Flags().GetBool("terminal")
@@ -146,6 +155,16 @@ func init() {
 	greeterEnableCmd.Flags().BoolP("terminal", "t", false, "Run in a new terminal (for entering sudo password)")
 	greeterUninstallCmd.Flags().BoolP("yes", "y", false, "Non-interactive: skip confirmation prompt")
 	greeterUninstallCmd.Flags().BoolP("terminal", "t", false, "Run in a new terminal (for entering sudo password)")
+}
+
+func syncGreeterConfigsAndAuth(dmsPath, compositor string, logFunc func(string), options sharedpam.SyncAuthOptions, beforeAuth func()) error {
+	if err := greeterConfigSyncFn(dmsPath, compositor, logFunc, ""); err != nil {
+		return err
+	}
+	if beforeAuth != nil {
+		beforeAuth()
+	}
+	return sharedAuthSyncFn(logFunc, "", options)
 }
 
 func installGreeter(nonInteractive bool) error {
@@ -243,7 +262,9 @@ func installGreeter(nonInteractive bool) error {
 	}
 
 	fmt.Println("\nSynchronizing DMS configurations...")
-	if err := greeter.SyncDMSConfigs(dmsPath, selectedCompositor, logFunc, "", false); err != nil {
+	if err := syncGreeterConfigsAndAuth(dmsPath, selectedCompositor, logFunc, sharedpam.SyncAuthOptions{}, func() {
+		fmt.Println("\nConfiguring authentication...")
+	}); err != nil {
 		return err
 	}
 
@@ -278,7 +299,7 @@ func uninstallGreeter(nonInteractive bool) error {
 	}
 
 	if !nonInteractive {
-		fmt.Print("\nThis will:\n  • Stop and disable greetd\n  • Remove the DMS PAM managed block\n  • Remove the DMS AppArmor profile\n  • Restore the most recent pre-DMS greetd config (if available)\n\nContinue? [y/N]: ")
+		fmt.Print("\nThis will:\n  • Stop and disable greetd\n  • Remove the DMS-managed greeter auth block\n  • Remove the DMS AppArmor profile\n  • Restore the most recent pre-DMS greetd config (if available)\n\nContinue? [y/N]: ")
 		var response string
 		fmt.Scanln(&response)
 		if strings.ToLower(strings.TrimSpace(response)) != "y" {
@@ -288,17 +309,14 @@ func uninstallGreeter(nonInteractive bool) error {
 	}
 
 	fmt.Println("\nDisabling greetd...")
-	disableCmd := exec.Command("sudo", "systemctl", "disable", "greetd")
-	disableCmd.Stdout = os.Stdout
-	disableCmd.Stderr = os.Stderr
-	if err := disableCmd.Run(); err != nil {
+	if err := privesc.Run(context.Background(), "", "systemctl", "disable", "greetd"); err != nil {
 		fmt.Printf("  ⚠ Could not disable greetd: %v\n", err)
 	} else {
 		fmt.Println("  ✓ greetd disabled")
 	}
 
-	fmt.Println("\nRemoving DMS PAM configuration...")
-	if err := greeter.RemoveGreeterPamManagedBlock(logFunc, ""); err != nil {
+	fmt.Println("\nRemoving DMS authentication configuration...")
+	if err := sharedpam.RemoveManagedGreeterPamBlock(logFunc, ""); err != nil {
 		fmt.Printf("  ⚠ PAM cleanup failed: %v\n", err)
 	}
 
@@ -357,10 +375,10 @@ func restorePreDMSGreetdConfig(sudoPassword string) error {
 		}
 		tmp.Close()
 
-		if err := runSudoCommand(sudoPassword, "cp", tmpPath, configPath); err != nil {
+		if err := privesc.Run(context.Background(), sudoPassword, "cp", tmpPath, configPath); err != nil {
 			return fmt.Errorf("failed to restore %s: %w", candidate, err)
 		}
-		if err := runSudoCommand(sudoPassword, "chmod", "644", configPath); err != nil {
+		if err := privesc.Run(context.Background(), sudoPassword, "chmod", "644", configPath); err != nil {
 			return err
 		}
 		fmt.Printf("  ✓ Restored greetd config from %s\n", candidate)
@@ -388,19 +406,12 @@ command = "agreety --cmd /bin/bash"
 	}
 	tmp.Close()
 
-	if err := runSudoCommand(sudoPassword, "cp", tmpPath, configPath); err != nil {
+	if err := privesc.Run(context.Background(), sudoPassword, "cp", tmpPath, configPath); err != nil {
 		return fmt.Errorf("failed to write fallback greetd config: %w", err)
 	}
-	_ = runSudoCommand(sudoPassword, "chmod", "644", configPath)
+	_ = privesc.Run(context.Background(), sudoPassword, "chmod", "644", configPath)
 	fmt.Println("  ✓ Wrote minimal fallback greetd config (configure a greeter command manually if needed)")
 	return nil
-}
-
-func runSudoCommand(_ string, command string, args ...string) error {
-	cmd := exec.Command("sudo", append([]string{command}, args...)...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
 }
 
 // suggestDisplayManagerRestore scans for installed DMs and re-enables one
@@ -421,10 +432,7 @@ func suggestDisplayManagerRestore(nonInteractive bool) {
 
 	enableDM := func(dm string) {
 		fmt.Printf("  Enabling %s...\n", dm)
-		cmd := exec.Command("sudo", "systemctl", "enable", "--force", dm)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
+		if err := privesc.Run(context.Background(), "", "systemctl", "enable", "--force", dm); err != nil {
 			fmt.Printf("  ⚠ Failed to enable %s: %v\n", dm, err)
 		} else {
 			fmt.Printf("  ✓ %s enabled (will take effect on next boot).\n", dm)
@@ -535,7 +543,7 @@ func resolveLocalWrapperShell() (string, error) {
 
 func syncGreeter(nonInteractive bool, forceAuth bool, local bool) error {
 	if !nonInteractive {
-		fmt.Println("=== DMS Greeter Theme Sync ===")
+		fmt.Println("=== DMS Greeter Sync ===")
 		fmt.Println()
 	}
 
@@ -623,10 +631,7 @@ func syncGreeter(nonInteractive bool, forceAuth bool, local bool) error {
 
 				if response != "n" && response != "no" {
 					fmt.Printf("\nAdding user to %s group...\n", greeterGroup)
-					addUserCmd := exec.Command("sudo", "usermod", "-aG", greeterGroup, currentUser.Username)
-					addUserCmd.Stdout = os.Stdout
-					addUserCmd.Stderr = os.Stderr
-					if err := addUserCmd.Run(); err != nil {
+					if err := privesc.Run(context.Background(), "", "usermod", "-aG", greeterGroup, currentUser.Username); err != nil {
 						return fmt.Errorf("failed to add user to %s group: %w", greeterGroup, err)
 					}
 					fmt.Printf("✓ User added to %s group\n", greeterGroup)
@@ -721,7 +726,11 @@ func syncGreeter(nonInteractive bool, forceAuth bool, local bool) error {
 	}
 
 	fmt.Println("\nSynchronizing DMS configurations...")
-	if err := greeter.SyncDMSConfigs(dmsPath, compositor, logFunc, "", forceAuth); err != nil {
+	if err := syncGreeterConfigsAndAuth(dmsPath, compositor, logFunc, sharedpam.SyncAuthOptions{
+		ForceGreeterAuth: forceAuth,
+	}, func() {
+		fmt.Println("\nConfiguring authentication...")
+	}); err != nil {
 		return err
 	}
 
@@ -734,8 +743,9 @@ func syncGreeter(nonInteractive bool, forceAuth bool, local bool) error {
 
 	fmt.Println("\n=== Sync Complete ===")
 	fmt.Println("\nYour theme, settings, and wallpaper configuration have been synced with the greeter.")
+	fmt.Println("Shared authentication settings were also checked and reconciled where needed.")
 	if forceAuth {
-		fmt.Println("PAM has been configured for fingerprint and U2F (where modules exist).")
+		fmt.Println("Authentication has been configured for fingerprint and U2F (where modules exist).")
 	}
 	fmt.Println("The changes will be visible on the next login screen.")
 
@@ -846,22 +856,19 @@ func disableDisplayManager(dmName string) (bool, error) {
 	actionTaken := false
 
 	if state.NeedsDisable {
-		var disableCmd *exec.Cmd
-		var actionVerb string
-
-		if state.EnabledState == "static" {
+		var action, actionVerb string
+		switch state.EnabledState {
+		case "static":
 			fmt.Printf("  Masking %s (static service cannot be disabled)...\n", dmName)
-			disableCmd = exec.Command("sudo", "systemctl", "mask", dmName)
+			action = "mask"
 			actionVerb = "masked"
-		} else {
+		default:
 			fmt.Printf("  Disabling %s...\n", dmName)
-			disableCmd = exec.Command("sudo", "systemctl", "disable", dmName)
+			action = "disable"
 			actionVerb = "disabled"
 		}
 
-		disableCmd.Stdout = os.Stdout
-		disableCmd.Stderr = os.Stderr
-		if err := disableCmd.Run(); err != nil {
+		if err := privesc.Run(context.Background(), "", "systemctl", action, dmName); err != nil {
 			return actionTaken, fmt.Errorf("failed to disable/mask %s: %w", dmName, err)
 		}
 
@@ -902,10 +909,7 @@ func ensureGreetdEnabled() error {
 
 	if state.EnabledState == "masked" || state.EnabledState == "masked-runtime" {
 		fmt.Println("  Unmasking greetd...")
-		unmaskCmd := exec.Command("sudo", "systemctl", "unmask", "greetd")
-		unmaskCmd.Stdout = os.Stdout
-		unmaskCmd.Stderr = os.Stderr
-		if err := unmaskCmd.Run(); err != nil {
+		if err := privesc.Run(context.Background(), "", "systemctl", "unmask", "greetd"); err != nil {
 			return fmt.Errorf("failed to unmask greetd: %w", err)
 		}
 		fmt.Println("  ✓ Unmasked greetd")
@@ -917,10 +921,7 @@ func ensureGreetdEnabled() error {
 		fmt.Println("  Enabling greetd service...")
 	}
 
-	enableCmd := exec.Command("sudo", "systemctl", "enable", "--force", "greetd")
-	enableCmd.Stdout = os.Stdout
-	enableCmd.Stderr = os.Stderr
-	if err := enableCmd.Run(); err != nil {
+	if err := privesc.Run(context.Background(), "", "systemctl", "enable", "--force", "greetd"); err != nil {
 		return fmt.Errorf("failed to enable greetd: %w", err)
 	}
 
@@ -950,10 +951,7 @@ func ensureGraphicalTarget() error {
 	currentTargetStr := strings.TrimSpace(string(currentTarget))
 	if currentTargetStr != "graphical.target" {
 		fmt.Printf("\nSetting graphical.target as default (current: %s)...\n", currentTargetStr)
-		setDefaultCmd := exec.Command("sudo", "systemctl", "set-default", "graphical.target")
-		setDefaultCmd.Stdout = os.Stdout
-		setDefaultCmd.Stderr = os.Stderr
-		if err := setDefaultCmd.Run(); err != nil {
+		if err := privesc.Run(context.Background(), "", "systemctl", "set-default", "graphical.target"); err != nil {
 			fmt.Println("⚠ Warning: Failed to set graphical.target as default")
 			fmt.Println("  Greeter may not start on boot. Run manually:")
 			fmt.Println("  sudo systemctl set-default graphical.target")
@@ -1297,39 +1295,7 @@ func extractGreeterPathOverrideFromCommand(command string) string {
 }
 
 func parseManagedGreeterPamAuth(pamText string) (managed bool, fingerprint bool, u2f bool, legacy bool) {
-	if pamText == "" {
-		return false, false, false, false
-	}
-
-	lines := strings.Split(pamText, "\n")
-	inManaged := false
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		switch trimmed {
-		case greeter.GreeterPamManagedBlockStart:
-			managed = true
-			inManaged = true
-			continue
-		case greeter.GreeterPamManagedBlockEnd:
-			inManaged = false
-			continue
-		}
-
-		if strings.HasPrefix(trimmed, "# DMS greeter fingerprint") || strings.HasPrefix(trimmed, "# DMS greeter U2F") {
-			legacy = true
-		}
-		if !inManaged {
-			continue
-		}
-		if strings.Contains(trimmed, "pam_fprintd") {
-			fingerprint = true
-		}
-		if strings.Contains(trimmed, "pam_u2f") {
-			u2f = true
-		}
-	}
-
-	return managed, fingerprint, u2f, legacy
+	return sharedpam.ParseManagedGreeterPamAuth(pamText)
 }
 
 func packageInstallHint() string {
@@ -1490,6 +1456,19 @@ func checkGreeterStatus() error {
 	}
 	if stat, err := os.Stat(cacheDir); err == nil && stat.IsDir() {
 		fmt.Printf("  ✓ %s exists\n", cacheDir)
+		requiredSubdirs := []string{".local/state", ".local/share", ".cache"}
+		missingSubdirs := false
+		for _, sub := range requiredSubdirs {
+			subPath := filepath.Join(cacheDir, sub)
+			if _, err := os.Stat(subPath); os.IsNotExist(err) {
+				fmt.Printf("  ⚠ Missing required subdir: %s\n", subPath)
+				missingSubdirs = true
+			}
+		}
+		if missingSubdirs {
+			fmt.Println("    Run 'dms greeter sync' to initialize the cache directory structure.")
+			allGood = false
+		}
 	} else {
 		fmt.Printf("  ✗ %s not found\n", cacheDir)
 		fmt.Printf("    %s\n", packageInstallHint())
@@ -1497,6 +1476,20 @@ func checkGreeterStatus() error {
 	}
 
 	fmt.Println("\nConfiguration Symlinks:")
+	colorSyncInfo, colorSyncErr := greeter.ResolveGreeterColorSyncInfo(homeDir)
+	if colorSyncErr != nil {
+		fmt.Printf("  ✗ Failed to resolve expected greeter color source: %v\n", colorSyncErr)
+		allGood = false
+		colorSyncInfo = greeter.GreeterColorSyncInfo{
+			SourcePath: filepath.Join(homeDir, ".cache", "DankMaterialShell", "dms-colors.json"),
+		}
+	}
+
+	colorThemeDesc := "Color theme"
+	if colorSyncInfo.UsesDynamicWallpaperOverride {
+		colorThemeDesc = "Color theme (greeter wallpaper override)"
+	}
+
 	symlinks := []struct {
 		source string
 		target string
@@ -1513,9 +1506,9 @@ func checkGreeterStatus() error {
 			desc:   "Session state",
 		},
 		{
-			source: filepath.Join(homeDir, ".cache", "DankMaterialShell", "dms-colors.json"),
+			source: colorSyncInfo.SourcePath,
 			target: filepath.Join(cacheDir, "colors.json"),
-			desc:   "Color theme",
+			desc:   colorThemeDesc,
 		},
 	}
 
@@ -1555,6 +1548,10 @@ func checkGreeterStatus() error {
 		}
 
 		fmt.Printf("  ✓ %s: synced correctly\n", link.desc)
+	}
+
+	if colorSyncInfo.UsesDynamicWallpaperOverride {
+		fmt.Printf("  ℹ Dynamic theme uses greeter override colors from %s\n", colorSyncInfo.SourcePath)
 	}
 
 	fmt.Println("\nGreeter Wallpaper Override:")
@@ -1608,29 +1605,29 @@ func checkGreeterStatus() error {
 			fmt.Println("  ℹ No managed auth block present (DMS-managed fingerprint/U2F lines are disabled)")
 		}
 		if legacyManaged {
-			fmt.Println("  ⚠ Legacy unmanaged DMS PAM lines detected. Run 'dms greeter sync' to normalize.")
+			fmt.Println("  ⚠ Legacy unmanaged DMS PAM lines detected. Run 'dms auth sync' to normalize.")
 			allGood = false
 		}
 		enableFprintToggle, enableU2fToggle := false, false
-		if enableFprint, enableU2f, settingsErr := greeter.ReadGreeterAuthToggles(homeDir); settingsErr == nil {
+		if enableFprint, enableU2f, settingsErr := sharedpam.ReadGreeterAuthToggles(homeDir); settingsErr == nil {
 			enableFprintToggle = enableFprint
 			enableU2fToggle = enableU2f
 		} else {
 			fmt.Printf("  ℹ Could not read greeter auth toggles from settings: %v\n", settingsErr)
 		}
 
-		includedFprintFile := greeter.DetectIncludedPamModule(string(pamData), "pam_fprintd.so")
-		includedU2fFile := greeter.DetectIncludedPamModule(string(pamData), "pam_u2f.so")
-		fprintAvailableForCurrentUser := greeter.FingerprintAuthAvailableForCurrentUser()
+		includedFprintFile := sharedpam.DetectIncludedPamModule(string(pamData), "pam_fprintd.so")
+		includedU2fFile := sharedpam.DetectIncludedPamModule(string(pamData), "pam_u2f.so")
+		fprintAvailableForCurrentUser := sharedpam.FingerprintAuthAvailableForCurrentUser()
 
 		if managedFprint && includedFprintFile != "" {
 			fmt.Printf("  ⚠ pam_fprintd found in both DMS managed block and %s.\n", includedFprintFile)
-			fmt.Println("    Double fingerprint auth detected — run 'dms greeter sync' to resolve.")
+			fmt.Println("    Double fingerprint auth detected — run 'dms auth sync' to resolve.")
 			allGood = false
 		}
 		if managedU2f && includedU2fFile != "" {
 			fmt.Printf("  ⚠ pam_u2f found in both DMS managed block and %s.\n", includedU2fFile)
-			fmt.Println("    Double security-key auth detected — run 'dms greeter sync' to resolve.")
+			fmt.Println("    Double security-key auth detected — run 'dms auth sync' to resolve.")
 			allGood = false
 		}
 

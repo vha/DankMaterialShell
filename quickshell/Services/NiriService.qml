@@ -99,15 +99,14 @@ Singleton {
                 const lines = text.split('\n');
                 const trimmedLines = lines.map(line => line.replace(/\s+$/, '')).filter(line => line.length > 0);
                 configValidationOutput = trimmedLines.join('\n').trim();
-                if (hasInitialConnection) {
-                    ToastService.showError("niri: failed to load config", configValidationOutput, "", "niri-config");
-                }
             }
         }
 
         onExited: exitCode => {
             if (exitCode === 0) {
                 configValidationOutput = "";
+            } else if (hasInitialConnection && configValidationOutput.length > 0) {
+                ToastService.showError("niri: failed to load config", configValidationOutput, "", "niri-config");
             }
         }
     }
@@ -629,9 +628,9 @@ Singleton {
         if (pendingScreenshotPath && data.path === pendingScreenshotPath) {
             const editor = Quickshell.env("DMS_SCREENSHOT_EDITOR");
             let command;
-            if (editor === "satty") {
+            if (editor === "satty" || !editor) {
                 command = ["satty", "-f", data.path];
-            } else if (editor === "swappy" || !editor) {
+            } else if (editor === "swappy") {
                 command = ["swappy", "-f", data.path];
             } else {
                 // Custom command with %path% placeholder
@@ -1427,6 +1426,15 @@ Singleton {
     }
 
     function renameWorkspace(name) {
+        if (!name || name.trim() === "") {
+            return send({
+                "Action": {
+                    "UnsetWorkspaceName": {
+                        "workspace": null
+                    }
+                }
+            });
+        }
         return send({
             "Action": {
                 "SetWorkspaceName": {

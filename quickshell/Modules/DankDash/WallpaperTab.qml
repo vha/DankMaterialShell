@@ -12,7 +12,7 @@ Item {
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
 
-    implicitWidth: 700
+    implicitWidth: SettingsData.showWeekNumber ? 736 : 700
     implicitHeight: 410
 
     property string wallpaperDir: ""
@@ -538,7 +538,11 @@ Item {
 
                     StyledText {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: wallpaperFolderModel.count > 0 ? `${wallpaperFolderModel.count} wallpapers  •  ${currentPage + 1} / ${totalPages}` : "No wallpapers"
+                        text: wallpaperFolderModel.count > 0
+                            ? (wallpaperFolderModel.count === 1
+                                ? I18n.tr("%1 wallpaper  •  %2 / %3").arg(wallpaperFolderModel.count).arg(currentPage + 1).arg(totalPages)
+                                : I18n.tr("%1 wallpapers  •  %2 / %3").arg(wallpaperFolderModel.count).arg(currentPage + 1).arg(totalPages))
+                            : I18n.tr("No wallpapers")
                         font.pixelSize: 14
                         color: Theme.surfaceText
                         opacity: 0.7

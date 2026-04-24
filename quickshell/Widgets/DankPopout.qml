@@ -398,6 +398,17 @@ Item {
         visible: false
         color: "transparent"
 
+        WindowBlur {
+            id: popoutBlur
+            targetWindow: contentWindow
+            readonly property real s: Math.min(1, contentContainer.scaleValue)
+            blurX: contentContainer.x + contentContainer.width * (1 - s) * 0.5 + Theme.snap(contentContainer.animX, root.dpr)
+            blurY: contentContainer.y + contentContainer.height * (1 - s) * 0.5 + Theme.snap(contentContainer.animY, root.dpr)
+            blurWidth: (shouldBeVisible && contentWrapper.opacity > 0) ? contentContainer.width * s : 0
+            blurHeight: (shouldBeVisible && contentWrapper.opacity > 0) ? contentContainer.height * s : 0
+            blurRadius: Theme.cornerRadius
+        }
+
         WlrLayershell.namespace: root.layerNamespace
         WlrLayershell.layer: {
             switch (Quickshell.env("DMS_POPOUT_LAYER")) {
@@ -453,8 +464,8 @@ Item {
             visible: false
             x: contentContainer.x
             y: contentContainer.y
-            width: root.alignedWidth
-            height: root.alignedHeight
+            width: shouldBeVisible ? root.alignedWidth : 0
+            height: shouldBeVisible ? root.alignedHeight : 0
         }
 
         MouseArea {
@@ -565,20 +576,27 @@ Item {
                     }
                 }
 
-                Rectangle {
-                    anchors.fill: parent
-                    radius: Theme.cornerRadius
-                    color: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
-                    border.color: Theme.outlineMedium
-                    border.width: 0
-                }
-
                 Loader {
                     id: contentLoader
                     anchors.fill: parent
                     active: root._primeContent || shouldBeVisible || contentWindow.visible
                     asynchronous: false
                 }
+            }
+
+            Rectangle {
+                width: parent.width
+                height: parent.height
+                x: contentWrapper.x
+                y: contentWrapper.y
+                opacity: contentWrapper.opacity
+                scale: contentWrapper.scale
+                visible: contentWrapper.visible
+                radius: Theme.cornerRadius
+                color: "transparent"
+                border.color: BlurService.enabled ? BlurService.borderColor : Theme.outlineMedium
+                border.width: BlurService.borderWidth
+                z: 100
             }
         }
 

@@ -7,6 +7,27 @@
     "comment": ""
   },
   {
+    "term": "%1 Sessions",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "%1 active session",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "%1 active sessions",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "%1 adapter, none connected",
     "translation": "",
     "context": "",
@@ -15,6 +36,13 @@
   },
   {
     "term": "%1 adapters, none connected",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "%1 character",
     "translation": "",
     "context": "",
     "reference": "",
@@ -84,6 +112,13 @@
     "comment": ""
   },
   {
+    "term": "%1 filtered",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "%1 is now included in config",
     "translation": "",
     "context": "",
@@ -112,6 +147,20 @@
     "comment": ""
   },
   {
+    "term": "%1 update",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "%1 updates",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "%1 variants",
     "translation": "",
     "context": "",
@@ -119,7 +168,35 @@
     "comment": ""
   },
   {
+    "term": "%1 wallpaper  •  %2 / %3",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "%1 wallpapers  •  %2 / %3",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "%1 widgets",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "%1 window",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "%1 windows",
     "translation": "",
     "context": "",
     "reference": "",
@@ -539,6 +616,13 @@
     "comment": ""
   },
   {
+    "term": "<a href=\"https://github.com/AvengeMedia/DankMaterialShell/blob/master/LICENSE\" style=\"text-decoration:none; color:%1;\">MIT License</a>",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "A file with this name already exists. Do you want to overwrite it?",
     "translation": "",
     "context": "",
@@ -735,6 +819,13 @@
     "comment": ""
   },
   {
+    "term": "Adaptive Media Width",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Add",
     "translation": "",
     "context": "",
@@ -820,6 +911,13 @@
   },
   {
     "term": "Adjust volume per scroll indent",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Adjusts contrast of generated colors (-100 = minimum, 0 = standard, 100 = maximum)",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1092,6 +1190,13 @@
     "comment": ""
   },
   {
+    "term": "Applying authentication changes…",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Apps",
     "translation": "",
     "context": "",
@@ -1148,7 +1253,21 @@
     "comment": ""
   },
   {
+    "term": "Are you sure you want to kill session \"%1\"?",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Arrange displays and configure resolution, refresh rate, and VRR",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Attach",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1253,6 +1372,13 @@
     "comment": ""
   },
   {
+    "term": "Authenticating...",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Authentication",
     "translation": "",
     "context": "",
@@ -1261,6 +1387,41 @@
   },
   {
     "term": "Authentication Required",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Authentication changes applied.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Authentication changes apply automatically.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Authentication changes apply automatically. Fingerprint-only login may not unlock Keyring.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Authentication changes need sudo. Opening terminal so you can use password or fingerprint.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Authentication error - try again",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1394,6 +1555,13 @@
   },
   {
     "term": "Autoconnect enabled",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Autofill last remembered query when opened",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1554,7 +1722,21 @@
     "comment": ""
   },
   {
+    "term": "Background Blur",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Background Opacity",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Background authentication sync failed. Trying terminal mode.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1632,6 +1814,13 @@
   },
   {
     "term": "Battery",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Battery %1",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1750,6 +1939,20 @@
     "comment": ""
   },
   {
+    "term": "Blur Border Color",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Blur Border Opacity",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Blur Wallpaper Layer",
     "translation": "",
     "context": "",
@@ -1758,6 +1961,13 @@
   },
   {
     "term": "Blur on Overview",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Blur the background behind bars, popouts, modals, and notifications. Requires compositor support and configuration.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1807,6 +2017,13 @@
   },
   {
     "term": "Border Thickness",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Border color around blurred surfaces",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2163,7 +2380,14 @@
     "comment": ""
   },
   {
-    "term": "Check sync status on demand. Sync copies your theme, settings, PAM config, and wallpaper to the login screen in one step. Must run Sync to apply changes.",
+    "term": "Check sync status on demand. Sync copies your theme, settings, and wallpaper configuration to the login screen. Authentication changes apply automatically.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Checking for updates...",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2171,6 +2395,13 @@
   },
   {
     "term": "Checking whether sudo authentication is needed…",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Checking...",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2499,13 +2730,6 @@
     "comment": ""
   },
   {
-    "term": "Clipboard service not available",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Clipboard works but nothing saved to disk",
     "translation": "",
     "context": "",
@@ -2696,6 +2920,13 @@
   },
   {
     "term": "Column Width",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Comma-separated list of session names to hide. Wrap in slashes for regex (e.g., /^_.*/).",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2948,6 +3179,13 @@
   },
   {
     "term": "Connecting to Device",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Connecting to clipboard service…",
     "translation": "",
     "context": "",
     "reference": "",
@@ -3241,6 +3479,13 @@
     "comment": ""
   },
   {
+    "term": "Create a new %1 session (n)",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Create rule for:",
     "translation": "",
     "context": "",
@@ -3390,7 +3635,7 @@
   {
     "term": "Custom",
     "translation": "",
-    "context": "shadow color option | theme category option",
+    "context": "blur border color | shadow color option | theme category option",
     "reference": "",
     "comment": ""
   },
@@ -3563,7 +3808,7 @@
     "comment": ""
   },
   {
-    "term": "DMS greeter needs: greetd, dms-greeter. Fingerprint: fprintd, pam_fprintd. Security keys: pam_u2f. Add your user to the greeter group. Sync checks sudo first and opens a terminal when interactive authentication is required.",
+    "term": "DMS greeter needs: greetd, dms-greeter. Fingerprint: fprintd, pam_fprintd. Security keys: pam_u2f. Add your user to the greeter group. Authentication changes apply automatically and may open a terminal when sudo authentication is required.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -3928,6 +4173,13 @@
   },
   {
     "term": "Detailed",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Details for \"%1\"",
     "translation": "",
     "context": "",
     "reference": "",
@@ -4627,7 +4879,7 @@
     "comment": ""
   },
   {
-    "term": "Enable fingerprint or security key for DMS Greeter. Run Sync to apply and configure PAM.",
+    "term": "Enable fingerprint or security key for DMS Greeter. Authentication changes apply automatically.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -4676,6 +4928,13 @@
     "comment": ""
   },
   {
+    "term": "Enabled, but no prints are enrolled yet. Authentication changes apply automatically once you enroll fingerprints.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Enabled, but no prints are enrolled yet. Enroll fingerprints and run Sync.",
     "translation": "",
     "context": "",
@@ -4683,7 +4942,7 @@
     "comment": ""
   },
   {
-    "term": "Enabled, but no prints are enrolled yet. Enroll fingerprints to use it.",
+    "term": "Enabled, but no registered security key was found yet. Authentication changes apply automatically once your key is registered or your U2F config is updated.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -4691,13 +4950,6 @@
   },
   {
     "term": "Enabled, but no registered security key was found yet. Register a key and run Sync.",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Enabled, but no registered security key was found yet. Register a key or update your U2F config.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -4788,7 +5040,21 @@
     "comment": ""
   },
   {
+    "term": "Enter a new name for session \"%1\"",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Enter a new name for this workspace",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Enter command or script path",
     "translation": "",
     "context": "",
     "reference": "",
@@ -5069,6 +5335,13 @@
   },
   {
     "term": "Failed to cancel selected job",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Failed to check for updates:\n%1",
     "translation": "",
     "context": "",
     "reference": "",
@@ -5425,6 +5698,13 @@
     "comment": ""
   },
   {
+    "term": "Failed to set power profile",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Failed to set profile image",
     "translation": "",
     "context": "",
@@ -5621,6 +5901,27 @@
     "comment": ""
   },
   {
+    "term": "Fingerprint error",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Fingerprint error: %1",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Fingerprint not recognized (%1/%2). Please try again or use password.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Fingerprint reader detected, but no prints are enrolled yet. You can enable this now and enroll later.",
     "translation": "",
     "context": "",
@@ -5789,6 +6090,13 @@
     "comment": ""
   },
   {
+    "term": "Follow DMS background color",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Follow Monitor Focus",
     "translation": "",
     "context": "",
@@ -5943,6 +6251,20 @@
     "comment": ""
   },
   {
+    "term": "Found %1 package to update:",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Found %1 packages to update:",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Free VRAM/memory when the launcher is closed. May cause a slight delay when reopening.",
     "translation": "",
     "context": "",
@@ -6055,6 +6377,13 @@
     "comment": ""
   },
   {
+    "term": "GPU temperature display",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "GTK, Qt, IDEs, more",
     "translation": "",
     "context": "greeter feature card description",
@@ -6077,6 +6406,13 @@
   },
   {
     "term": "Gamma control not available. Requires DMS API v6+.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Generate baseline GTK3/4 or QT5/QT6 (requires qt6ct-kde) configurations to follow DMS colors. Only needed once.<br /><br />It is recommended to configure <a href=\"https://github.com/AvengeMedia/DankMaterialShell/blob/master/README.md#Theming\" style=\"text-decoration:none; color:%1;\">adw-gtk3</a> prior to applying GTK themes.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -6699,6 +7035,13 @@
     "comment": ""
   },
   {
+    "term": "Hyprland Discord Server",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Hyprland Layout Overrides",
     "translation": "",
     "context": "",
@@ -6707,6 +7050,13 @@
   },
   {
     "term": "Hyprland Options",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Hyprland Website",
     "translation": "",
     "context": "",
     "reference": "",
@@ -6860,6 +7210,20 @@
     "comment": ""
   },
   {
+    "term": "Include Files in All Tab",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Include Folders in All Tab",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Include Transitions",
     "translation": "",
     "context": "",
@@ -6882,6 +7246,27 @@
   },
   {
     "term": "Incorrect password",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Incorrect password - attempt %1 of %2 (lockout may follow)",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Incorrect password - next failures may trigger account lockout",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Incorrect password - try again",
     "translation": "",
     "context": "",
     "reference": "",
@@ -6945,6 +7330,13 @@
   },
   {
     "term": "Input Volume Slider",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Insert your security key...",
     "translation": "",
     "context": "",
     "reference": "",
@@ -7231,7 +7623,21 @@
     "comment": ""
   },
   {
+    "term": "Kill",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Kill Process",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Kill Session",
     "translation": "",
     "context": "",
     "reference": "",
@@ -7246,6 +7652,20 @@
   },
   {
     "term": "LED device",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "LabWC IRC Channel",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "LabWC Website",
     "translation": "",
     "context": "",
     "reference": "",
@@ -7351,6 +7771,13 @@
   },
   {
     "term": "Launch on dGPU",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Launch on dGPU by default",
     "translation": "",
     "context": "",
     "reference": "",
@@ -7472,6 +7899,13 @@
     "term": "Line",
     "translation": "",
     "context": "dock indicator style option",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Line: %1",
+    "translation": "",
+    "context": "",
     "reference": "",
     "comment": ""
   },
@@ -7637,6 +8071,13 @@
     "comment": ""
   },
   {
+    "term": "Lock screen authentication changes apply automatically and may open a terminal when sudo authentication is required.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Locked",
     "translation": "",
     "context": "",
@@ -7645,6 +8086,20 @@
   },
   {
     "term": "Log Out",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Logging in...",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Login",
     "translation": "",
     "context": "",
     "reference": "",
@@ -7861,6 +8316,13 @@
     "comment": ""
   },
   {
+    "term": "Matugen Contrast",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Matugen Missing",
     "translation": "",
     "context": "matugen not found status",
@@ -8008,6 +8470,13 @@
     "comment": ""
   },
   {
+    "term": "Maximum fingerprint attempts reached. Please use password.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Maximum number of clipboard entries to keep",
     "translation": "",
     "context": "",
@@ -8106,6 +8575,13 @@
     "comment": ""
   },
   {
+    "term": "Media Players",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Media Players (",
     "translation": "",
     "context": "",
@@ -8149,6 +8625,20 @@
   },
   {
     "term": "Memory usage indicator",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Merge indexed file results into the All tab (requires dsearch).",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Merge indexed folder results into the All tab (requires dsearch).",
     "translation": "",
     "context": "",
     "reference": "",
@@ -8421,6 +8911,27 @@
     "comment": ""
   },
   {
+    "term": "Multiplexer",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Multiplexer Type",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Multiplexers",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Music",
     "translation": "",
     "context": "",
@@ -8478,6 +8989,13 @@
   },
   {
     "term": "Named Workspace Icons",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Navigate",
     "translation": "",
     "context": "",
     "reference": "",
@@ -8590,6 +9108,13 @@
   },
   {
     "term": "New Notification",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "New Session",
     "translation": "",
     "context": "",
     "reference": "",
@@ -8813,6 +9338,13 @@
     "comment": ""
   },
   {
+    "term": "No Weather",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No Weather Data",
     "translation": "",
     "context": "",
@@ -8828,6 +9360,13 @@
   },
   {
     "term": "No action",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No active %1 sessions",
     "translation": "",
     "context": "",
     "reference": "",
@@ -9002,6 +9541,13 @@
     "comment": ""
   },
   {
+    "term": "No information available",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No input device",
     "translation": "",
     "context": "audio status",
@@ -9086,6 +9632,13 @@
     "comment": ""
   },
   {
+    "term": "No package manager found. Please install 'paru' or 'yay' on Arch-based systems to check for updates.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No plugin results",
     "translation": "",
     "context": "",
@@ -9156,6 +9709,13 @@
     "comment": ""
   },
   {
+    "term": "No sessions found",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No status output.",
     "translation": "",
     "context": "",
@@ -9194,6 +9754,13 @@
     "term": "No wallpaper selected",
     "translation": "",
     "context": "no wallpaper status",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "No wallpapers",
+    "translation": "",
+    "context": "",
     "reference": "",
     "comment": ""
   },
@@ -9739,7 +10306,7 @@
   {
     "term": "Outline",
     "translation": "",
-    "context": "outline color",
+    "context": "blur border color | outline color",
     "reference": "",
     "comment": ""
   },
@@ -9759,6 +10326,13 @@
   },
   {
     "term": "Output Area Full",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Output Device",
     "translation": "",
     "context": "",
     "reference": "",
@@ -9836,6 +10410,13 @@
   },
   {
     "term": "Override global layout settings for this output",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Override terminal with a custom command or script",
     "translation": "",
     "context": "",
     "reference": "",
@@ -10025,6 +10606,13 @@
   },
   {
     "term": "Password",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Password...",
     "translation": "",
     "context": "",
     "reference": "",
@@ -10248,6 +10836,13 @@
     "comment": ""
   },
   {
+    "term": "Play sound after logging in",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Play sound when new notification arrives",
     "translation": "",
     "context": "",
@@ -10293,6 +10888,13 @@
     "term": "Please wait...",
     "translation": "",
     "context": "network status",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Please write a name for your new %1 session",
+    "translation": "",
+    "context": "",
     "reference": "",
     "comment": ""
   },
@@ -10591,6 +11193,13 @@
     "comment": ""
   },
   {
+    "term": "Press 'n' or click 'New Session' to create one",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Press Enter and the audio system will restart to apply the change",
     "translation": "",
     "context": "Audio device rename dialog hint",
@@ -10635,7 +11244,7 @@
   {
     "term": "Primary",
     "translation": "",
-    "context": "button color option | color option | primary color | shadow color option | tile color option",
+    "context": "blur border color | button color option | color option | primary color | shadow color option | tile color option",
     "reference": "",
     "comment": ""
   },
@@ -11053,6 +11662,13 @@
     "comment": ""
   },
   {
+    "term": "Remember Last Query",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Remember last session",
     "translation": "",
     "context": "",
@@ -11089,6 +11705,13 @@
   },
   {
     "term": "Rename",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Rename Session",
     "translation": "",
     "context": "",
     "reference": "",
@@ -11166,6 +11789,13 @@
   },
   {
     "term": "Requires DWL compositor",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Requires a newer version of Quickshell",
     "translation": "",
     "context": "",
     "reference": "",
@@ -11411,20 +12041,6 @@
   },
   {
     "term": "Run DMS Templates",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Run Sync to apply.",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Run Sync to apply. Fingerprint-only login may not unlock GNOME Keyring.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -11683,6 +12299,13 @@
     "comment": ""
   },
   {
+    "term": "Scroll GitHub",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Scroll Wheel",
     "translation": "",
     "context": "",
@@ -11774,6 +12397,13 @@
     "comment": ""
   },
   {
+    "term": "Search sessions...",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Search themes...",
     "translation": "",
     "context": "theme search placeholder",
@@ -11811,7 +12441,7 @@
   {
     "term": "Secondary",
     "translation": "",
-    "context": "button color option | color option | secondary color | tile color option",
+    "context": "blur border color | button color option | color option | secondary color | tile color option",
     "reference": "",
     "comment": ""
   },
@@ -12131,6 +12761,13 @@
     "comment": ""
   },
   {
+    "term": "Session Filter",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Set Custom Device Name",
     "translation": "",
     "context": "Audio device rename dialog title",
@@ -12335,6 +12972,13 @@
   },
   {
     "term": "Short",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Shortcut (%1)",
     "translation": "",
     "context": "",
     "reference": "",
@@ -12712,6 +13356,13 @@
     "comment": ""
   },
   {
+    "term": "Show Week Number",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Show Welcome",
     "translation": "",
     "context": "",
@@ -12936,6 +13587,13 @@
     "comment": ""
   },
   {
+    "term": "Show week number in the calendar",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Show workspace index numbers in the top bar workspace switcher",
     "translation": "",
     "context": "",
@@ -12979,6 +13637,13 @@
   },
   {
     "term": "Shows when microphone, camera, or screen sharing is active",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Shrink the media widget to fit shorter song titles while still respecting the configured maximum size",
     "translation": "",
     "context": "",
     "reference": "",
@@ -13356,6 +14021,13 @@
     "comment": ""
   },
   {
+    "term": "Sway Website",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Switch User",
     "translation": "",
     "context": "",
@@ -13559,7 +14231,21 @@
     "comment": ""
   },
   {
+    "term": "Terminal",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Terminal custom additional parameters",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Terminal fallback failed. Install a supported terminal emulator or run 'dms auth sync' manually.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -13573,7 +14259,28 @@
     "comment": ""
   },
   {
+    "term": "Terminal fallback opened. Complete authentication setup there; it will close automatically when done.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Terminal fallback opened. Complete sync there; it will close automatically when done.",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Terminal multiplexer backend to use",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Terminal opened. Complete authentication setup there; it will close automatically when done.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -13631,7 +14338,7 @@
   {
     "term": "Text Color",
     "translation": "",
-    "context": "shadow color option",
+    "context": "blur border color | shadow color option",
     "reference": "",
     "comment": ""
   },
@@ -13651,6 +14358,13 @@
   },
   {
     "term": "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (qt5ct.conf|qt6ct.conf and ~/.config/gtk-3.0|gtk-4.0).",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "The custom command used when attaching to sessions (receives the session name as the first argument)",
     "translation": "",
     "context": "",
     "reference": "",
@@ -13986,6 +14700,20 @@
     "comment": ""
   },
   {
+    "term": "Too many attempts - locked out",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Too many failed attempts - account may be locked",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Tools",
     "translation": "",
     "context": "",
@@ -14057,6 +14785,13 @@
   },
   {
     "term": "Total Jobs",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Touch your security key...",
     "translation": "",
     "context": "",
     "reference": "",
@@ -14162,20 +14897,6 @@
   },
   {
     "term": "Type this prefix to search keybinds",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Type to search",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Type to search apps",
     "translation": "",
     "context": "",
     "reference": "",
@@ -14343,6 +15064,13 @@
     "comment": ""
   },
   {
+    "term": "Unknown Track",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Unload on Close",
     "translation": "",
     "context": "",
@@ -14434,6 +15162,13 @@
     "comment": ""
   },
   {
+    "term": "Up to date",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Update",
     "translation": "",
     "context": "",
@@ -14519,6 +15254,13 @@
   },
   {
     "term": "Use Imperial units (°F, mph, inHg) instead of Metric (°C, km/h, hPa)",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Use Inline Expansion",
     "translation": "",
     "context": "",
     "reference": "",
@@ -14687,6 +15429,13 @@
   },
   {
     "term": "Username",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Username...",
     "translation": "",
     "context": "",
     "reference": "",
@@ -15505,7 +16254,21 @@
     "comment": ""
   },
   {
+    "term": "Your system is up to date!",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "actions",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "attached",
     "translation": "",
     "context": "",
     "reference": "",
@@ -15533,6 +16296,13 @@
     "comment": ""
   },
   {
+    "term": "detached",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "device",
     "translation": "",
     "context": "Generic device name | Generic device name fallback",
@@ -15548,6 +16318,13 @@
   },
   {
     "term": "dgop not available",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "dms is a highly customizable, modern desktop shell with a <a href=\"https://m3.material.io/\" style=\"text-decoration:none; color:%1;\">material 3 inspired</a> design.<br /><br/>It is built with <a href=\"https://quickshell.org\" style=\"text-decoration:none; color:%1;\">Quickshell</a>, a QT6 framework for building desktop shells, and <a href=\"https://go.dev\" style=\"text-decoration:none; color:%1;\">Go</a>, a statically typed, compiled programming language.",
     "translation": "",
     "context": "",
     "reference": "",
@@ -15589,6 +16366,13 @@
     "comment": ""
   },
   {
+    "term": "e.g., scratch, /^tmp_.*/, build",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "events",
     "translation": "",
     "context": "",
@@ -15624,6 +16408,20 @@
     "comment": ""
   },
   {
+    "term": "mangowc Discord Server",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "mangowc GitHub",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "matugen not found - install matugen package for dynamic theming",
     "translation": "",
     "context": "matugen error",
@@ -15652,9 +16450,30 @@
     "comment": ""
   },
   {
+    "term": "niri GitHub",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "niri Matrix Chat",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "niri shortcuts config",
     "translation": "",
     "context": "greeter keybinds niri description",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "niri/dms Discord",
+    "translation": "",
+    "context": "",
     "reference": "",
     "comment": ""
   },
@@ -15729,9 +16548,23 @@
     "comment": ""
   },
   {
+    "term": "power-profiles-daemon not available",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "procs",
     "translation": "",
     "context": "short for processes",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "r/niri Subreddit",
+    "translation": "",
+    "context": "",
     "reference": "",
     "comment": ""
   },
@@ -15877,6 +16710,13 @@
   },
   {
     "term": "↑/↓: Nav • Space: Expand • Enter: Action/Expand • E: Text",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "↑/↓: Navigate • Enter/Ctrl+C: Copy • Del: Delete • F10: Help",
     "translation": "",
     "context": "",
     "reference": "",
