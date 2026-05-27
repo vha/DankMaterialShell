@@ -5,6 +5,7 @@ import Quickshell.Wayland
 import qs.Common
 import qs.Modals.DankLauncherV2
 import qs.Services
+import qs.Widgets
 
 Scope {
     id: niriOverviewScope
@@ -67,6 +68,20 @@ Scope {
             hideSpotlight();
     }
 
+    onIsClosingChanged: {
+        if (!isClosing) {
+            closeTimer.stop();
+            return;
+        }
+        closeTimer.restart();
+    }
+
+    Timer {
+        id: closeTimer
+        interval: Theme.expressiveDurations.fast
+        onTriggered: niriOverviewScope.resetState()
+    }
+
     Loader {
         id: niriOverlayLoader
         active: overlayActive || isClosing
@@ -122,6 +137,19 @@ Scope {
 
                 mask: Region {
                     item: overlayVisible && spotlightContainer.visible ? spotlightContainer : null
+                }
+
+                WindowBlur {
+                    targetWindow: overlayWindow
+                    // Track the container's scale so blur shrinks with the content
+                    // during exit — otherwise blur pops away one frame after content.
+                    readonly property real s: Math.min(1, spotlightContainer.scale)
+                    readonly property bool active: overlayWindow.shouldShowSpotlight && spotlightContainer.opacity > 0
+                    blurX: spotlightContainer.x + spotlightContainer.width * (1 - s) * 0.5
+                    blurY: spotlightContainer.y + spotlightContainer.height * (1 - s) * 0.5
+                    blurWidth: active ? spotlightContainer.width * s : 0
+                    blurHeight: active ? spotlightContainer.height * s : 0
+                    blurRadius: Theme.cornerRadius
                 }
 
                 onShouldShowSpotlightChanged: {
@@ -202,8 +230,26 @@ Scope {
 
                 Item {
                     id: spotlightContainer
+
+                    // Connected-frame mode: dock flush against the emerge-side frame
+                    // edge and slide in from beyond that edge. In any other mode the
+                    // spotlight stays centered — identical to master.
+                    readonly property string connectedEmergeSide: SettingsData.frameLauncherEmergeSide || "bottom"
+                    readonly property real _centerY: (parent.height - height) / 2
+                    readonly property real _connectedRestY: {
+                        if (!Theme.isConnectedEffect || !overlayWindow.screen)
+                            return _centerY;
+                        const inset = SettingsData.frameEdgeInsetForSide(overlayWindow.screen, connectedEmergeSide);
+                        return connectedEmergeSide === "top" ? inset : parent.height - height - inset;
+                    }
+                    readonly property real _connectedCollapsedY: connectedEmergeSide === "top" ? -height : parent.height
+
                     x: Theme.snap((parent.width - width) / 2, overlayWindow.dpr)
-                    y: Theme.snap((parent.height - height) / 2, overlayWindow.dpr)
+                    y: {
+                        if (!Theme.isConnectedEffect)
+                            return Theme.snap(_centerY, overlayWindow.dpr);
+                        return Theme.snap(overlayWindow.shouldShowSpotlight ? _connectedRestY : _connectedCollapsedY, overlayWindow.dpr);
+                    }
 
                     readonly property int baseWidth: {
                         switch (SettingsData.dankLauncherV2Size) {
@@ -234,8 +280,8 @@ Scope {
 
                     readonly property bool animatingOut: niriOverviewScope.isClosing && overlayWindow.isSpotlightScreen
 
-                    scale: overlayWindow.shouldShowSpotlight ? 1.0 : 0.96
-                    opacity: overlayWindow.shouldShowSpotlight ? 1 : 0
+                    scale: Theme.isConnectedEffect ? 1.0 : (overlayWindow.shouldShowSpotlight ? 1.0 : 0.96)
+                    opacity: Theme.isConnectedEffect ? 1 : (overlayWindow.shouldShowSpotlight ? 1 : 0)
                     visible: overlayWindow.shouldShowSpotlight || animatingOut
                     enabled: overlayWindow.shouldShowSpotlight
 
@@ -245,6 +291,7 @@ Scope {
 
                     Behavior on scale {
                         id: scaleAnimation
+                        enabled: !Theme.isConnectedEffect
                         NumberAnimation {
                             duration: Theme.expressiveDurations.fast
                             easing.type: Easing.BezierSpline
@@ -258,10 +305,28 @@ Scope {
                     }
 
                     Behavior on opacity {
+                        enabled: !Theme.isConnectedEffect
                         NumberAnimation {
                             duration: Theme.expressiveDurations.fast
                             easing.type: Easing.BezierSpline
                             easing.bezierCurve: spotlightContainer.visible ? Theme.expressiveCurves.expressiveFastSpatial : Theme.expressiveCurves.standardAccel
+                        }
+                    }
+
+                    // Connected-mode slide — only animates in full connected-frame mode.
+                    // Drives resetState when the slide-out finishes (scale/opacity are
+                    // static in connected mode so their onRunningChanged never fires).
+                    Behavior on y {
+                        enabled: Theme.isConnectedEffect
+                        NumberAnimation {
+                            duration: Theme.variantDuration(Theme.popoutAnimationDuration, overlayWindow.shouldShowSpotlight)
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: overlayWindow.shouldShowSpotlight ? Theme.variantPopoutEnterCurve : Theme.variantPopoutExitCurve
+                            onRunningChanged: {
+                                if (running || !spotlightContainer.animatingOut)
+                                    return;
+                                niriOverviewScope.resetState();
+                            }
                         }
                     }
 

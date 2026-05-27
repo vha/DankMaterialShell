@@ -14,6 +14,7 @@ import qs.Widgets
 
 Item {
     id: root
+    readonly property var log: Log.scoped("LockScreenContent")
 
     function encodeFileUrl(path) {
         if (!path)
@@ -95,9 +96,9 @@ Item {
         if (SessionService.loginctlAvailable && DMSService.apiVersion >= 2) {
             DMSService.sendRequest("loginctl.lockerReady", null, resp => {
                 if (resp?.error)
-                    console.warn("lockerReady failed:", resp.error);
+                    log.warn("lockerReady failed:", resp.error);
                 else
-                    console.log("lockerReady sent (afterAnimating/afterRendering)");
+                    log.debug("lockerReady sent (afterAnimating/afterRendering)");
             });
         }
     }
@@ -803,7 +804,7 @@ Item {
                             }
 
                             if (pam.passwd.active) {
-                                console.log("PAM is active, ignoring input");
+                                log.debug("PAM is active, ignoring input");
                                 event.accepted = true;
                                 return;
                             }
@@ -1024,7 +1025,7 @@ Item {
                                     color: Qt.rgba(Theme.surfaceContainer.r, Theme.surfaceContainer.g, Theme.surfaceContainer.b, 0.9)
                                 }
 
-                                RotationAnimation on rotation {
+                                RotationAnimator on rotation {
                                     running: pam.passwd.active && !root.unlocking
                                     loops: Animation.Infinite
                                     duration: Anims.durLong
@@ -1622,7 +1623,7 @@ Item {
             buttonSize: 40
             onClicked: {
                 if (demoMode) {
-                    console.log("Demo: Power Menu");
+                    log.debug("Demo: Power Menu");
                 } else {
                     powerMenu.show();
                 }

@@ -36,36 +36,36 @@ Item {
 
     function normalizePinList(value) {
         if (Array.isArray(value))
-            return value.filter(v => v)
+            return value.filter(v => v);
         if (typeof value === "string" && value.length > 0)
-            return [value]
-        return []
+            return [value];
+        return [];
     }
 
     function getPinnedWifiNetworks() {
-        const pins = SettingsData.wifiNetworkPins || {}
-        return normalizePinList(pins["preferredWifi"])
+        const pins = SettingsData.wifiNetworkPins || {};
+        return normalizePinList(pins["preferredWifi"]);
     }
 
     function toggleWifiPin(ssid) {
-        const pins = JSON.parse(JSON.stringify(SettingsData.wifiNetworkPins || {}))
-        let pinnedList = normalizePinList(pins["preferredWifi"])
-        const pinIndex = pinnedList.indexOf(ssid)
+        const pins = JSON.parse(JSON.stringify(SettingsData.wifiNetworkPins || {}));
+        let pinnedList = normalizePinList(pins["preferredWifi"]);
+        const pinIndex = pinnedList.indexOf(ssid);
 
         if (pinIndex !== -1) {
-            pinnedList.splice(pinIndex, 1)
+            pinnedList.splice(pinIndex, 1);
         } else {
-            pinnedList.unshift(ssid)
+            pinnedList.unshift(ssid);
             if (pinnedList.length > maxPinnedWifiNetworks)
-                pinnedList = pinnedList.slice(0, maxPinnedWifiNetworks)
+                pinnedList = pinnedList.slice(0, maxPinnedWifiNetworks);
         }
 
         if (pinnedList.length > 0)
-            pins["preferredWifi"] = pinnedList
+            pins["preferredWifi"] = pinnedList;
         else
-            delete pins["preferredWifi"]
+            delete pins["preferredWifi"];
 
-        SettingsData.set("wifiNetworkPins", pins)
+        SettingsData.set("wifiNetworkPins", pins);
     }
 
     LazyLoader {
@@ -340,9 +340,7 @@ Item {
                                     if (devices.length === 0)
                                         return I18n.tr("No adapters");
                                     if (connected === 0)
-                                        return devices.length === 1
-                                            ? I18n.tr("%1 adapter, none connected").arg(devices.length)
-                                            : I18n.tr("%1 adapters, none connected").arg(devices.length);
+                                        return devices.length === 1 ? I18n.tr("%1 adapter, none connected").arg(devices.length) : I18n.tr("%1 adapters, none connected").arg(devices.length);
                                     return I18n.tr("%1 connected").arg(connected);
                                 }
                                 font.pixelSize: Theme.fontSizeSmall
@@ -658,16 +656,14 @@ Item {
                                                             SequentialAnimation {
                                                                 running: NetworkService.networkWiredInfoLoading
                                                                 loops: Animation.Infinite
-                                                                NumberAnimation {
+                                                                OpacityAnimator {
                                                                     target: wiredLoadIcon
-                                                                    property: "opacity"
                                                                     to: 0.3
                                                                     duration: 400
                                                                     easing.type: Easing.InOutQuad
                                                                 }
-                                                                NumberAnimation {
+                                                                OpacityAnimator {
                                                                     target: wiredLoadIcon
-                                                                    property: "opacity"
                                                                     to: 1.0
                                                                     duration: 400
                                                                     easing.type: Easing.InOutQuad
@@ -1046,16 +1042,14 @@ Item {
                                     SequentialAnimation {
                                         running: NetworkService.isScanning
                                         loops: Animation.Infinite
-                                        NumberAnimation {
+                                        OpacityAnimator {
                                             target: scanningIcon
-                                            property: "opacity"
                                             to: 0.3
                                             duration: 400
                                             easing.type: Easing.InOutQuad
                                         }
-                                        NumberAnimation {
+                                        OpacityAnimator {
                                             target: scanningIcon
-                                            property: "opacity"
                                             to: 1.0
                                             duration: 400
                                             easing.type: Easing.InOutQuad
@@ -1087,14 +1081,14 @@ Item {
 
                                     let sorted = [...networks];
                                     sorted.sort((a, b) => {
-                                        const aPinnedIndex = pinnedList.indexOf(a.ssid)
-                                        const bPinnedIndex = pinnedList.indexOf(b.ssid)
+                                        const aPinnedIndex = pinnedList.indexOf(a.ssid);
+                                        const bPinnedIndex = pinnedList.indexOf(b.ssid);
                                         if (aPinnedIndex !== -1 || bPinnedIndex !== -1) {
                                             if (aPinnedIndex === -1)
-                                                return 1
+                                                return 1;
                                             if (bPinnedIndex === -1)
-                                                return -1
-                                            return aPinnedIndex - bPinnedIndex
+                                                return -1;
+                                            return aPinnedIndex - bPinnedIndex;
                                         }
                                         if (a.ssid === ssid)
                                             return -1;
@@ -1297,7 +1291,7 @@ Item {
                                                     buttonSize: 28
                                                     iconColor: isPinned ? Theme.primary : Theme.surfaceVariantText
                                                     onClicked: {
-                                                        networkTab.toggleWifiPin(modelData.ssid)
+                                                        networkTab.toggleWifiPin(modelData.ssid);
                                                     }
                                                 }
 
@@ -1375,16 +1369,14 @@ Item {
                                                                 SequentialAnimation {
                                                                     running: NetworkService.networkInfoLoading
                                                                     loops: Animation.Infinite
-                                                                    NumberAnimation {
+                                                                    OpacityAnimator {
                                                                         target: wifiInfoLoadIcon
-                                                                        property: "opacity"
                                                                         to: 0.3
                                                                         duration: 400
                                                                         easing.type: Easing.InOutQuad
                                                                     }
-                                                                    NumberAnimation {
+                                                                    OpacityAnimator {
                                                                         target: wifiInfoLoadIcon
-                                                                        property: "opacity"
                                                                         to: 1.0
                                                                         duration: 400
                                                                         easing.type: Easing.InOutQuad
@@ -1697,8 +1689,11 @@ Item {
                                 required property int index
 
                                 readonly property bool isActive: DMSNetworkService.isActiveUuid(modelData.uuid)
+                                readonly property bool isTransient: !!modelData.transient
+                                readonly property bool canExpand: modelData.canExpand !== false
+                                readonly property bool canDelete: modelData.canDelete !== false
                                 readonly property bool isExpanded: networkTab.expandedVpnUuid === modelData.uuid
-                                readonly property var configData: isExpanded ? VPNService.editConfig : null
+                                readonly property var configData: (!isTransient && isExpanded) ? VPNService.editConfig : null
 
                                 width: parent.width
                                 height: isExpanded ? 56 + vpnExpandedContent.height : 56
@@ -1745,7 +1740,7 @@ Item {
                                         Column {
                                             spacing: 2
                                             anchors.verticalCenter: parent.verticalCenter
-                                            width: parent.width - 20 - 28 - 28 - Theme.spacingS * 4
+                                            width: parent.width - 20 - ((canExpand ? 28 : 0) + (canDelete ? 28 : 0)) - Theme.spacingS * 4
 
                                             StyledText {
                                                 text: modelData.name
@@ -1775,6 +1770,7 @@ Item {
                                             radius: 14
                                             color: vpnExpandBtn.containsMouse ? Theme.surfacePressed : "transparent"
                                             anchors.verticalCenter: parent.verticalCenter
+                                            visible: canExpand
 
                                             DankIcon {
                                                 anchors.centerIn: parent
@@ -1805,6 +1801,7 @@ Item {
                                             radius: 14
                                             color: vpnDeleteBtn.containsMouse ? Theme.errorHover : "transparent"
                                             anchors.verticalCenter: parent.verticalCenter
+                                            visible: canDelete
 
                                             DankIcon {
                                                 anchors.centerIn: parent
@@ -1835,7 +1832,7 @@ Item {
                                         id: vpnExpandedContent
                                         width: parent.width
                                         spacing: Theme.spacingXS
-                                        visible: isExpanded
+                                        visible: !isTransient && isExpanded
 
                                         Rectangle {
                                             width: parent.width
@@ -1861,16 +1858,14 @@ Item {
                                                     SequentialAnimation {
                                                         running: VPNService.configLoading
                                                         loops: Animation.Infinite
-                                                        NumberAnimation {
+                                                        OpacityAnimator {
                                                             target: vpnLoadIcon
-                                                            property: "opacity"
                                                             to: 0.3
                                                             duration: 400
                                                             easing.type: Easing.InOutQuad
                                                         }
-                                                        NumberAnimation {
+                                                        OpacityAnimator {
                                                             target: vpnLoadIcon
-                                                            property: "opacity"
                                                             to: 1.0
                                                             duration: 400
                                                             easing.type: Easing.InOutQuad
@@ -1979,7 +1974,9 @@ Item {
                                             checked: configData ? (configData.autoconnect || false) : false
                                             visible: !VPNService.configLoading && configData !== null
                                             onToggled: checked => {
-                                                VPNService.updateConfig(modelData.uuid, {autoconnect: checked});
+                                                VPNService.updateConfig(modelData.uuid, {
+                                                    autoconnect: checked
+                                                });
                                             }
                                         }
 

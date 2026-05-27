@@ -8,9 +8,11 @@ import Quickshell.Hyprland
 import Quickshell.I3
 import Quickshell.Wayland
 import qs.Common
+import qs.Services
 
 Singleton {
     id: root
+    readonly property var log: Log.scoped("SessionService")
 
     property bool hasUwsm: false
     property bool isElogind: false
@@ -64,15 +66,16 @@ Singleton {
             detectHibernateProcess.running = true;
             detectPrimeRunProcess.running = true;
             detectWtypeProcess.running = true;
-            console.info("SessionService: Native inhibitor available:", nativeInhibitorAvailable);
+            cleanupOrphanedInhibitors();
+            log.info("Native inhibitor available:", nativeInhibitorAvailable);
             if (!SettingsData.loginctlLockIntegration) {
-                console.log("SessionService: loginctl lock integration disabled by user");
+                log.debug("loginctl lock integration disabled by user");
                 return;
             }
             if (socketPath && socketPath.length > 0) {
                 checkDMSCapabilities();
             } else {
-                console.log("SessionService: DMS_SOCKET not set");
+                log.debug("DMS_SOCKET not set");
             }
         }
     }
@@ -93,7 +96,7 @@ Singleton {
         command: ["sh", "-c", "ps -eo comm= | grep -E '^(elogind|elogind-daemon)$'"]
 
         onExited: function (exitCode) {
-            console.log("SessionService: Elogind detection exited with code", exitCode);
+            log.debug("Elogind detection exited with code", exitCode);
             isElogind = (exitCode === 0);
         }
     }
@@ -237,7 +240,7 @@ Singleton {
         const finalEnv = Object.assign({}, cursorEnv, overrideEnv);
 
         if (desktopEntry.runInTerminal) {
-            const terminal = Quickshell.env("TERMINAL") || "xterm";
+            const terminal = SessionData.resolveTerminal() || "xterm";
             const escapedCmd = cmd.map(arg => escapeShellArg(arg)).join(" ");
             const shellCmd = prefix.length > 0 ? `${prefix} ${escapedCmd}` : escapedCmd;
             Quickshell.execDetached({
@@ -396,7 +399,7 @@ Singleton {
         if (idleInhibited) {
             return;
         }
-        console.log("SessionService: Enabling idle inhibit (native:", nativeInhibitorAvailable, ")");
+        log.debug("Enabling idle inhibit (native:", nativeInhibitorAvailable, ")");
         idleInhibited = true;
         inhibitorChanged();
     }
@@ -405,7 +408,7 @@ Singleton {
         if (!idleInhibited) {
             return;
         }
-        console.log("SessionService: Disabling idle inhibit (native:", nativeInhibitorAvailable, ")");
+        log.debug("Disabling idle inhibit (native:", nativeInhibitorAvailable, ")");
         idleInhibited = false;
         inhibitorChanged();
     }
@@ -441,23 +444,43 @@ Singleton {
                 return ["true"];
             }
 
-            console.log("SessionService: Starting systemd/elogind inhibit process");
+            log.debug("Starting systemd/elogind inhibit process");
             return [isElogind ? "elogind-inhibit" : "systemd-inhibit", "--what=idle", "--who=quickshell", `--why=${inhibitReason}`, "--mode=block", "sleep", "infinity"];
         }
 
         running: idleInhibited && !nativeInhibitorAvailable
 
         onRunningChanged: {
-            console.log("SessionService: Inhibit process running:", running, "(native:", nativeInhibitorAvailable, ")");
+            log.debug("Inhibit process running:", running, "(native:", nativeInhibitorAvailable, ")");
         }
 
         onExited: function (exitCode) {
             if (idleInhibited && exitCode !== 0 && !nativeInhibitorAvailable) {
-                console.warn("SessionService: Inhibitor process crashed with exit code:", exitCode);
+                log.warn("Inhibitor process crashed with exit code:", exitCode);
                 idleInhibited = false;
                 if (SettingsData.osdIdleInhibitorEnabled) {
                     ToastService.showWarning("Idle inhibitor failed");
                 }
+            }
+        }
+    }
+
+    // Kill orphaned idle inhibitor processes left behind by previous quickshell sessions.
+    // When quickshell crashes or is force-killed, the child systemd-inhibit process gets
+    // reparented to PID 1 and continues to block idle indefinitely.
+    function cleanupOrphanedInhibitors() {
+        if (nativeInhibitorAvailable) return;
+        orphanCleanupProcess.running = true;
+    }
+
+    Process {
+        id: orphanCleanupProcess
+        running: false
+        command: ["pkill", "-f", "systemd-inhibit --what=idle --who=quickshell.*sleep infinity"]
+
+        onExited: function (exitCode) {
+            if (exitCode === 0) {
+                log.info("Cleaned up orphaned idle inhibitor process(es) from a previous session");
             }
         }
     }
@@ -547,7 +570,7 @@ Singleton {
             }
         } else {
             loginctlAvailable = false;
-            console.log("SessionService: loginctl capability not available in DMS");
+            log.debug("loginctl capability not available in DMS");
         }
 
         if (DMSService.capabilities.includes("dbus")) {
@@ -576,7 +599,7 @@ Singleton {
             prepareForSleepSubscriptionPending = false;
 
             if (response.error) {
-                console.warn("SessionService: Failed to subscribe to PrepareForSleep:", response.error);
+                log.warn("Failed to subscribe to PrepareForSleep:", response.error);
                 return;
             }
 
@@ -623,9 +646,9 @@ Singleton {
             enabled: SettingsData.lockBeforeSuspend
         }, response => {
             if (response.error) {
-                console.warn("SessionService: Failed to sync lock before suspend:", response.error);
+                log.warn("Failed to sync lock before suspend:", response.error);
             } else {
-                console.log("SessionService: Synced lock before suspend:", SettingsData.lockBeforeSuspend);
+                log.debug("Synced lock before suspend:", SettingsData.lockBeforeSuspend);
             }
         });
     }
@@ -639,9 +662,9 @@ Singleton {
             enabled: SettingsData.loginctlLockIntegration && SettingsData.lockBeforeSuspend
         }, response => {
             if (response.error) {
-                console.warn("SessionService: Failed to sync sleep inhibitor:", response.error);
+                log.warn("Failed to sync sleep inhibitor:", response.error);
             } else {
-                console.log("SessionService: Synced sleep inhibitor:", SettingsData.loginctlLockIntegration);
+                log.debug("Synced sleep inhibitor:", SettingsData.loginctlLockIntegration);
             }
         });
     }

@@ -11,6 +11,8 @@ import qs.Modules.Settings.Widgets
 Item {
     id: themeColorsTab
 
+    property var parentModal: null
+    readonly property bool connectedFrameModeActive: SettingsData.connectedFrameModeActive
     property var cachedIconThemes: SettingsData.availableIconThemes
     property var cachedCursorThemes: SettingsData.availableCursorThemes
     property var cachedMatugenSchemes: Theme.availableMatugenSchemes.map(option => option.label)
@@ -1613,12 +1615,20 @@ Item {
                     }
                 }
 
+                SettingsControlledByFrame {
+                    visible: themeColorsTab.connectedFrameModeActive
+                    parentModal: themeColorsTab.parentModal
+                    settingLabel: I18n.tr("Surface Opacity")
+                    reason: I18n.tr("Managed by Frame in Connected Mode")
+                }
+
                 SettingsSliderRow {
                     tab: "theme"
-                    tags: ["popup", "transparency", "opacity", "modal"]
+                    tags: ["surface", "popup", "transparency", "opacity", "modal"]
                     settingKey: "popupTransparency"
-                    text: I18n.tr("Popup Transparency")
+                    text: I18n.tr("Surface Opacity")
                     description: I18n.tr("Controls opacity of all popouts, modals, and their content layers")
+                    visible: !themeColorsTab.connectedFrameModeActive
                     value: Math.round(SettingsData.popupTransparency * 100)
                     minimum: 0
                     maximum: 100
@@ -1837,10 +1847,37 @@ Item {
                     tags: ["blur", "background", "transparency", "glass", "frosted"]
                     settingKey: "blurEnabled"
                     text: I18n.tr("Background Blur")
-                    description: BlurService.available ? I18n.tr("Blur the background behind bars, popouts, modals, and notifications. Requires compositor support and configuration.") : I18n.tr("Requires a newer version of Quickshell")
+                    description: !BlurService.available ? I18n.tr("Requires a newer version of Quickshell") : I18n.tr("Blur the background behind bars, popouts, modals, and notifications. Requires compositor support and configuration.")
                     checked: SettingsData.blurEnabled ?? false
                     enabled: BlurService.available
                     onToggled: checked => SettingsData.set("blurEnabled", checked)
+                }
+
+                SettingsToggleRow {
+                    tab: "theme"
+                    tags: ["blur", "foreground", "layers", "contrast", "glass", "frosted"]
+                    settingKey: "blurForegroundLayers"
+                    text: I18n.tr("Foreground Layers")
+                    description: I18n.tr("Show foreground surfaces on blurred panels for stronger contrast")
+                    checked: SettingsData.blurForegroundLayers ?? true
+                    visible: BlurService.available && (SettingsData.blurEnabled ?? false)
+                    enabled: BlurService.available
+                    onToggled: checked => SettingsData.set("blurForegroundLayers", checked)
+                }
+
+                SettingsSliderRow {
+                    tab: "theme"
+                    tags: ["blur", "foreground", "layers", "outline", "border", "cards", "widgets", "notifications", "control center"]
+                    settingKey: "blurLayerOutlineOpacity"
+                    text: I18n.tr("Layer Outline Opacity")
+                    description: I18n.tr("Controls outlines around blurred foreground cards, pills, and notification cards")
+                    visible: BlurService.available && (SettingsData.blurEnabled ?? false)
+                    value: Math.round((SettingsData.blurLayerOutlineOpacity ?? 0.12) * 100)
+                    minimum: 0
+                    maximum: 40
+                    unit: "%"
+                    defaultValue: 12
+                    onSliderValueChanged: newValue => SettingsData.set("blurLayerOutlineOpacity", newValue / 100)
                 }
 
                 SettingsDropdownRow {
@@ -1886,12 +1923,13 @@ Item {
                     tags: ["blur", "border", "opacity"]
                     settingKey: "blurBorderOpacity"
                     text: I18n.tr("Blur Border Opacity")
+                    description: I18n.tr("Controls the outer edge of protocol-blurred windows")
                     visible: SettingsData.blurEnabled
-                    value: Math.round((SettingsData.blurBorderOpacity ?? 1.0) * 100)
+                    value: Math.round((SettingsData.blurBorderOpacity ?? 0.35) * 100)
                     minimum: 0
                     maximum: 100
                     unit: "%"
-                    defaultValue: 100
+                    defaultValue: 35
                     onSliderValueChanged: newValue => SettingsData.set("blurBorderOpacity", newValue / 100)
                 }
             }
@@ -2212,12 +2250,20 @@ Item {
                 settingKey: "modalBackground"
                 iconName: "layers"
 
+                SettingsControlledByFrame {
+                    visible: themeColorsTab.connectedFrameModeActive
+                    parentModal: themeColorsTab.parentModal
+                    settingLabel: I18n.tr("Darken Modal Background")
+                    reason: I18n.tr("Managed by Frame in Connected Mode")
+                }
+
                 SettingsToggleRow {
                     tab: "theme"
                     tags: ["modal", "darken", "background", "overlay"]
                     settingKey: "modalDarkenBackground"
                     text: I18n.tr("Darken Modal Background")
                     description: I18n.tr("Show darkened overlay behind modal dialogs")
+                    visible: !themeColorsTab.connectedFrameModeActive
                     checked: SettingsData.modalDarkenBackground
                     onToggled: checked => SettingsData.set("modalDarkenBackground", checked)
                 }
@@ -2615,6 +2661,18 @@ Item {
                     visible: SettingsData.runDmsMatugenTemplates
                     checked: SettingsData.matugenTemplateVesktop
                     onToggled: checked => SettingsData.set("matugenTemplateVesktop", checked)
+                }
+
+                SettingsToggleRow {
+                    tab: "theme"
+                    tags: ["matugen", "vencord", "discord", "template"]
+                    settingKey: "matugenTemplateVencord"
+                    text: "vencord"
+                    description: getTemplateDescription("vencord", "")
+                    descriptionColor: getTemplateDescriptionColor("vencord")
+                    visible: SettingsData.runDmsMatugenTemplates
+                    checked: SettingsData.matugenTemplateVencord
+                    onToggled: checked => SettingsData.set("matugenTemplateVencord", checked)
                 }
 
                 SettingsToggleRow {

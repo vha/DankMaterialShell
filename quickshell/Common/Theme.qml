@@ -12,6 +12,7 @@ import "StockThemes.js" as StockThemes
 
 Singleton {
     id: root
+    readonly property var log: Log.scoped("Theme")
 
     readonly property string stateDir: Paths.strip(StandardPaths.writableLocation(StandardPaths.GenericCacheLocation).toString()) + "/DankMaterialShell"
     readonly property bool envDisableMatugen: Quickshell.env("DMS_DISABLE_MATUGEN") === "1" || Quickshell.env("DMS_DISABLE_MATUGEN") === "true"
@@ -148,7 +149,7 @@ Singleton {
             }
 
             if (colorsFileLoadFailed && currentTheme === dynamic && rawWallpaperPath) {
-                console.info("Theme: Matugen now available, regenerating colors for dynamic theme");
+                log.info("Matugen now available, regenerating colors for dynamic theme");
                 const isLight = (typeof SessionData !== "undefined" && SessionData.isLightMode);
                 const iconTheme = (typeof SettingsData !== "undefined" && SettingsData.iconTheme) ? SettingsData.iconTheme : "System Default";
                 const selectedMatugenType = (typeof SettingsData !== "undefined" && SettingsData.matugenScheme) ? SettingsData.matugenScheme : "scheme-tonal-spot";
@@ -376,7 +377,7 @@ Singleton {
                         "use": true
                     }, response => {
                         if (!response.error) {
-                            console.info("Theme automation: IP location enabled after connection");
+                            log.info("Theme automation: IP location enabled after connection");
                         }
                     });
                 } else if (SessionData.latitude !== 0.0 && SessionData.longitude !== 0.0) {
@@ -389,13 +390,13 @@ Singleton {
                                 "longitude": SessionData.longitude
                             }, locationResponse => {
                                 if (locationResponse?.error) {
-                                    console.warn("Theme automation: Failed to set location", locationResponse.error);
+                                    log.warn("Theme automation: Failed to set location", locationResponse.error);
                                 }
                             });
                         }
                     });
                 } else {
-                    console.warn("Theme automation: No location configured");
+                    log.warn("Theme automation: No location configured");
                 }
             }
         }
@@ -549,8 +550,8 @@ Singleton {
     property color success: currentThemeData.success || "#4CAF50"
 
     property color primaryHover: Qt.rgba(primary.r, primary.g, primary.b, 0.12)
-    property color primaryHoverLight: Qt.rgba(primary.r, primary.g, primary.b, 0.08)
-    property color primaryPressed: Qt.rgba(primary.r, primary.g, primary.b, 0.16)
+    property color primaryHoverLight: Qt.rgba(primary.r, primary.g, primary.b, transparentBlurLayers ? 0.12 : 0.08)
+    property color primaryPressed: Qt.rgba(primary.r, primary.g, primary.b, transparentBlurLayers ? 0.24 : 0.16)
     property color primarySelected: Qt.rgba(primary.r, primary.g, primary.b, 0.3)
     property color primaryBackground: Qt.rgba(primary.r, primary.g, primary.b, 0.04)
 
@@ -559,17 +560,28 @@ Singleton {
     property color surfaceHover: Qt.rgba(surfaceVariant.r, surfaceVariant.g, surfaceVariant.b, 0.08)
     property color surfacePressed: Qt.rgba(surfaceVariant.r, surfaceVariant.g, surfaceVariant.b, 0.12)
     property color surfaceSelected: Qt.rgba(surfaceVariant.r, surfaceVariant.g, surfaceVariant.b, 0.15)
-    property color surfaceLight: Qt.rgba(surfaceVariant.r, surfaceVariant.g, surfaceVariant.b, 0.1)
+    property color surfaceLight: Qt.rgba(surfaceVariant.r, surfaceVariant.g, surfaceVariant.b, transparentBlurLayers ? 0.3 : 0.1)
     property color surfaceVariantAlpha: Qt.rgba(surfaceVariant.r, surfaceVariant.g, surfaceVariant.b, 0.2)
+
+    readonly property bool blurForegroundLayers: BlurService.enabled && (typeof SettingsData === "undefined" || (SettingsData.blurForegroundLayers ?? true))
+    readonly property bool transparentBlurLayers: BlurService.enabled && !blurForegroundLayers
+    readonly property color readableSurface: withAlpha(surfaceContainer, popupTransparency)
+    readonly property color readableSurfaceHigh: withAlpha(surfaceContainerHigh, popupTransparency)
+    readonly property color floatingSurface: transparentBlurLayers ? "transparent" : readableSurface
+    readonly property color floatingSurfaceHigh: transparentBlurLayers ? "transparent" : readableSurfaceHigh
+    readonly property color nestedSurface: floatingSurfaceHigh
+    readonly property real blurLayerOutlineOpacity: Math.max(0, Math.min(1, typeof SettingsData === "undefined" ? 0.12 : (SettingsData.blurLayerOutlineOpacity ?? 0.12)))
+    readonly property real layerOutlineOpacity: BlurService.enabled ? blurLayerOutlineOpacity : 0.08
+    readonly property int layerOutlineWidth: BlurService.enabled && layerOutlineOpacity > 0 ? 1 : 0
     property color surfaceTextHover: Qt.rgba(surfaceText.r, surfaceText.g, surfaceText.b, 0.08)
     property color surfaceTextAlpha: Qt.rgba(surfaceText.r, surfaceText.g, surfaceText.b, 0.3)
     property color surfaceTextLight: Qt.rgba(surfaceText.r, surfaceText.g, surfaceText.b, 0.06)
     property color surfaceTextMedium: Qt.rgba(surfaceText.r, surfaceText.g, surfaceText.b, 0.7)
 
     property color outlineButton: Qt.rgba(outline.r, outline.g, outline.b, 0.5)
-    property color outlineLight: Qt.rgba(outline.r, outline.g, outline.b, 0.05)
-    property color outlineMedium: Qt.rgba(outline.r, outline.g, outline.b, 0.08)
-    property color outlineStrong: Qt.rgba(outline.r, outline.g, outline.b, 0.12)
+    property color outlineLight: Qt.rgba(outline.r, outline.g, outline.b, BlurService.enabled ? Math.min(1, layerOutlineOpacity * 0.625) : 0.05)
+    property color outlineMedium: Qt.rgba(outline.r, outline.g, outline.b, layerOutlineOpacity)
+    property color outlineStrong: Qt.rgba(outline.r, outline.g, outline.b, BlurService.enabled ? Math.min(1, layerOutlineOpacity * 1.5) : 0.12)
 
     property color errorHover: Qt.rgba(error.r, error.g, error.b, 0.12)
     property color errorPressed: Qt.rgba(error.r, error.g, error.b, 0.16)
@@ -586,6 +598,12 @@ Singleton {
             return primary;
         }
     }
+
+    readonly property color ccTileInactiveBg: transparentBlurLayers ? withAlpha(surfaceContainerHigh, 0.16) : (blurForegroundLayers ? withAlpha(surfaceContainerHigh, Math.min(popupTransparency, 0.24)) : withAlpha(surfaceContainer, popupTransparency))
+    readonly property color ccPillInactiveBg: transparentBlurLayers ? withAlpha(surfaceContainerHigh, 0.08) : nestedSurface
+    readonly property color ccPillInactiveHoverBg: transparentBlurLayers ? withAlpha(primary, 0.10) : primaryPressed
+    readonly property color ccSliderTrackColor: transparentBlurLayers ? surfaceText : surfaceContainerHigh
+    readonly property real ccSliderTrackOpacity: transparentBlurLayers ? 0.18 : popupTransparency
 
     readonly property color ccTileActiveText: {
         switch (SettingsData.controlCenterTileColorMode) {
@@ -968,6 +986,46 @@ Singleton {
         "expressiveEffects": [0.34, 0.8, 0.34, 1, 1, 1]
     }
 
+    // Theme is the canonical access point for animation variant state. The
+    // aliases below forward to AnimVariants.qml so consumers don't need two
+    // imports. ~200 call sites read through Theme.variantEnterCurve /
+    // Theme.isConnectedEffect / etc. — do NOT migrate to AnimVariants directly.
+    readonly property list<real> variantEnterCurve: AnimVariants.variantEnterCurve
+    readonly property list<real> variantExitCurve: AnimVariants.variantExitCurve
+    readonly property list<real> variantModalEnterCurve: AnimVariants.variantModalEnterCurve
+    readonly property list<real> variantModalExitCurve: AnimVariants.variantModalExitCurve
+    readonly property list<real> variantPopoutEnterCurve: AnimVariants.variantPopoutEnterCurve
+    readonly property list<real> variantPopoutExitCurve: AnimVariants.variantPopoutExitCurve
+    readonly property real variantEnterDurationFactor: AnimVariants.variantEnterDurationFactor
+    readonly property real variantExitDurationFactor: AnimVariants.variantExitDurationFactor
+    readonly property real variantOpacityDurationScale: AnimVariants.variantOpacityDurationScale
+    readonly property bool isDirectionalEffect: AnimVariants.isDirectionalEffect
+    readonly property bool isDepthEffect: AnimVariants.isDepthEffect
+    readonly property bool isConnectedEffect: AnimVariants.isConnectedEffect
+    readonly property real connectedCornerRadius: {
+        if (typeof SettingsData === "undefined")
+            return 12;
+        return SettingsData.connectedFrameModeActive ? SettingsData.frameRounding : cornerRadius;
+    }
+    readonly property color connectedSurfaceColor: {
+        if (typeof SettingsData === "undefined")
+            return withAlpha(surfaceContainer, popupTransparency);
+        return isConnectedEffect ? Qt.rgba(SettingsData.effectiveFrameColor.r, SettingsData.effectiveFrameColor.g, SettingsData.effectiveFrameColor.b, SettingsData.frameOpacity) : withAlpha(surfaceContainer, popupTransparency);
+    }
+    readonly property real connectedSurfaceRadius: isConnectedEffect ? connectedCornerRadius : cornerRadius
+    readonly property bool connectedSurfaceBlurEnabled: (typeof SettingsData === "undefined") ? true : (!isConnectedEffect || SettingsData.frameBlurEnabled)
+    readonly property real effectScaleCollapsed: AnimVariants.effectScaleCollapsed
+    readonly property real effectAnimOffset: AnimVariants.effectAnimOffset
+    function variantDuration(baseDuration, entering) {
+        return AnimVariants.variantDuration(baseDuration, entering);
+    }
+    function variantExitCleanupPadding() {
+        return AnimVariants.variantExitCleanupPadding();
+    }
+    function variantCloseInterval(baseDuration) {
+        return AnimVariants.variantCloseInterval(baseDuration);
+    }
+
     readonly property var animationPresetDurations: {
         "none": 0,
         "short": 250,
@@ -1042,6 +1100,9 @@ Singleton {
         const base = notificationAnimationBaseDuration;
         return base === 0 ? 0 : Math.round(base * 0.85);
     }
+
+    readonly property int notificationInlineExpandDuration: notificationAnimationBaseDuration === 0 ? 0 : 185
+    readonly property int notificationInlineCollapseDuration: notificationAnimationBaseDuration === 0 ? 0 : 150
 
     readonly property real notificationIconSizeNormal: 56
     readonly property real notificationIconSizeCompact: 48
@@ -1133,7 +1194,13 @@ Singleton {
     property real iconSizeLarge: 32
 
     property real panelTransparency: 0.85
-    property real popupTransparency: typeof SettingsData !== "undefined" && SettingsData.popupTransparency !== undefined ? SettingsData.popupTransparency : 1.0
+    property real popupTransparency: {
+        if (typeof SettingsData === "undefined")
+            return 1.0;
+        if (isConnectedEffect)
+            return SettingsData.frameOpacity !== undefined ? SettingsData.frameOpacity : 1.0;
+        return SettingsData.popupTransparency !== undefined ? SettingsData.popupTransparency : 1.0;
+    }
 
     function screenTransition() {
         if (CompositorService.isNiri) {
@@ -1508,12 +1575,12 @@ Singleton {
 
     function setDesiredTheme(kind, value, isLight, iconTheme, matugenType, stockColors) {
         if (!matugenAvailable) {
-            console.warn("Theme: matugen not available or disabled - cannot set system theme");
+            log.warn("matugen not available or disabled - cannot set system theme");
             return;
         }
 
         if (workerRunning) {
-            console.info("Theme: Worker already running, queueing request");
+            log.info("Worker already running, queueing request");
             pendingThemeRequest = {
                 kind,
                 value,
@@ -1525,7 +1592,7 @@ Singleton {
             return;
         }
 
-        console.info("Theme: Setting desired theme -", kind, "mode:", isLight ? "light" : "dark", stockColors ? "(stock colors)" : "(dynamic)");
+        log.info("Setting desired theme -", kind, "mode:", isLight ? "light" : "dark", stockColors ? "(stock colors)" : "(dynamic)");
 
         if (typeof NiriService !== "undefined" && CompositorService.isNiri) {
             NiriService.suppressNextToast();
@@ -1540,7 +1607,7 @@ Singleton {
             "runUserTemplates": (typeof SettingsData !== "undefined") ? SettingsData.runUserMatugenTemplates : true
         };
 
-        console.log("Theme: Starting matugen worker");
+        log.debug("Starting matugen worker");
         workerRunning = true;
 
         const args = ["dms", "matugen", "queue", "--state-dir", stateDir, "--shell-dir", shellDir, "--config-dir", configDir, "--kind", desired.kind, "--value", desired.value, "--mode", desired.mode, "--icon-theme", desired.iconTheme, "--matugen-type", desired.matugenType,];
@@ -1564,7 +1631,7 @@ Singleton {
         if (typeof SettingsData !== "undefined") {
             const skipTemplates = [];
             if (!SettingsData.runDmsMatugenTemplates) {
-                skipTemplates.push("gtk", "nvim", "niri", "qt5ct", "qt6ct", "firefox", "pywalfox", "zenbrowser", "vesktop", "equibop", "ghostty", "kitty", "foot", "alacritty", "wezterm", "dgop", "kcolorscheme", "vscode", "emacs", "zed");
+                skipTemplates.push("gtk", "nvim", "niri", "qt5ct", "qt6ct", "firefox", "pywalfox", "zenbrowser", "vesktop", "vencord", "equibop", "ghostty", "kitty", "foot", "alacritty", "wezterm", "dgop", "kcolorscheme", "vscode", "emacs", "zed");
             } else {
                 if (!SettingsData.matugenTemplateGtk)
                     skipTemplates.push("gtk");
@@ -1586,6 +1653,8 @@ Singleton {
                     skipTemplates.push("zenbrowser");
                 if (!SettingsData.matugenTemplateVesktop)
                     skipTemplates.push("vesktop");
+                if (!SettingsData.matugenTemplateVencord)
+                    skipTemplates.push("vencord");
                 if (!SettingsData.matugenTemplateEquibop)
                     skipTemplates.push("equibop");
                 if (!SettingsData.matugenTemplateGhostty)
@@ -1698,7 +1767,7 @@ Singleton {
         }
 
         if (!darkTheme || !darkTheme.primary) {
-            console.warn("Theme data not available for:", currentTheme);
+            log.warn("Theme data not available for:", currentTheme);
             return;
         }
 
@@ -1832,6 +1901,12 @@ Singleton {
         return Qt.rgba(c.r, c.g, c.b, a);
     }
 
+    function popupLayerColor(baseColor) {
+        if (isConnectedEffect)
+            return connectedSurfaceColor;
+        return withAlpha(baseColor, popupTransparency);
+    }
+
     function blendAlpha(c, a) {
         return Qt.rgba(c.r, c.g, c.b, c.a * a);
     }
@@ -1936,10 +2011,10 @@ Singleton {
         id: systemThemeGenerator
         running: false
         stdout: SplitParser {
-            onRead: data => console.info("Theme worker:", data)
+            onRead: data => log.info("Theme worker:", data)
         }
         stderr: SplitParser {
-            onRead: data => console.warn("Theme worker:", data)
+            onRead: data => log.warn("Theme worker:", data)
         }
 
         onExited: exitCode => {
@@ -1948,18 +2023,18 @@ Singleton {
 
             switch (exitCode) {
             case 0:
-                console.info("Theme: Matugen worker completed successfully");
+                log.info("Matugen worker completed successfully");
                 root.matugenCompleted(currentMode, "success");
                 break;
             case 2:
-                console.log("Theme: Matugen worker completed with code 2 (no changes needed)");
+                log.debug("Matugen worker completed with code 2 (no changes needed)");
                 root.matugenCompleted(currentMode, "no-changes");
                 break;
             default:
                 if (typeof ToastService !== "undefined") {
                     ToastService.showError("Theme worker failed (" + exitCode + ")");
                 }
-                console.warn("Theme: Matugen worker failed with exit code:", exitCode);
+                log.warn("Matugen worker failed with exit code:", exitCode);
                 root.matugenCompleted(currentMode, "error");
             }
 
@@ -1968,7 +2043,7 @@ Singleton {
 
             const req = pendingThemeRequest;
             pendingThemeRequest = null;
-            console.info("Theme: Processing queued theme request");
+            log.info("Processing queued theme request");
             setDesiredTheme(req.kind, req.value, req.isLight, req.iconTheme, req.matugenType, req.stockColors);
         }
     }
@@ -2022,7 +2097,7 @@ Singleton {
                     }
                 }
             } catch (e) {
-                console.error("Theme: Failed to parse dynamic colors:", e);
+                log.error("Failed to parse dynamic colors:", e);
                 if (typeof ToastService !== "undefined") {
                     ToastService.wallpaperErrorStatus = "error";
                     ToastService.showError("Dynamic colors parse error: " + e.message);
@@ -2042,11 +2117,11 @@ Singleton {
 
         onLoadFailed: function (error) {
             if (currentTheme === dynamic) {
-                console.warn("Theme: Dynamic colors file load failed, marking for regeneration");
+                log.warn("Dynamic colors file load failed, marking for regeneration");
                 colorsFileLoadFailed = true;
                 const isGreeterMode = (typeof SessionData !== "undefined" && SessionData.isGreeterMode);
                 if (!isGreeterMode && matugenAvailable && rawWallpaperPath) {
-                    console.log("Theme: Matugen available, triggering immediate regeneration");
+                    log.debug("Matugen available, triggering immediate regeneration");
                     generateSystemThemesFromCurrentTheme();
                 }
             }
@@ -2170,7 +2245,7 @@ Singleton {
             "endMinute": endMinute
         }, response => {
             if (response && response.error) {
-                console.error("Theme automation: Failed to sync time schedule:", response.error);
+                log.error("Theme automation: Failed to sync time schedule:", response.error);
             }
         });
 
@@ -2263,9 +2338,9 @@ Singleton {
 
         if (root.themeModeAutomationActive) {
             if (SessionData.nightModeUseIPLocation) {
-                console.warn("Theme automation: Waiting for IP location from backend");
+                log.warn("Theme automation: Waiting for IP location from backend");
             } else {
-                console.warn("Theme automation: Location mode requires coordinates");
+                log.warn("Theme automation: Location mode requires coordinates");
             }
         }
     }
@@ -2347,7 +2422,7 @@ Singleton {
                 "use": true
             }, response => {
                 if (response?.error) {
-                    console.warn("Theme automation: Failed to enable IP location", response.error);
+                    log.warn("Theme automation: Failed to enable IP location", response.error);
                 }
             });
             return true;
@@ -2361,7 +2436,7 @@ Singleton {
                         "longitude": SessionData.longitude
                     }, locResp => {
                         if (locResp?.error) {
-                            console.warn("Theme automation: Failed to set location", locResp.error);
+                            log.warn("Theme automation: Failed to set location", locResp.error);
                         }
                     });
                 }

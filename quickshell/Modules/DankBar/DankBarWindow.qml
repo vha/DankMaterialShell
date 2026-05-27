@@ -7,6 +7,7 @@ import qs.Services
 
 PanelWindow {
     id: barWindow
+    readonly property var log: Log.scoped("DankBarWindow")
 
     required property var rootWindow
     required property var barConfig
@@ -42,10 +43,10 @@ PanelWindow {
         }
     }
 
-    function triggerWallpaperBrowser() {
+    function triggerDashTab(tabIndex) {
         dankDashPopoutLoader.active = true;
         if (!dankDashPopoutLoader.item) {
-            return;
+            return false;
         }
 
         let section = "center";
@@ -81,7 +82,12 @@ PanelWindow {
             dankDashPopoutLoader.item.triggerScreen = barWindow.screen;
         }
 
-        PopoutManager.requestPopout(dankDashPopoutLoader.item, 2, (barConfig?.id ?? "default") + "-" + section + "-2");
+        PopoutManager.requestPopout(dankDashPopoutLoader.item, tabIndex, (barConfig?.id ?? "default") + "-" + section + "-" + tabIndex);
+        return true;
+    }
+
+    function triggerWallpaperBrowser() {
+        triggerDashTab(2);
     }
 
     readonly property var dBarLayer: {
@@ -91,9 +97,14 @@ PanelWindow {
         case "overlay":
             return WlrLayer.Overlay;
         case "background":
-            return WlrLayer.background;
-        default:
+            return WlrLayer.Background;
+        case "top":
             return WlrLayer.Top;
+        default:
+            // Elevate to Overlay when Frame is enabled so the bar stays above
+            // the FrameWindow (WlrLayer.Top) when it is re-mapped on mode switch,
+            // but drop back to Top while a true fullscreen app owns this screen.
+            return SettingsData.frameEnabled && !barWindow.hasFullscreenToplevel ? WlrLayer.Overlay : WlrLayer.Top;
         }
     }
 
@@ -133,6 +144,11 @@ PanelWindow {
             teardown();
             if (!BlurService.enabled || !BlurService.available)
                 return;
+            // In frame mode, FrameWindow owns the blur region for the entire screen edge
+            // (including the bar area). The bar must not set its own competing blur region
+            // so that frameBlurEnabled acts as the single control for all blur in frame mode.
+            if (SettingsData.frameEnabled)
+                return;
 
             const widgets = barWindow._blurWidgetItems.filter(w => w && w.visible && w.width > 0 && w.height > 0);
             const hasBar = barHasTransparency;
@@ -164,7 +180,7 @@ PanelWindow {
                 barWindow.BackgroundEffect.blurRegion = region;
                 barWindow.blurRegion = region;
             } catch (e) {
-                console.warn("BarBlur: Failed to create blur region:", e);
+                log.warn("BarBlur: Failed to create blur region:", e);
             }
         }
 
@@ -183,6 +199,13 @@ PanelWindow {
         Connections {
             target: BlurService
             function onEnabledChanged() {
+                barBlur.rebuild();
+            }
+        }
+
+        Connections {
+            target: SettingsData
+            function onFrameEnabledChanged() {
                 barBlur.rebuild();
             }
         }
@@ -238,7 +261,7 @@ PanelWindow {
     readonly property color _surfaceContainer: Theme.surfaceContainer
     readonly property string _barId: barConfig?.id ?? "default"
     property real _backgroundAlpha: barConfig?.transparency ?? 1.0
-    readonly property color _bgColor: Theme.withAlpha(_surfaceContainer, _backgroundAlpha)
+    readonly property color _bgColor: SettingsData.frameEnabled ? Qt.rgba(SettingsData.effectiveFrameColor.r, SettingsData.effectiveFrameColor.g, SettingsData.effectiveFrameColor.b, SettingsData.frameOpacity) : Theme.withAlpha(_surfaceContainer, _backgroundAlpha)
 
     function _updateBackgroundAlpha() {
         const live = SettingsData.barConfigs.find(c => c.id === _barId);
@@ -287,22 +310,11 @@ PanelWindow {
     }
 
     function _updateHasFullscreenToplevel() {
-        if (!CompositorService.isHyprland) {
+        if (!(barConfig?.fullscreenDetection ?? true)) {
             hasFullscreenToplevel = false;
             return;
         }
-
-        const filtered = CompositorService.filterCurrentWorkspace(CompositorService.sortedToplevels, screenName);
-        for (let i = 0; i < filtered.length; i++) {
-            if (filtered[i]?.fullscreen) {
-                // On niri, fullscreen windows in inactive columns should not hide the bar
-                if (CompositorService.isNiri && !filtered[i]?.activated)
-                    continue;
-                hasFullscreenToplevel = true;
-                return;
-            }
-        }
-        hasFullscreenToplevel = false;
+        hasFullscreenToplevel = CompositorService.hasFullscreenToplevelOnScreen(screenName);
     }
 
     function _updateShouldHideForWindows() {
@@ -384,7 +396,7 @@ PanelWindow {
         shouldHideForWindows = filtered.length > 0;
     }
 
-    property real effectiveSpacing: hasMaximizedToplevel ? 0 : (barConfig?.spacing ?? 4)
+    property real effectiveSpacing: SettingsData.frameEnabled ? 0 : (hasMaximizedToplevel ? 0 : (barConfig?.spacing ?? 4))
 
     Behavior on effectiveSpacing {
         enabled: barWindow.visible
@@ -395,7 +407,8 @@ PanelWindow {
     }
 
     readonly property int notificationCount: NotificationService.notifications.length
-    readonly property real effectiveBarThickness: Theme.snap(Math.max(barWindow.widgetThickness + (barConfig?.innerPadding ?? 4) + 4, Theme.barHeight - 4 - (8 - (barConfig?.innerPadding ?? 4))), _dpr)
+    readonly property real effectiveBarThickness: SettingsData.frameEnabled ? SettingsData.frameBarSize : Theme.snap(Math.max(barWindow.widgetThickness + (barConfig?.innerPadding ?? 4) + 4, Theme.barHeight - 4 - (8 - (barConfig?.innerPadding ?? 4))), _dpr)
+    readonly property bool effectiveOpenOnOverview: SettingsData.frameEnabled ? SettingsData.frameShowOnOverview : (barConfig?.openOnOverview ?? false)
     readonly property real widgetThickness: Theme.snap(Math.max(20, 26 + (barConfig?.innerPadding ?? 4) * 0.6), _dpr)
 
     readonly property bool hasAdjacentTopBar: {
@@ -501,20 +514,10 @@ PanelWindow {
     property var nativeInhibitor: null
 
     Component.onCompleted: {
-        if (SettingsData.forceStatusBarLayoutRefresh) {
-            SettingsData.forceStatusBarLayoutRefresh.connect(() => {
-                Qt.callLater(() => {
-                    stackContainer.visible = false;
-                    Qt.callLater(() => {
-                        stackContainer.visible = true;
-                    });
-                });
-            });
-        }
-
         updateGpuTempConfig();
         _updateBackgroundAlpha();
         _updateHasMaximizedToplevel();
+        _updateHasFullscreenToplevel();
         _updateShouldHideForWindows();
 
         inhibitorInitTimer.start();
@@ -534,11 +537,11 @@ PanelWindow {
     Connections {
         target: PluginService
         function onPluginLoaded(pluginId) {
-            console.info("DankBar: Plugin loaded:", pluginId);
+            log.info("DankBar: Plugin loaded:", pluginId);
             SettingsData.widgetDataChanged();
         }
         function onPluginUnloaded(pluginId) {
-            console.info("DankBar: Plugin unloaded:", pluginId);
+            log.info("DankBar: Plugin unloaded:", pluginId);
             SettingsData.widgetDataChanged();
         }
     }
@@ -594,6 +597,7 @@ PanelWindow {
             barWindow.updateGpuTempConfig();
             barWindow._updateBackgroundAlpha();
             barWindow._updateHasMaximizedToplevel();
+            barWindow._updateHasFullscreenToplevel();
             barWindow._updateShouldHideForWindows();
         }
 
@@ -626,6 +630,13 @@ PanelWindow {
     }
 
     Connections {
+        target: ToplevelManager
+        function onActiveToplevelChanged() {
+            barWindow._updateHasFullscreenToplevel();
+        }
+    }
+
+    Connections {
         function onNvidiaGpuTempEnabledChanged() {
             barWindow.updateGpuTempConfig();
         }
@@ -644,18 +655,18 @@ PanelWindow {
     anchors.left: !isVertical ? true : (barPos === SettingsData.Position.Left)
     anchors.right: !isVertical ? true : (barPos === SettingsData.Position.Right)
 
-    exclusiveZone: (!(barConfig?.visible ?? true) || topBarCore.autoHide) ? -1 : (barWindow.effectiveBarThickness + effectiveSpacing + (barConfig?.bottomGap ?? 0))
+    exclusiveZone: (barWindow.hasFullscreenToplevel || !(barConfig?.visible ?? true) || topBarCore.autoHide) ? -1 : (barWindow.effectiveBarThickness + effectiveSpacing + (Theme.isConnectedEffect ? 0 : (barConfig?.bottomGap ?? 0)))
 
     Item {
         id: inputMask
 
         readonly property int barThickness: Theme.px(barWindow.effectiveBarThickness + barWindow.effectiveSpacing, barWindow._dpr)
 
-        readonly property bool inOverviewWithShow: CompositorService.isNiri && NiriService.inOverview && (barConfig?.openOnOverview ?? false)
+        readonly property bool inOverviewWithShow: CompositorService.isNiri && NiriService.inOverview && barWindow.effectiveOpenOnOverview
         readonly property bool effectiveVisible: (barConfig?.visible ?? true) || inOverviewWithShow
-        readonly property bool showing: effectiveVisible && (topBarCore.reveal || inOverviewWithShow || !topBarCore.autoHide)
+        readonly property bool showing: effectiveVisible && !barWindow.hasFullscreenToplevel && (topBarCore.reveal || inOverviewWithShow || !topBarCore.autoHide)
 
-        readonly property int maskThickness: showing ? barThickness : 1
+        readonly property int maskThickness: barWindow.hasFullscreenToplevel ? 0 : (showing ? barThickness : 1)
 
         x: {
             if (!axis.isVertical) {
@@ -792,12 +803,12 @@ PanelWindow {
         }
 
         property bool reveal: {
-            const inOverviewWithShow = CompositorService.isNiri && NiriService.inOverview && (barConfig?.openOnOverview ?? false);
-            if (inOverviewWithShow)
-                return true;
-
             if (barWindow.hasFullscreenToplevel)
                 return false;
+
+            const inOverviewWithShow = CompositorService.isNiri && NiriService.inOverview && barWindow.effectiveOpenOnOverview;
+            if (inOverviewWithShow)
+                return true;
 
             const showOnWindowsSetting = barConfig?.showOnWindowsOpen ?? false;
             if (showOnWindowsSetting && autoHide && (CompositorService.isNiri || CompositorService.isHyprland)) {
@@ -889,10 +900,10 @@ PanelWindow {
                 top: barWindow.isVertical ? parent.top : undefined
                 bottom: barWindow.isVertical ? parent.bottom : undefined
             }
-            readonly property bool inOverview: CompositorService.isNiri && NiriService.inOverview && (barConfig?.openOnOverview ?? false)
-            hoverEnabled: (barConfig?.autoHide ?? false) && !inOverview && !topBarCore.hasActivePopout
+            readonly property bool inOverview: CompositorService.isNiri && NiriService.inOverview && barWindow.effectiveOpenOnOverview
+            hoverEnabled: (barConfig?.autoHide ?? false) && !inOverview && !barWindow.hasFullscreenToplevel && !topBarCore.hasActivePopout
             acceptedButtons: Qt.NoButton
-            enabled: (barConfig?.autoHide ?? false) && !inOverview
+            enabled: (barConfig?.autoHide ?? false) && !inOverview && !barWindow.hasFullscreenToplevel
 
             Item {
                 id: topBarContainer
@@ -932,6 +943,17 @@ PanelWindow {
                         barWindow: barWindow
                         axis: axis
                         barConfig: barWindow.barConfig
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        z: -2
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+                        onClicked: {
+                            const screenName = barWindow.screen?.name;
+                            if (screenName && PopoutManager.currentPopoutsByScreen[screenName])
+                                PopoutManager.closeAllPopouts();
+                        }
                     }
 
                     MouseArea {

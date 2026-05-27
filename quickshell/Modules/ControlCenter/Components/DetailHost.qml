@@ -22,6 +22,7 @@ Item {
         case section === "wifi":
         case section === "bluetooth":
         case section === "builtin_vpn":
+        case section === "builtin_tailscale":
             return Math.min(350, maxAvailableHeight);
         case section.startsWith("brightnessSlider_"):
             return Math.min(400, maxAvailableHeight);
@@ -37,7 +38,7 @@ Item {
     Loader {
         id: pluginDetailLoader
         width: parent.width
-        height: parent.height - Theme.spacingS
+        height: Math.max(0, parent.height - Theme.spacingS)
         y: Theme.spacingS
         active: false
         sourceComponent: null
@@ -46,7 +47,7 @@ Item {
     Loader {
         id: coreDetailLoader
         width: parent.width
-        height: parent.height - Theme.spacingS
+        height: Math.max(0, parent.height - Theme.spacingS)
         y: Theme.spacingS
         active: false
         sourceComponent: null
@@ -128,13 +129,19 @@ Item {
                 }
                 builtinInstance = widgetModel.cupsBuiltinInstance;
             }
+            if (builtinId === "builtin_tailscale") {
+                if (widgetModel?.tailscaleLoader) {
+                    widgetModel.tailscaleLoader.active = true;
+                }
+                builtinInstance = widgetModel.tailscaleBuiltinInstance;
+            }
 
             if (!builtinInstance || !builtinInstance.ccDetailContent) {
                 return;
             }
 
             pluginDetailLoader.sourceComponent = builtinInstance.ccDetailContent;
-            pluginDetailLoader.active = parent.height > 0;
+            pluginDetailLoader.active = true;
             return;
         }
 
@@ -155,19 +162,19 @@ Item {
             }
 
             pluginDetailLoader.sourceComponent = pluginDetailInstance.ccDetailContent;
-            pluginDetailLoader.active = parent.height > 0;
+            pluginDetailLoader.active = true;
             return;
         }
 
         if (root.expandedSection.startsWith("diskUsage_")) {
             coreDetailLoader.sourceComponent = diskUsageDetailComponent;
-            coreDetailLoader.active = parent.height > 0;
+            coreDetailLoader.active = true;
             return;
         }
 
         if (root.expandedSection.startsWith("brightnessSlider_")) {
             coreDetailLoader.sourceComponent = brightnessDetailComponent;
-            coreDetailLoader.active = parent.height > 0;
+            coreDetailLoader.active = true;
             return;
         }
 
@@ -195,7 +202,7 @@ Item {
             return;
         }
 
-        coreDetailLoader.active = parent.height > 0;
+        coreDetailLoader.active = true;
     }
 
     Component {

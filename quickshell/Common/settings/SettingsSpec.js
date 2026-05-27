@@ -49,6 +49,8 @@ var SPEC = {
     modalAnimationSpeed: { def: 1 },
     modalCustomAnimationDuration: { def: 150 },
     enableRippleEffects: { def: true },
+    animationVariant: { def: 0 },
+    motionEffect: { def: 0 },
     m3ElevationEnabled: { def: true },
     m3ElevationIntensity: { def: 12 },
     m3ElevationOpacity: { def: 30 },
@@ -59,9 +61,11 @@ var SPEC = {
     popoutElevationEnabled: { def: true },
     barElevationEnabled: { def: true },
     blurEnabled: { def: false },
+    blurForegroundLayers: { def: true },
+    blurLayerOutlineOpacity: { def: 0.12, coerce: percentToUnit },
     blurBorderColor: { def: "outline" },
     blurBorderCustomColor: { def: "#ffffff" },
-    blurBorderOpacity: { def: 1.0, coerce: percentToUnit },
+    blurBorderOpacity: { def: 0.35, coerce: percentToUnit },
     wallpaperFillMode: { def: "Fill" },
     blurredWallpaperLayer: { def: false },
     blurWallpaperOnOverview: { def: false },
@@ -79,7 +83,9 @@ var SPEC = {
     selectedGpuIndex: { def: 0 },
     enabledGpuPciIds: { def: [] },
     showSystemTray: { def: true },
-    systemTrayMonochromeIcons: { def: false },
+    systemTrayIconTintMode: { def: "none" },
+    systemTrayIconTintSaturation: { def: 50 },
+    systemTrayIconTintStrength: { def: 135 },
     showClock: { def: true },
     showNotificationButton: { def: true },
     showBattery: { def: true },
@@ -298,6 +304,7 @@ var SPEC = {
     matugenTemplatePywalfox: { def: true },
     matugenTemplateZenBrowser: { def: true },
     matugenTemplateVesktop: { def: true },
+    matugenTemplateVencord: { def: true },
     matugenTemplateEquibop: { def: true },
     matugenTemplateGhostty: { def: true },
     matugenTemplateKitty: { def: true },
@@ -322,6 +329,7 @@ var SPEC = {
     showDock: { def: false },
     dockAutoHide: { def: false },
     dockSmartAutoHide: { def: false },
+    dockHideOnFullscreen: { def: true },
     dockGroupByApp: { def: false },
     dockRestoreSpecialWorkspaceOnClick: { def: false },
     dockOpenOnOverview: { def: false },
@@ -346,6 +354,9 @@ var SPEC = {
     dockMaxVisibleApps: { def: 0 },
     dockMaxVisibleRunningApps: { def: 0 },
     dockShowOverflowBadge: { def: true },
+    dockShowTrash: { def: false },
+    dockTrashFileManager: { def: "default" },
+    dockTrashCustomCommand: { def: "" },
 
     notificationOverlayEnabled: { def: false },
     notificationPopupShadowEnabled: { def: true },
@@ -424,6 +435,9 @@ var SPEC = {
     updaterShowLatestNews: { def: false },
     updaterLatestNewsUrl: { def: "" },
     updaterLatestNewsRegex: { def: "" },
+    updaterIntervalSeconds: { def: 1800 },
+    updaterIncludeFlatpak: { def: true },
+    updaterAllowAUR: { def: true },
 
     displayNameMode: { def: "system" },
     screenPreferences: { def: {} },
@@ -435,6 +449,8 @@ var SPEC = {
     displayProfileAutoSelect: { def: false },
     displayShowDisconnected: { def: false },
     displaySnapToEdge: { def: true },
+    connectedFrameBarStyleBackups: { def: {} },
+    connectedFrameModalDarkenBackup: { def: null },
 
     barConfigs: {
         def: [{
@@ -479,6 +495,7 @@ var SPEC = {
             popupGapsAuto: true,
             popupGapsManual: 4,
             maximizeDetection: true,
+            fullscreenDetection: true,
             scrollEnabled: true,
             scrollXBehavior: "column",
             scrollYBehavior: "workspace",
@@ -541,7 +558,21 @@ var SPEC = {
     clipboardEnterToPaste: { def: false },
 
     launcherPluginVisibility: { def: {} },
-    launcherPluginOrder: { def: [] }
+    launcherPluginOrder: { def: [] },
+
+    frameEnabled: { def: false },
+    frameThickness: { def: 16 },
+    frameRounding: { def: 23 },
+    frameColor: { def: "" },
+    frameOpacity: { def: 1.0 },
+    frameScreenPreferences: { def: ["all"] },
+    frameBarSize: { def: 40 },
+    frameShowOnOverview: { def: false },
+    frameBlurEnabled: { def: true },
+    frameCloseGaps: { def: true },
+    frameLauncherEmergeSide: { def: "bottom" },
+    frameLauncherArcExtender: { def: false },
+    frameMode: { def: "separate" }
 };
 
 function getValidKeys() {

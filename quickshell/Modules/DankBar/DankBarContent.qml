@@ -19,9 +19,53 @@ Item {
     property var leftWidgetsModel
     property var centerWidgetsModel
     property var rightWidgetsModel
+    property bool _animateFrameInsets: false
 
     readonly property real innerPadding: barConfig?.innerPadding ?? 4
     readonly property real outlineThickness: (barConfig?.widgetOutlineEnabled ?? false) ? (barConfig?.widgetOutlineThickness ?? 1) : 0
+    readonly property real _edgeBaseMargin: Math.max(Theme.spacingXS, innerPadding * 0.8)
+    readonly property real _frameEdgeFloorInset: SettingsData.frameEnabled ? Math.max(0, SettingsData.frameThickness - _edgeBaseMargin) : 0
+    readonly property bool _hasBarWindow: barWindow !== undefined && barWindow !== null
+    readonly property bool _barIsVertical: _hasBarWindow ? barWindow.isVertical : false
+    readonly property string _barScreenName: _hasBarWindow ? (barWindow.screenName || "") : ""
+    readonly property bool hasAdjacentTopBarLive: _hasBarWindow && barWindow.hasAdjacentTopBar
+    readonly property bool hasAdjacentBottomBarLive: _hasBarWindow && barWindow.hasAdjacentBottomBar
+    readonly property bool hasAdjacentLeftBarLive: _hasBarWindow && barWindow.hasAdjacentLeftBar
+    readonly property bool hasAdjacentRightBarLive: _hasBarWindow && barWindow.hasAdjacentRightBar
+    property bool _hadAdjacentTopBar: false
+    property bool _hadAdjacentBottomBar: false
+    property bool _hadAdjacentLeftBar: false
+    property bool _hadAdjacentRightBar: false
+
+    onHasAdjacentTopBarLiveChanged: if (hasAdjacentTopBarLive) _hadAdjacentTopBar = true
+    onHasAdjacentBottomBarLiveChanged: if (hasAdjacentBottomBarLive) _hadAdjacentBottomBar = true
+    onHasAdjacentLeftBarLiveChanged: if (hasAdjacentLeftBarLive) _hadAdjacentLeftBar = true
+    onHasAdjacentRightBarLiveChanged: if (hasAdjacentRightBarLive) _hadAdjacentRightBar = true
+
+    readonly property real _frameLeftInset: {
+        if (!_hasBarWindow || !SettingsData.frameEnabled || _barIsVertical) return 0
+        return hasAdjacentLeftBarLive
+            ? SettingsData.frameBarSize
+            : (_hadAdjacentLeftBar ? _frameEdgeFloorInset : 0)
+    }
+    readonly property real _frameRightInset: {
+        if (!_hasBarWindow || !SettingsData.frameEnabled || _barIsVertical) return 0
+        return hasAdjacentRightBarLive
+            ? SettingsData.frameBarSize
+            : (_hadAdjacentRightBar ? _frameEdgeFloorInset : 0)
+    }
+    readonly property real _frameTopInset: {
+        if (!_hasBarWindow || !SettingsData.frameEnabled || !_barIsVertical) return 0
+        return hasAdjacentTopBarLive
+            ? SettingsData.frameThickness
+            : (_hadAdjacentTopBar ? _frameEdgeFloorInset : 0)
+    }
+    readonly property real _frameBottomInset: {
+        if (!_hasBarWindow || !SettingsData.frameEnabled || !_barIsVertical) return 0
+        return hasAdjacentBottomBarLive
+            ? SettingsData.frameThickness
+            : (_hadAdjacentBottomBar ? _frameEdgeFloorInset : 0)
+    }
 
     property alias hLeftSection: hLeftSection
     property alias hCenterSection: hCenterSection
@@ -31,11 +75,60 @@ Item {
     property alias vRightSection: vRightSection
 
     anchors.fill: parent
-    anchors.leftMargin: Math.max(Theme.spacingXS, innerPadding * 0.8)
-    anchors.rightMargin: Math.max(Theme.spacingXS, innerPadding * 0.8)
-    anchors.topMargin: barWindow.isVertical ? (barWindow.hasAdjacentTopBar ? outlineThickness : Theme.spacingXS) : 0
-    anchors.bottomMargin: barWindow.isVertical ? (barWindow.hasAdjacentBottomBar ? outlineThickness : Theme.spacingXS) : 0
+    anchors.leftMargin:   _edgeBaseMargin + _frameLeftInset
+    anchors.rightMargin:  _edgeBaseMargin + _frameRightInset
+    anchors.topMargin:    (_barIsVertical
+        ? (hasAdjacentTopBarLive ? outlineThickness : Theme.spacingXS)
+        : 0) + _frameTopInset
+    anchors.bottomMargin: (_barIsVertical
+        ? (hasAdjacentBottomBarLive ? outlineThickness : Theme.spacingXS)
+        : 0) + _frameBottomInset
     clip: false
+
+    DeferredAction {
+        id: enableFrameInsetAnimation
+        onTriggered: topBarContent._animateFrameInsets = true
+    }
+
+    Component.onCompleted: {
+        _hadAdjacentTopBar = hasAdjacentTopBarLive;
+        _hadAdjacentBottomBar = hasAdjacentBottomBarLive;
+        _hadAdjacentLeftBar = hasAdjacentLeftBarLive;
+        _hadAdjacentRightBar = hasAdjacentRightBarLive;
+        enableFrameInsetAnimation.schedule();
+    }
+
+    Behavior on anchors.leftMargin {
+        enabled: _animateFrameInsets && SettingsData.frameEnabled
+        NumberAnimation {
+            duration: Theme.shortDuration
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    Behavior on anchors.rightMargin {
+        enabled: _animateFrameInsets && SettingsData.frameEnabled
+        NumberAnimation {
+            duration: Theme.shortDuration
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    Behavior on anchors.topMargin {
+        enabled: _animateFrameInsets && SettingsData.frameEnabled
+        NumberAnimation {
+            duration: Theme.shortDuration
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    Behavior on anchors.bottomMargin {
+        enabled: _animateFrameInsets && SettingsData.frameEnabled
+        NumberAnimation {
+            duration: Theme.shortDuration
+            easing.type: Easing.OutCubic
+        }
+    }
 
     property int componentMapRevision: 0
 
@@ -44,10 +137,14 @@ Item {
     }
 
     readonly property var sortedToplevels: {
-        return CompositorService.filterCurrentWorkspace(CompositorService.sortedToplevels, barWindow.screenName);
+        if (!_hasBarWindow) {
+            return [];
+        }
+        return CompositorService.filterCurrentWorkspace(CompositorService.sortedToplevels, _barScreenName);
     }
 
     function getRealWorkspaces() {
+        const screenName = _barScreenName;
         if (CompositorService.isNiri) {
             const fallbackWorkspaces = [
                 {
@@ -61,16 +158,16 @@ Item {
                     "name": ""
                 }
             ];
-            if (!barWindow.screenName || SettingsData.workspaceFollowFocus) {
+            if (!screenName || SettingsData.workspaceFollowFocus) {
                 const currentWorkspaces = NiriService.getCurrentOutputWorkspaces();
                 return currentWorkspaces.length > 0 ? currentWorkspaces : fallbackWorkspaces;
             }
-            const workspaces = NiriService.allWorkspaces.filter(ws => ws.output === barWindow.screenName);
+            const workspaces = NiriService.allWorkspaces.filter(ws => ws.output === screenName);
             return workspaces.length > 0 ? workspaces : fallbackWorkspaces;
         } else if (CompositorService.isHyprland) {
             const workspaces = Hyprland.workspaces?.values || [];
 
-            if (!barWindow.screenName || SettingsData.workspaceFollowFocus) {
+            if (!screenName || SettingsData.workspaceFollowFocus) {
                 const sorted = workspaces.slice().sort((a, b) => a.id - b.id);
                 const filtered = sorted.filter(ws => ws.id > -1);
                 return filtered.length > 0 ? filtered : [
@@ -82,7 +179,7 @@ Item {
             }
 
             const monitorWorkspaces = workspaces.filter(ws => {
-                return ws.lastIpcObject && ws.lastIpcObject.monitor === barWindow.screenName && ws.id > -1;
+                return ws.lastIpcObject && ws.lastIpcObject.monitor === screenName && ws.id > -1;
             });
 
             if (monitorWorkspaces.length === 0) {
@@ -104,7 +201,7 @@ Item {
                     length: DwlService.tagCount
                 }, (_, i) => i);
             }
-            return DwlService.getVisibleTags(barWindow.screenName);
+            return DwlService.getVisibleTags(screenName);
         } else if (CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle) {
             const workspaces = I3.workspaces?.values || [];
             if (workspaces.length === 0)
@@ -114,11 +211,11 @@ Item {
                     }
                 ];
 
-            if (!barWindow.screenName || SettingsData.workspaceFollowFocus) {
+            if (!screenName || SettingsData.workspaceFollowFocus) {
                 return workspaces.slice().sort((a, b) => a.num - b.num);
             }
 
-            const monitorWorkspaces = workspaces.filter(ws => ws.monitor?.name === barWindow.screenName);
+            const monitorWorkspaces = workspaces.filter(ws => ws.monitor?.name === screenName);
             return monitorWorkspaces.length > 0 ? monitorWorkspaces.sort((a, b) => a.num - b.num) : [
                 {
                     "num": 1
@@ -129,31 +226,32 @@ Item {
     }
 
     function getCurrentWorkspace() {
+        const screenName = _barScreenName;
         if (CompositorService.isNiri) {
-            if (!barWindow.screenName || SettingsData.workspaceFollowFocus) {
+            if (!screenName || SettingsData.workspaceFollowFocus) {
                 return NiriService.getCurrentWorkspaceNumber();
             }
-            const activeWs = NiriService.allWorkspaces.find(ws => ws.output === barWindow.screenName && ws.is_active);
+            const activeWs = NiriService.allWorkspaces.find(ws => ws.output === screenName && ws.is_active);
             return activeWs ? activeWs.idx : 1;
         } else if (CompositorService.isHyprland) {
             const monitors = Hyprland.monitors?.values || [];
-            const currentMonitor = monitors.find(monitor => monitor.name === barWindow.screenName);
+            const currentMonitor = monitors.find(monitor => monitor.name === screenName);
             return currentMonitor?.activeWorkspace?.id ?? 1;
         } else if (CompositorService.isDwl) {
             if (!DwlService.dwlAvailable)
                 return 0;
-            const outputState = DwlService.getOutputState(barWindow.screenName);
+            const outputState = DwlService.getOutputState(screenName);
             if (!outputState || !outputState.tags)
                 return 0;
-            const activeTags = DwlService.getActiveTags(barWindow.screenName);
+            const activeTags = DwlService.getActiveTags(screenName);
             return activeTags.length > 0 ? activeTags[0] : 0;
         } else if (CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle) {
-            if (!barWindow.screenName || SettingsData.workspaceFollowFocus) {
+            if (!screenName || SettingsData.workspaceFollowFocus) {
                 const focusedWs = I3.workspaces?.values?.find(ws => ws.focused === true);
                 return focusedWs ? focusedWs.num : 1;
             }
 
-            const focusedWs = I3.workspaces?.values?.find(ws => ws.monitor?.name === barWindow.screenName && ws.focused === true);
+            const focusedWs = I3.workspaces?.values?.find(ws => ws.monitor?.name === screenName && ws.focused === true);
             return focusedWs ? focusedWs.num : 1;
         }
         return 1;
@@ -194,7 +292,7 @@ Item {
             const nextIndex = direction > 0 ? Math.min(validIndex + 1, realWorkspaces.length - 1) : Math.max(validIndex - 1, 0);
 
             if (nextIndex !== validIndex) {
-                DwlService.switchToTag(barWindow.screenName, realWorkspaces[nextIndex]);
+                DwlService.switchToTag(_barScreenName, realWorkspaces[nextIndex]);
             }
         } else if (CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle) {
             const currentWs = getCurrentWorkspace();
@@ -261,8 +359,8 @@ Item {
     readonly property int leftToMediaGap: mediaMaxWidth > 0 ? Math.max(0, mediaLeftEdge - leftSectionRightEdge) : leftToClockGap
     readonly property int mediaToClockGap: mediaMaxWidth > 0 ? Theme.spacingS : 0
     readonly property int clockToRightGap: validLayout ? Math.max(0, rightSectionLeftEdge - clockRightEdge) : 1000
-    readonly property bool spacingTight: !barWindow.isVertical && validLayout && (leftToMediaGap < 150 || clockToRightGap < 100)
-    readonly property bool overlapping: !barWindow.isVertical && validLayout && (leftToMediaGap < 100 || clockToRightGap < 50)
+    readonly property bool spacingTight: !_barIsVertical && validLayout && (leftToMediaGap < 150 || clockToRightGap < 100)
+    readonly property bool overlapping: !_barIsVertical && validLayout && (leftToMediaGap < 100 || clockToRightGap < 50)
 
     function getWidgetEnabled(enabled) {
         return enabled !== false;
@@ -732,7 +830,7 @@ Item {
 
         WorkspaceSwitcher {
             axis: barWindow.axis
-            screenName: barWindow.screenName
+            screenName: _barScreenName
             widgetHeight: barWindow.widgetThickness
             barThickness: barWindow.effectiveBarThickness
             parentScreen: barWindow.screen
@@ -1156,6 +1254,7 @@ Item {
                 if (!notificationCenterLoader.item) {
                     return;
                 }
+                notificationCenterLoader.item.triggerScreen = barWindow.screen;
                 const effectiveBarConfig = topBarContent.barConfig;
                 const barPosition = barWindow.axis?.edge === "left" ? 2 : (barWindow.axis?.edge === "right" ? 3 : (barWindow.axis?.edge === "top" ? 0 : 1));
                 if (notificationCenterLoader.item.setBarContext) {
@@ -1348,8 +1447,8 @@ Item {
         id: spacerComponent
 
         Item {
-            width: barWindow.isVertical ? barWindow.widgetThickness : (parent.spacerSize || 20)
-            height: barWindow.isVertical ? (parent.spacerSize || 20) : barWindow.widgetThickness
+            width: _barIsVertical ? barWindow.widgetThickness : (parent.spacerSize || 20)
+            height: _barIsVertical ? (parent.spacerSize || 20) : barWindow.widgetThickness
             implicitWidth: width
             implicitHeight: height
 
@@ -1378,14 +1477,14 @@ Item {
         id: separatorComponent
 
         Item {
-            width: barWindow.isVertical ? parent.barThickness : 1
-            height: barWindow.isVertical ? 1 : parent.barThickness
+            width: _barIsVertical ? parent.barThickness : 1
+            height: _barIsVertical ? 1 : parent.barThickness
             implicitWidth: width
             implicitHeight: height
 
             Rectangle {
-                width: barWindow.isVertical ? parent.width * 0.6 : 1
-                height: barWindow.isVertical ? 1 : parent.height * 0.6
+                width: _barIsVertical ? parent.width * 0.6 : 1
+                height: _barIsVertical ? 1 : parent.height * 0.6
                 anchors.centerIn: parent
                 color: Theme.outline
                 opacity: 0.3

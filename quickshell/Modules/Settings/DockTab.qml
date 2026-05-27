@@ -8,6 +8,9 @@ import qs.Modules.Settings.Widgets
 Item {
     id: root
 
+    property var parentModal: null
+    readonly property bool connectedFrameModeActive: SettingsData.connectedFrameModeActive
+
     FileBrowserModal {
         id: dockLogoFileBrowser
         browserTitle: I18n.tr("Select Dock Launcher Logo")
@@ -83,6 +86,16 @@ Item {
                     checked: SettingsData.dockOpenOnOverview
                     visible: CompositorService.isNiri
                     onToggled: checked => SettingsData.set("dockOpenOnOverview", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "dockHideOnFullscreen"
+                    tags: ["dock", "fullscreen", "hide"]
+                    text: I18n.tr("Hide When Fullscreen", "dock visibility toggle: hide the dock when a window is fullscreen")
+                    description: I18n.tr("Hide the dock when a window is fullscreen", "dock visibility toggle description")
+                    checked: SettingsData.dockHideOnFullscreen
+                    visible: SettingsData.showDock
+                    onToggled: checked => SettingsData.set("dockHideOnFullscreen", checked)
                 }
             }
 
@@ -508,6 +521,66 @@ Item {
 
             SettingsCard {
                 width: parent.width
+                iconName: "delete"
+                title: I18n.tr("Trash")
+                settingKey: "dockTrash"
+
+                SettingsToggleRow {
+                    settingKey: "dockShowTrash"
+                    tags: ["dock", "trash", "bin", "recycle"]
+                    text: I18n.tr("Show Trash in Dock")
+                    description: I18n.tr("Place a trash bin at the end of the dock")
+                    checked: SettingsData.dockShowTrash
+                    onToggled: checked => SettingsData.set("dockShowTrash", checked)
+                }
+
+                SettingsDropdownRow {
+                    id: trashFmDropdown
+                    settingKey: "dockTrashFileManager"
+                    tags: ["dock", "trash", "file", "manager", "nautilus", "thunar", "dolphin", "custom"]
+                    text: I18n.tr("Open Trash With")
+                    description: I18n.tr("File manager used to open the trash. Pick \"custom\" to enter your own command.")
+                    visible: SettingsData.dockShowTrash
+                    currentValue: SettingsData.dockTrashFileManager
+                    options: TrashService.availableFileManagers || []
+                    onValueChanged: value => SettingsData.set("dockTrashFileManager", value)
+                }
+
+                FocusScope {
+                    width: parent.width - Theme.spacingM * 2
+                    height: visible ? trashCustomCommandColumn.implicitHeight : 0
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.spacingM
+                    visible: SettingsData.dockShowTrash && SettingsData.dockTrashFileManager === "custom"
+
+                    Column {
+                        id: trashCustomCommandColumn
+                        width: parent.width
+                        spacing: Theme.spacingXS
+
+                        StyledText {
+                            text: I18n.tr("Custom open-trash command")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceVariantText
+                        }
+
+                        DankTextField {
+                            id: trashCustomCommandField
+                            width: parent.width
+                            placeholderText: "pcmanfm trash:///"
+                            backgroundColor: Theme.surfaceContainerHighest
+                            normalBorderColor: Theme.outlineMedium
+                            focusedBorderColor: Theme.primary
+                            text: SettingsData.dockTrashCustomCommand
+
+                            onTextEdited: SettingsData.set("dockTrashCustomCommand", text.trim())
+                        }
+                    }
+                }
+            }
+
+            SettingsCard {
+                width: parent.width
                 iconName: "photo_size_select_large"
                 title: I18n.tr("Sizing")
                 settingKey: "dockSizing"
@@ -544,6 +617,7 @@ Item {
 
                 SettingsSliderRow {
                     text: I18n.tr("Exclusive Zone Offset")
+                    visible: !root.connectedFrameModeActive
                     value: SettingsData.dockBottomGap
                     minimum: -100
                     maximum: 100
@@ -553,6 +627,7 @@ Item {
 
                 SettingsSliderRow {
                     text: I18n.tr("Margin")
+                    visible: !root.connectedFrameModeActive
                     value: SettingsData.dockMargin
                     minimum: 0
                     maximum: 100
@@ -561,11 +636,19 @@ Item {
                 }
             }
 
+            SettingsControlledByFrame {
+                visible: root.connectedFrameModeActive
+                parentModal: root.parentModal
+                settingLabel: I18n.tr("Dock spacing, transparency, and border")
+                reason: I18n.tr("Managed by Frame in Connected Mode")
+            }
+
             SettingsCard {
                 width: parent.width
                 iconName: "opacity"
                 title: I18n.tr("Transparency")
                 settingKey: "dockTransparency"
+                visible: !root.connectedFrameModeActive
 
                 SettingsSliderRow {
                     text: I18n.tr("Dock Transparency")
@@ -585,6 +668,7 @@ Item {
                 settingKey: "dockBorder"
                 collapsible: true
                 expanded: false
+                visible: !root.connectedFrameModeActive
 
                 SettingsToggleRow {
                     text: I18n.tr("Border")

@@ -20,6 +20,8 @@ import (
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/network"
 	serverPlugins "github.com/AvengeMedia/DankMaterialShell/core/internal/server/plugins"
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/sysupdate"
+	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/tailscale"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/thememode"
 	serverThemes "github.com/AvengeMedia/DankMaterialShell/core/internal/server/themes"
 	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wayland"
@@ -106,6 +108,15 @@ func RouteRequest(conn net.Conn, req models.Request) {
 			return
 		}
 		cups.HandleRequest(conn, req, cupsManager)
+		return
+	}
+
+	if strings.HasPrefix(req.Method, "tailscale.") {
+		if tailscaleManager == nil {
+			models.RespondError(conn, req.ID, "Tailscale not available")
+			return
+		}
+		tailscale.HandleRequest(conn, req, tailscaleManager)
 		return
 	}
 
@@ -199,6 +210,15 @@ func RouteRequest(conn net.Conn, req models.Request) {
 			return
 		}
 		location.HandleRequest(conn, req, locationManager)
+		return
+	}
+
+	if strings.HasPrefix(req.Method, "sysupdate.") {
+		if sysUpdateManager == nil {
+			models.RespondError(conn, req.ID, "sysupdate manager not initialized")
+			return
+		}
+		sysupdate.HandleRequest(conn, req, sysUpdateManager)
 		return
 	}
 

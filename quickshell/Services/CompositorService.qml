@@ -7,9 +7,11 @@ import Quickshell.I3
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs.Common
+import qs.Services
 
 Singleton {
     id: root
+    readonly property var log: Log.scoped("CompositorService")
 
     property bool isHyprland: false
     property bool isNiri: false
@@ -52,7 +54,7 @@ Singleton {
                         randrScales = scales;
                     }
                 } catch (e) {
-                    console.warn("CompositorService: failed to parse randr data:", e);
+                    log.warn("failed to parse randr data:", e);
                 }
             }
             randrReady = true;
@@ -371,11 +373,79 @@ Singleton {
     function filterCurrentDisplay(toplevels, screenName) {
         if (!toplevels || toplevels.length === 0 || !screenName)
             return toplevels;
-        if (useNiriSorting)
+        if (useNiriSorting) {
+            const active = ToplevelManager.activeToplevel;
+            if (active && toplevels.length === 1 && toplevels[0] === active) {
+                if (NiriService.currentOutput !== screenName)
+                    return [];
+                const focusedWin = NiriService.windows.find(nw => nw.is_focused);
+                if (!focusedWin)
+                    return [];
+                const screenWsIds = new Set(NiriService.allWorkspaces.filter(ws => ws.output === screenName).map(ws => ws.id));
+                return screenWsIds.has(focusedWin.workspace_id) ? toplevels : [];
+            }
             return NiriService.filterCurrentDisplay(toplevels, screenName);
+        }
         if (isHyprland)
             return filterHyprlandCurrentDisplaySafe(toplevels, screenName);
         return toplevels;
+    }
+
+    function _screenName(screenOrName) {
+        if (typeof screenOrName === "string")
+            return screenOrName;
+        return screenOrName?.name ?? "";
+    }
+
+    function _toplevelOnScreen(toplevel, screenName) {
+        if (!toplevel || !screenName)
+            return false;
+        const screens = toplevel.screens;
+        if (!screens)
+            return false;
+        for (let i = 0; i < screens.length; i++) {
+            if (screens[i]?.name === screenName)
+                return true;
+        }
+        return false;
+    }
+
+    function hasFullscreenToplevelOnScreen(screenOrName) {
+        const screenName = _screenName(screenOrName);
+        if (!screenName)
+            return false;
+
+        if (isNiri) {
+            const active = ToplevelManager.activeToplevel;
+            if (active?.fullscreen && active?.activated && NiriService.currentOutput === screenName)
+                return true;
+
+            const filtered = filterCurrentWorkspace(sortedToplevels, screenName);
+            for (let i = 0; i < filtered.length; i++) {
+                const toplevel = filtered[i];
+                if (toplevel?.fullscreen && toplevel?.activated)
+                    return true;
+            }
+            return false;
+        }
+
+        if (isHyprland) {
+            const filtered = filterCurrentWorkspace(sortedToplevels, screenName);
+            for (let i = 0; i < filtered.length; i++) {
+                if (filtered[i]?.fullscreen)
+                    return true;
+            }
+            return false;
+        }
+
+        if (!ToplevelManager.toplevels?.values)
+            return false;
+
+        for (const toplevel of ToplevelManager.toplevels.values) {
+            if (toplevel?.fullscreen && _toplevelOnScreen(toplevel, screenName))
+                return true;
+        }
+        return false;
     }
 
     function filterHyprlandCurrentDisplaySafe(toplevels, screenName) {
@@ -441,7 +511,7 @@ Singleton {
                 }
             }
         } catch (e) {
-            console.warn("CompositorService: workspace snapshot failed:", e);
+            log.warn("workspace snapshot failed:", e);
         }
 
         if (currentWorkspaceId === null)
@@ -485,7 +555,7 @@ Singleton {
             isMiracle = false;
             isLabwc = false;
             compositor = "hyprland";
-            console.info("CompositorService: Detected Hyprland");
+            log.info("Detected Hyprland");
             return;
         }
 
@@ -500,7 +570,7 @@ Singleton {
                     isMiracle = false;
                     isLabwc = false;
                     compositor = "niri";
-                    console.info("CompositorService: Detected Niri with socket:", niriSocket);
+                    log.info("Detected Niri with socket:", niriSocket);
                     NiriService.generateNiriBlurrule();
                 }
             }, 0);
@@ -518,7 +588,7 @@ Singleton {
                     isMiracle = false;
                     isLabwc = false;
                     compositor = "sway";
-                    console.info("CompositorService: Detected Sway with socket:", swaySocket);
+                    log.info("Detected Sway with socket:", swaySocket);
                 }
             }, 0);
             return;
@@ -535,7 +605,7 @@ Singleton {
                     isMiracle = true;
                     isLabwc = false;
                     compositor = "miracle";
-                    console.info("CompositorService: Detected Miracle WM with socket:", miracleSocket);
+                    log.info("Detected Miracle WM with socket:", miracleSocket);
                 }
             }, 0);
             return;
@@ -552,7 +622,7 @@ Singleton {
                     isMiracle = false;
                     isLabwc = false;
                     compositor = "scroll";
-                    console.info("CompositorService: Detected Scroll with socket:", scrollSocket);
+                    log.info("Detected Scroll with socket:", scrollSocket);
                 }
             }, 0);
             return;
@@ -567,7 +637,7 @@ Singleton {
             isMiracle = false;
             isLabwc = true;
             compositor = "labwc";
-            console.info("CompositorService: Detected LabWC with PID:", labwcPid);
+            log.info("Detected LabWC with PID:", labwcPid);
             return;
         }
 
@@ -582,7 +652,7 @@ Singleton {
             isMiracle = false;
             isLabwc = false;
             compositor = "unknown";
-            console.warn("CompositorService: No compositor detected");
+            log.warn("No compositor detected");
         }
     }
 
@@ -605,7 +675,7 @@ Singleton {
             isMiracle = false;
             isLabwc = false;
             compositor = "dwl";
-            console.info("CompositorService: Detected DWL via DMS capability");
+            log.info("Detected DWL via DMS capability");
         }
     }
 
@@ -625,7 +695,7 @@ Singleton {
         if (isLabwc) {
             Quickshell.execDetached(["dms", "dpms", "off"]);
         }
-        console.warn("CompositorService: Cannot power off monitors, unknown compositor");
+        log.warn("Cannot power off monitors, unknown compositor");
     }
 
     function powerOnMonitors() {
@@ -644,12 +714,12 @@ Singleton {
         if (isLabwc) {
             Quickshell.execDetached(["dms", "dpms", "on"]);
         }
-        console.warn("CompositorService: Cannot power on monitors, unknown compositor");
+        log.warn("Cannot power on monitors, unknown compositor");
     }
 
     function _dwlPowerOffMonitors() {
         if (!Quickshell.screens || Quickshell.screens.length === 0) {
-            console.warn("CompositorService: No screens available for DWL power off");
+            log.warn("No screens available for DWL power off");
             return;
         }
 
@@ -663,7 +733,7 @@ Singleton {
 
     function _dwlPowerOnMonitors() {
         if (!Quickshell.screens || Quickshell.screens.length === 0) {
-            console.warn("CompositorService: No screens available for DWL power on");
+            log.warn("No screens available for DWL power on");
             return;
         }
 

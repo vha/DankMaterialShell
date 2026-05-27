@@ -6,6 +6,7 @@ import qs.Widgets
 
 Rectangle {
     id: root
+    readonly property var log: Log.scoped("CalendarOverviewCard")
 
     implicitWidth: SettingsData.showWeekNumber ? 736 : 700
 
@@ -126,8 +127,8 @@ Rectangle {
     }
 
     radius: Theme.cornerRadius
-    color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
-    border.color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.05)
+    color: Theme.nestedSurface
+    border.color: Theme.outlineMedium
     border.width: 1
 
     Column {
@@ -446,7 +447,7 @@ Rectangle {
                     } else if (eventMouseArea.containsMouse) {
                         return Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.06);
                     }
-                    return Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency);
+                    return Theme.nestedSurface;
                 }
                 border.color: {
                     if (modelData.url && eventMouseArea.containsMouse) {
@@ -454,9 +455,9 @@ Rectangle {
                     } else if (eventMouseArea.containsMouse) {
                         return Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15);
                     }
-                    return "transparent";
+                    return Theme.outlineMedium;
                 }
-                border.width: 1
+                border.width: eventMouseArea.containsMouse ? 1 : Theme.layerOutlineWidth
 
                 Rectangle {
                     width: 3
@@ -521,7 +522,7 @@ Rectangle {
                     onClicked: {
                         if (modelData.url && modelData.url !== "") {
                             if (Qt.openUrlExternally(modelData.url) === false) {
-                                console.warn("Failed to open URL: " + modelData.url);
+                                log.warn("Failed to open URL: " + modelData.url);
                             } else {
                                 root.closeDash();
                             }

@@ -6,10 +6,12 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
 import qs.Common
+import qs.Services
 import "../Common/markdown2html.js" as Markdown2Html
 
 Singleton {
     id: root
+    readonly property var log: Log.scoped("NotificationService")
 
     readonly property list<NotifWrapper> notifications: []
     readonly property list<NotifWrapper> allWrappers: []
@@ -153,7 +155,7 @@ Singleton {
             historyAdapter.notifications = historyList;
             historyFileView.writeAdapter();
         } catch (e) {
-            console.warn("NotificationService: save history failed:", e);
+            log.warn("save history failed:", e);
         }
     }
 
@@ -203,7 +205,7 @@ Singleton {
             if ((maxAgeMs > 0 && loaded.length !== (historyAdapter.notifications || []).length) || needsRewrite)
                 saveHistory();
         } catch (e) {
-            console.warn("NotificationService: load history failed:", e);
+            log.warn("load history failed:", e);
             historyLoaded = true;
         }
     }
@@ -287,6 +289,42 @@ Singleton {
 
     function _nowSec() {
         return Date.now() / 1000.0;
+    }
+
+    function _notificationDedupKey(source) {
+        if (!source)
+            return "";
+        const app = (source.appName || source.desktopEntry || "").toString();
+        const summary = (source.summary || "").toString();
+        const body = (source.body || "").toString();
+        const urgency = typeof source.urgency === "number" ? source.urgency : NotificationUrgency.Normal;
+        const icon = (source.appIcon || "").toString();
+        if (!app && !summary && !body)
+            return "";
+        const sep = "";
+        return app + sep + summary + sep + body + sep + urgency + sep + icon;
+    }
+
+    function _findActiveDuplicate(notif) {
+        const key = _notificationDedupKey(notif);
+        if (!key)
+            return null;
+
+        for (const w of visibleNotifications) {
+            if (!w || !w.notification || !w.popup)
+                continue;
+            if (_notificationDedupKey(w.notification) === key)
+                return w;
+        }
+
+        for (const w of notificationQueue) {
+            if (!w || !w.notification)
+                continue;
+            if (_notificationDedupKey(w.notification) === key)
+                return w;
+        }
+
+        return null;
     }
 
     function _ingressAllowed(urgency) {
@@ -403,7 +441,7 @@ Singleton {
             try {
                 return new RegExp(pattern, "i").test(value);
             } catch (e) {
-                console.warn("NotificationService: invalid notification rule regex:", pattern);
+                log.warn("invalid notification rule regex:", pattern);
                 return false;
             }
         }
@@ -593,6 +631,16 @@ Singleton {
 
             const policy = _evaluateNotificationPolicy(notif);
             if (policy.drop) {
+                try {
+                    notif.dismiss();
+                } catch (e) {}
+                return;
+            }
+
+            const duplicate = _findActiveDuplicate(notif);
+            if (duplicate) {
+                if (duplicate.timer && duplicate.timer.running)
+                    duplicate.timer.restart();
                 try {
                     notif.dismiss();
                 } catch (e) {}

@@ -50,6 +50,12 @@
   "%1 filtered": {
     "%1 filtered": ""
   },
+  "%1 h %2 m left": {
+    "%1 h %2 m left": ""
+  },
+  "%1 h left": {
+    "%1 h left": ""
+  },
   "%1 is now included in config": {
     "%1 is now included in config": "اکنون %1 وارد پیکربندی شد"
   },
@@ -59,8 +65,14 @@
   "%1 issues found": {
     "%1 issues found": ""
   },
+  "%1 min left": {
+    "%1 min left": ""
+  },
   "%1 notifications": {
     "%1 notifications": "%1 اعلان"
+  },
+  "%1 online": {
+    "%1 online": ""
   },
   "%1 update": {
     "%1 update": ""
@@ -146,6 +158,9 @@
   "14 days": {
     "14 days": "۱۴ روز"
   },
+  "15 min": {
+    "15 min": ""
+  },
   "15 minutes": {
     "15 minutes": "۱۵ دقیقه"
   },
@@ -202,6 +217,9 @@
   },
   "30 days": {
     "30 days": "۳۰ روز"
+  },
+  "30 min": {
+    "30 min": ""
   },
   "30 minutes": {
     "30 minutes": "۳۰ دقیقه"
@@ -278,6 +296,9 @@
   "API": {
     "API": "API"
   },
+  "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": {
+    "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": ""
+  },
   "Aborted": {
     "Aborted": "لغو شد"
   },
@@ -334,6 +355,9 @@
   },
   "Active Lock Screen Monitor": {
     "Active Lock Screen Monitor": "مانیتور فعال صفحه قفل"
+  },
+  "Active VPN": {
+    "Active VPN": ""
   },
   "Active tile background and icon color": {
     "Active tile background and icon color": "رنگ کاشی پس‌زمینه فعال و آیکون"
@@ -464,6 +488,9 @@
   "Animation Speed": {
     "Animation Speed": "سرعت انیمیشن"
   },
+  "Animation Style": {
+    "Animation Style": ""
+  },
   "Anonymous Identity": {
     "Anonymous Identity": "هویت ناشناس"
   },
@@ -500,11 +527,17 @@
   "Apply Changes": {
     "Apply Changes": "اعمال تغییرات"
   },
+  "Apply Flatpak updates alongside system updates when running 'Update All'.": {
+    "Apply Flatpak updates alongside system updates when running 'Update All'.": ""
+  },
   "Apply GTK Colors": {
     "Apply GTK Colors": "اعمال رنگ‌های GTK"
   },
   "Apply Qt Colors": {
     "Apply Qt Colors": "اعمال رنگ‌های Qt"
+  },
+  "Apply compositor blur behind the frame border": {
+    "Apply compositor blur behind the frame border": ""
   },
   "Apply warm color temperature to reduce eye strain. Use automation settings below to control when it activates.": {
     "Apply warm color temperature to reduce eye strain. Use automation settings below to control when it activates.": "برای کاهش خستگی چشم دمای رنگ گرم را اعمال کن. از تنظیمات خودکارسازی پایین برای زمان فعال شدن آن استفاده کنید."
@@ -533,6 +566,9 @@
   "Apps with notification popups muted. Unmute or delete to remove.": {
     "Apps with notification popups muted. Unmute or delete to remove.": "برنامه‌هایی که پاپ‌آپ اعلان آن‌ها بی‌صدا شده است. برای حذف، بی‌صدا را بردارید یا برنامه را حذف کنید."
   },
+  "Arc Extender": {
+    "Arc Extender": ""
+  },
   "Architecture": {
     "Architecture": "معماری"
   },
@@ -541,6 +577,9 @@
   },
   "Arrange displays and configure resolution, refresh rate, and VRR": {
     "Arrange displays and configure resolution, refresh rate, and VRR": "چیدمان نمایشگرها و پیکربندی وضوح، نرخ تازه‌سازی و VRR"
+  },
+  "At least one output must remain enabled": {
+    "At least one output must remain enabled": ""
   },
   "Attach": {
     "Attach": ""
@@ -734,6 +773,9 @@
   "Backend": {
     "Backend": "بک‌اند"
   },
+  "Backends: %1": {
+    "Backends: %1": ""
+  },
   "Background": {
     "Background": ""
   },
@@ -769,6 +811,18 @@
   },
   "Bar Transparency": {
     "Bar Transparency": "شفافیت نوار"
+  },
+  "Bar corners and background": {
+    "Bar corners and background": ""
+  },
+  "Bar shadow, border, and corners": {
+    "Bar shadow, border, and corners": ""
+  },
+  "Bar spacing and size": {
+    "Bar spacing and size": ""
+  },
+  "Bar transparency": {
+    "Bar transparency": ""
   },
   "Base color for shadows (opacity is applied automatically)": {
     "Base color for shadows (opacity is applied automatically)": ""
@@ -860,11 +914,17 @@
   "Border Opacity": {
     "Border Opacity": "شفافیت حاشیه"
   },
+  "Border Radius": {
+    "Border Radius": ""
+  },
   "Border Size": {
     "Border Size": "اندازه حاشیه"
   },
   "Border Thickness": {
     "Border Thickness": "ضخامت حاشیه"
+  },
+  "Border Width": {
+    "Border Width": ""
   },
   "Border color around blurred surfaces": {
     "Border color around blurred surfaces": ""
@@ -965,6 +1025,15 @@
   "Canceled": {
     "Canceled": "لغو شد"
   },
+  "Cannot disable the only output": {
+    "Cannot disable the only output": ""
+  },
+  "Cannot open trash: '%1' is not installed": {
+    "Cannot open trash: '%1' is not installed": ""
+  },
+  "Cannot open trash: no custom command set": {
+    "Cannot open trash: no custom command set": ""
+  },
   "Cannot pair": {
     "Cannot pair": "جفت‌سازی امکان‌پذیر نیست"
   },
@@ -1019,8 +1088,14 @@
   "Check for system updates": {
     "Check for system updates": "بررسی برای بروزرسانی‌های سیستم"
   },
+  "Check interval": {
+    "Check interval": ""
+  },
   "Check sync status on demand. Sync copies your theme, settings, and wallpaper configuration to the login screen. Authentication changes apply automatically.": {
     "Check sync status on demand. Sync copies your theme, settings, and wallpaper configuration to the login screen. Authentication changes apply automatically.": ""
+  },
+  "Check your custom command in Settings → Dock → Trash.": {
+    "Check your custom command in Settings → Dock → Trash.": ""
   },
   "Checking for updates...": {
     "Checking for updates...": ""
@@ -1066,6 +1141,9 @@
   },
   "Choose icon": {
     "Choose icon": "انتخاب آیکون"
+  },
+  "Choose monochrome or a theme color tint for system tray icons": {
+    "Choose monochrome or a theme color tint for system tray icons": ""
   },
   "Choose the background color for widgets": {
     "Choose the background color for widgets": "رنگ پس‌زمینه برای ابزارک‌ها انتخاب کنید"
@@ -1322,6 +1400,9 @@
   "Configure match criteria and actions": {
     "Configure match criteria and actions": "پیکربندی انطباق معیار و اقدامات"
   },
+  "Configure one in Settings → Dock → Trash.": {
+    "Configure one in Settings → Dock → Trash.": ""
+  },
   "Configure which displays show \"%1": {
     "Configure which displays show \"%1\"": "تنظیم کنید که کدام نمایشگر‌ها «%1» را نشان دهند"
   },
@@ -1363,6 +1444,9 @@
   },
   "Connected Displays": {
     "Connected Displays": "نمایشگر‌های متصل"
+  },
+  "Connected Options": {
+    "Connected Options": ""
   },
   "Connecting to Device": {
     "Connecting to Device": "درحال اتصال به دستگاه"
@@ -1409,14 +1493,26 @@
   "Control workspaces and columns by scrolling on the bar": {
     "Control workspaces and columns by scrolling on the bar": "کنترل محیط‎‌کارها و ستون‌ها با اسکرول روی نوار"
   },
+  "Controls how much original icon color is removed before applying tint": {
+    "Controls how much original icon color is removed before applying tint": ""
+  },
+  "Controls how strongly the selected tint color is applied": {
+    "Controls how strongly the selected tint color is applied": ""
+  },
   "Controls opacity of all popouts, modals, and their content layers": {
     "Controls opacity of all popouts, modals, and their content layers": "میزان شفافیت همه پاپ‌آپ‌ها، مودال‌ها و لایه‌های محتوای آنها را کنترل می‌کند"
+  },
+  "Controls outlines around blurred foreground cards, pills, and notification cards": {
+    "Controls outlines around blurred foreground cards, pills, and notification cards": ""
   },
   "Controls shadow cast direction for elevation layers": {
     "Controls shadow cast direction for elevation layers": ""
   },
   "Controls the base blur radius and offset of shadows": {
     "Controls the base blur radius and offset of shadows": ""
+  },
+  "Controls the outer edge of protocol-blurred windows": {
+    "Controls the outer edge of protocol-blurred windows": ""
   },
   "Controls the transparency of the shadow": {
     "Controls the transparency of the shadow": ""
@@ -1459,6 +1555,9 @@
   },
   "Copy PID": {
     "Copy PID": "کپی PID"
+  },
+  "Copy Path": {
+    "Copy Path": ""
   },
   "Copy Text": {
     "Copy Text": "کپی متن"
@@ -1507,6 +1606,15 @@
   },
   "Critical Priority": {
     "Critical Priority": "اولویت حیاتی"
+  },
+  "Ctrl+Tab: Switch Tab • Ctrl+S: Pin/Unpin • Shift+Del: Clear All • Esc: Close": {
+    "Ctrl+Tab: Switch Tab • Ctrl+S: Pin/Unpin • Shift+Del: Clear All • Esc: Close": ""
+  },
+  "Ctrl+Tab: Switch Tab • Ctrl+S: Pin/Unpin • Shift+Enter: Copy • Shift+Del: Clear All • Esc: Close": {
+    "Ctrl+Tab: Switch Tab • Ctrl+S: Pin/Unpin • Shift+Enter: Copy • Shift+Del: Clear All • Esc: Close": ""
+  },
+  "Ctrl+Tab: Switch Tab • Ctrl+S: Pin/Unpin • Shift+Enter: Paste • Shift+Del: Clear All • Esc: Close": {
+    "Ctrl+Tab: Switch Tab • Ctrl+S: Pin/Unpin • Shift+Enter: Paste • Shift+Del: Clear All • Esc: Close": ""
   },
   "Current": {
     "Current": "کنونی"
@@ -1604,11 +1712,20 @@
   "Custom Transparency": {
     "Custom Transparency": "شفافیت سفارشی"
   },
+  "Custom command and terminal params are split on whitespace; paths with spaces will break.": {
+    "Custom command and terminal params are split on whitespace; paths with spaces will break.": ""
+  },
+  "Custom open-trash command": {
+    "Custom open-trash command": ""
+  },
   "Custom power profile": {
     "Custom power profile": "پروفایل پاور سفارشی"
   },
   "Custom theme loaded from JSON file": {
     "Custom theme loaded from JSON file": "تم سفارشی از فایل JSON بارگذاری شد"
+  },
+  "Custom update command": {
+    "Custom update command": ""
   },
   "Custom...": {
     "Custom...": "سفارشی..."
@@ -1766,6 +1883,12 @@
   "Dependencies & documentation": {
     "Dependencies & documentation": ""
   },
+  "Depth": {
+    "Depth": ""
+  },
+  "Depth: Panels scale up from small as they slide in — a dramatic pop-forward depth effect.": {
+    "Depth: Panels scale up from small as they slide in — a dramatic pop-forward depth effect.": ""
+  },
   "Derives colors that closely match the underlying image.": {
     "Derives colors that closely match the underlying image.": "رنگ‌هایی را استخراج می‌کند که با تصویر زیرین مطابقت نزدیکی دارند."
   },
@@ -1796,6 +1919,9 @@
   "Details for \"%1": {
     "Details for \"%1\"": ""
   },
+  "Detected backends: %1": {
+    "Detected backends: %1": ""
+  },
   "Development": {
     "Development": "توسعه"
   },
@@ -1819,6 +1945,12 @@
   },
   "Direction Source": {
     "Direction Source": ""
+  },
+  "Directional": {
+    "Directional": ""
+  },
+  "Directional: Panels glide in from a larger distance at full size — no scale change, pure clean motion.": {
+    "Directional: Panels glide in from a larger distance at full size — no scale change, pure clean motion.": ""
   },
   "Disable Autoconnect": {
     "Disable Autoconnect": "غیرفعال کردن اتصال خودکار"
@@ -1964,6 +2096,9 @@
   "Dock Visibility": {
     "Dock Visibility": "وضعیت نمایش داک"
   },
+  "Dock spacing, transparency, and border": {
+    "Dock spacing, transparency, and border": ""
+  },
   "Docs": {
     "Docs": "مستندات"
   },
@@ -1993,6 +2128,9 @@
   },
   "Drag workspace indicators to reorder them": {
     "Drag workspace indicators to reorder them": "نگه‌داشتن نشانگر محیط‌کارها برای بازآرایی آنها"
+  },
+  "Draw a connected picture-frame border around the entire display": {
+    "Draw a connected picture-frame border around the entire display": ""
   },
   "Driver": {
     "Driver": "درایور"
@@ -2033,8 +2171,14 @@
   "Dynamic colors, presets": {
     "Dynamic colors, presets": "رنگ‌های پویا، پیش‌تنظیم‌ها"
   },
+  "Dynamic: Spring bezier with overshoot — entry briefly exceeds its target then settles. Expressive and alive.": {
+    "Dynamic: Spring bezier with overshoot — entry briefly exceeds its target then settles. Expressive and alive.": ""
+  },
   "Edge Spacing": {
     "Edge Spacing": "فاصله لبه"
+  },
+  "Edge the launcher slides from": {
+    "Edge the launcher slides from": ""
   },
   "Edit App": {
     "Edit App": "ویرایش برنامه"
@@ -2048,6 +2192,15 @@
   "Empty": {
     "Empty": "خالی"
   },
+  "Empty Trash": {
+    "Empty Trash": ""
+  },
+  "Empty Trash (%1)": {
+    "Empty Trash (%1)": ""
+  },
+  "Empty Trash?": {
+    "Empty Trash?": ""
+  },
   "Enable 10-bit color depth for wider color gamut and HDR support": {
     "Enable 10-bit color depth for wider color gamut and HDR support": "فعال‌کردن عمق رنگ ۱۰ بیت برای طیف رنگ عریض‌تر و پشتیبانی HDR"
   },
@@ -2059,6 +2212,9 @@
   },
   "Enable Do Not Disturb": {
     "Enable Do Not Disturb": "فعال‌کردن مزاحم نشوید"
+  },
+  "Enable Frame": {
+    "Enable Frame": ""
   },
   "Enable History": {
     "Enable History": "فعال‌کردن تاریخچه"
@@ -2225,6 +2381,18 @@
   "Ethernet": {
     "Ethernet": "اترنت"
   },
+  "Every 15 minutes": {
+    "Every 15 minutes": ""
+  },
+  "Every 30 minutes": {
+    "Every 30 minutes": ""
+  },
+  "Every 4 hours": {
+    "Every 4 hours": ""
+  },
+  "Every hour": {
+    "Every hour": ""
+  },
   "Exact": {
     "Exact": "دقیق"
   },
@@ -2239,6 +2407,9 @@
   },
   "Exponential": {
     "Exponential": "نمایی"
+  },
+  "Expose the Arcs": {
+    "Expose the Arcs": ""
   },
   "Expressive": {
     "Expressive": "پررنگ"
@@ -2281,6 +2452,9 @@
   },
   "Failed to add printer to class": {
     "Failed to add printer to class": "افزودن چاپگر به کلاس ناموفق بود"
+  },
+  "Failed to apply profile": {
+    "Failed to apply profile": ""
   },
   "Failed to browse device": {
     "Failed to browse device": "مرور دستگاه ناموفق بود"
@@ -2336,6 +2510,9 @@
   "Failed to disconnect WiFi": {
     "Failed to disconnect WiFi": "قطع اتصال وای‌فای ناموفق بود"
   },
+  "Failed to empty trash": {
+    "Failed to empty trash": ""
+  },
   "Failed to enable IP location": {
     "Failed to enable IP location": "فعال‌کردن موقعیت مکانی IP ناموفق بود"
   },
@@ -2365,6 +2542,9 @@
   },
   "Failed to move job": {
     "Failed to move job": "انتقال کار چاپ ناموفق بود"
+  },
+  "Failed to move to trash": {
+    "Failed to move to trash": ""
   },
   "Failed to parse plugin_settings.json": {
     "Failed to parse plugin_settings.json": "تجزیه فایل plugin_settings.json ناموفق بود"
@@ -2419,6 +2599,9 @@
   },
   "Failed to save keybind": {
     "Failed to save keybind": "ذخیره نگاشت‌کلید ناموفق بود"
+  },
+  "Failed to save profile": {
+    "Failed to save profile": ""
   },
   "Failed to save profile file": {
     "Failed to save profile file": "ذخیره فایل پروفایل ناموفق بود"
@@ -2480,6 +2663,9 @@
   "Failed to write temp file for validation": {
     "Failed to write temp file for validation": "نوشتن فایل موقت برای اعتبارسنجی ناموفق بود"
   },
+  "Failed: %1": {
+    "Failed: %1": ""
+  },
   "Features": {
     "Features": "ویژگی‌ها"
   },
@@ -2506,6 +2692,9 @@
   },
   "File Information": {
     "File Information": "اطلاعات فایل"
+  },
+  "File manager used to open the trash. Pick \"custom\" to enter your own command.": {
+    "File manager used to open the trash. Pick \"custom\" to enter your own command.": ""
   },
   "File received from": {
     "File received from": "فایل دریافت شده از"
@@ -2582,6 +2771,12 @@
   "Float": {
     "Float": "شناور"
   },
+  "Fluent": {
+    "Fluent": ""
+  },
+  "Fluent: Smooth cubic deceleration in, quick snap out — clean, elegant curves.": {
+    "Fluent: Smooth cubic deceleration in, quick snap out — clean, elegant curves.": ""
+  },
   "Focus": {
     "Focus": "فوکوس"
   },
@@ -2639,6 +2834,21 @@
   "Font used on the login screen": {
     "Font used on the login screen": ""
   },
+  "For 1 hour": {
+    "For 1 hour": ""
+  },
+  "For 15 minutes": {
+    "For 15 minutes": ""
+  },
+  "For 3 hours": {
+    "For 3 hours": ""
+  },
+  "For 30 minutes": {
+    "For 30 minutes": ""
+  },
+  "For 8 hours": {
+    "For 8 hours": ""
+  },
   "Force HDR": {
     "Force HDR": "اجبار HDR"
   },
@@ -2659,6 +2869,9 @@
   },
   "Forecast Not Available": {
     "Forecast Not Available": "پیش‌بینی موجود نیست"
+  },
+  "Foreground Layers": {
+    "Foreground Layers": ""
   },
   "Forever": {
     "Forever": "برای همیشه"
@@ -2686,6 +2899,18 @@
   },
   "Found %1 packages to update:": {
     "Found %1 packages to update:": ""
+  },
+  "Frame": {
+    "Frame": ""
+  },
+  "Frame Blur": {
+    "Frame Blur": ""
+  },
+  "Frame Blur follows Background Blur in Theme & Colors": {
+    "Frame Blur follows Background Blur in Theme & Colors": ""
+  },
+  "Frame Border Color": {
+    "Frame Border Color": ""
   },
   "Free VRAM/memory when the launcher is closed. May cause a slight delay when reopening.": {
     "Free VRAM/memory when the launcher is closed. May cause a slight delay when reopening.": "هنگامی که لانچر بسته شد VRAM/حافظه را آزاد کن. ممکن است باعث اندکی تأخیر هنگام باز کردن مجدد شود."
@@ -2987,6 +3212,9 @@
   "Home": {
     "Home": "خانه"
   },
+  "Horizontal and vertical bar thickness": {
+    "Horizontal and vertical bar thickness": ""
+  },
   "Host": {
     "Host": ""
   },
@@ -3007,6 +3235,9 @@
   },
   "Hourly Forecast Count": {
     "Hourly Forecast Count": "تعداد پیش‌بینی‌های ساعتی"
+  },
+  "How often the server polls for new updates.": {
+    "How often the server polls for new updates.": ""
   },
   "How often to change wallpaper": {
     "How often to change wallpaper": "چند وقت یکبار تصویر پس‌زمینه تغییر کند"
@@ -3092,8 +3323,14 @@
   "Inactive Monitor Color": {
     "Inactive Monitor Color": "رنگ مانیتور غیر‌فعال"
   },
+  "Include AUR updates": {
+    "Include AUR updates": ""
+  },
   "Include Files in All Tab": {
     "Include Files in All Tab": ""
+  },
+  "Include Flatpak updates": {
+    "Include Flatpak updates": ""
   },
   "Include Folders in All Tab": {
     "Include Folders in All Tab": ""
@@ -3196,6 +3433,9 @@
   },
   "Installing: %1": {
     "Installing: %1": "درحال نصب: %1"
+  },
+  "Integrations": {
+    "Integrations": ""
   },
   "Intelligent Auto-hide": {
     "Intelligent Auto-hide": "پنهان خودکار هوشمند"
@@ -3346,6 +3586,12 @@
   },
   "Launcher Button Logo": {
     "Launcher Button Logo": "لوگوی دکمه لانچر"
+  },
+  "Launcher Emerge Side": {
+    "Launcher Emerge Side": ""
+  },
+  "Layer Outline Opacity": {
+    "Layer Outline Opacity": ""
   },
   "Layout": {
     "Layout": "چیدمان"
@@ -3509,6 +3755,12 @@
   "Manage up to 4 independent bar configurations. Each bar has its own position, widgets, styling, and display assignment.": {
     "Manage up to 4 independent bar configurations. Each bar has its own position, widgets, styling, and display assignment.": "مدیریت حداکثر ۴ پیکربندی مستقل برای نوارها. هر نوار موقعیت، ابزارک‌ها، استایل و نحوه نمایش خاص خود را دارد."
   },
+  "Managed by Frame": {
+    "Managed by Frame": ""
+  },
+  "Managed by Frame in Connected Mode": {
+    "Managed by Frame in Connected Mode": ""
+  },
   "Management": {
     "Management": "مدیریت"
   },
@@ -3554,6 +3806,9 @@
   "Matches profile: %1": {
     "Matches profile: %1": "منطبق با پروفایل: %1"
   },
+  "Material": {
+    "Material": ""
+  },
   "Material Colors": {
     "Material Colors": "رنگ‌های Material"
   },
@@ -3565,6 +3820,9 @@
   },
   "Material inspired shadows and elevation on modals, popouts, and dialogs": {
     "Material inspired shadows and elevation on modals, popouts, and dialogs": ""
+  },
+  "Material: Material Design 3 Expressive bezier curves. The DMS default feel.": {
+    "Material: Material Design 3 Expressive bezier curves. The DMS default feel.": ""
   },
   "Matugen Contrast": {
     "Matugen Contrast": ""
@@ -3785,6 +4043,9 @@
   "Monitor whose wallpaper drives dynamic theming colors": {
     "Monitor whose wallpaper drives dynamic theming colors": "مانیتوری که تصویر پس‌زمینه آن رنگ‌های تم پویا را تعیین می‌کند"
   },
+  "Monitors in \"%1\":": {
+    "Monitors in \"%1\":": ""
+  },
   "Monochrome": {
     "Monochrome": "تک‌رنگ"
   },
@@ -3800,6 +4061,9 @@
   "Morning": {
     "Morning": "صبح"
   },
+  "Motion Effects": {
+    "Motion Effects": ""
+  },
   "Mount Points": {
     "Mount Points": "نقاط اتصال"
   },
@@ -3814,6 +4078,9 @@
   },
   "Move Widget": {
     "Move Widget": "انتقال ابزارک"
+  },
+  "Move to Trash": {
+    "Move to Trash": ""
   },
   "Moving to Paused": {
     "Moving to Paused": "انتقال به حالت متوقف شده"
@@ -3847,6 +4114,9 @@
   },
   "Muted palette with subdued, calming tones.": {
     "Muted palette with subdued, calming tones.": "پالت رنگی ساکت با تن‌های ملایم و آرامش‌بخش."
+  },
+  "My Online": {
+    "My Online": ""
   },
   "NM not supported": {
     "NM not supported": "NM پشتیبانی نمی‌شود"
@@ -4115,6 +4385,9 @@
   "No matches": {
     "No matches": "موردی پیدا نشد"
   },
+  "No matching devices": {
+    "No matching devices": ""
+  },
   "No matching processes": {
     "No matching processes": "فرآیند موردنظر یافت نشد"
   },
@@ -4132,6 +4405,9 @@
   },
   "No package manager found. Please install 'paru' or 'yay' on Arch-based systems to check for updates.": {
     "No package manager found. Please install 'paru' or 'yay' on Arch-based systems to check for updates.": ""
+  },
+  "No peers found": {
+    "No peers found": ""
   },
   "No plugin results": {
     "No plugin results": "بدون نتایج افزونه"
@@ -4168,6 +4444,12 @@
   },
   "No status output.": {
     "No status output.": ""
+  },
+  "No supported package manager found.": {
+    "No supported package manager found.": ""
+  },
+  "No terminal configured": {
+    "No terminal configured": ""
   },
   "No themes found": {
     "No themes found": "هیچ تمی یافت نشد"
@@ -4328,6 +4610,9 @@
   "On": {
     "On": "روشن"
   },
+  "On indefinitely": {
+    "On indefinitely": ""
+  },
   "On-Demand": {
     "On-Demand": "هنگام درخواست"
   },
@@ -4336,6 +4621,12 @@
   },
   "On-screen Displays": {
     "On-screen Displays": "نمایشگر‌های بر صفحه (OSD)"
+  },
+  "Once a day": {
+    "Once a day": ""
+  },
+  "Online": {
+    "Online": ""
   },
   "Only adjust gamma based on time or location rules.": {
     "Only adjust gamma based on time or location rules.": "گاما را فقط بر اساس قواعد زمانی یا مکانی تنظیم کن."
@@ -4361,14 +4652,26 @@
   "Open App": {
     "Open App": "باز کردن برنامه"
   },
+  "Open Frame": {
+    "Open Frame": ""
+  },
   "Open KDE Connect on your phone": {
     "Open KDE Connect on your phone": "برنامه KDE Connect را در گوشی خود باز کنید"
   },
   "Open Notepad File": {
     "Open Notepad File": "باز‌ کردن فایل دفترچه یادداشت"
   },
+  "Open Trash": {
+    "Open Trash": ""
+  },
+  "Open Trash With": {
+    "Open Trash With": ""
+  },
   "Open a new note": {
     "Open a new note": "باز کردن یادداشت جدید"
+  },
+  "Open a terminal and run a custom command instead of the in-shell upgrade flow.": {
+    "Open a terminal and run a custom command instead of the in-shell upgrade flow.": ""
   },
   "Open folder": {
     "Open folder": "باز کردن پوشه"
@@ -4484,6 +4787,9 @@
   "Overwrite": {
     "Overwrite": "بازنویسی"
   },
+  "Owner: %1": {
+    "Owner: %1": ""
+  },
   "PAM already provides fingerprint auth. Enable this to show it at login.": {
     "PAM already provides fingerprint auth. Enable this to show it at login.": ""
   },
@@ -4592,6 +4898,9 @@
   "Performance": {
     "Performance": "کارایی"
   },
+  "Permanently delete %1 item(s)? This cannot be undone.": {
+    "Permanently delete %1 item(s)? This cannot be undone.": ""
+  },
   "Permission denied to set profile image.": {
     "Permission denied to set profile image.": "اجازه تنظیم تصویر نمایه داده نشد."
   },
@@ -4607,8 +4916,17 @@
   "Phone number": {
     "Phone number": "شماره تلفن"
   },
+  "Pick a different file manager in Settings → Dock → Trash.": {
+    "Pick a different file manager in Settings → Dock → Trash.": ""
+  },
   "Pick a different random video each time from the same folder": {
     "Pick a different random video each time from the same folder": ""
+  },
+  "Pick a terminal in Settings → Launcher (or set $TERMINAL).": {
+    "Pick a terminal in Settings → Launcher (or set $TERMINAL).": ""
+  },
+  "Pick how long to pause notifications": {
+    "Pick how long to pause notifications": ""
   },
   "Pictures": {
     "Pictures": "تصاویر"
@@ -4636,6 +4954,9 @@
   },
   "Pixelate": {
     "Pixelate": "پیکسلی کردن"
+  },
+  "Place a trash bin at the end of the dock": {
+    "Place a trash bin at the end of the dock": ""
   },
   "Place plugin directories here. Each plugin should have a plugin.json manifest file.": {
     "Place plugin directories here. Each plugin should have a plugin.json manifest file.": "دایرکتوری افزونه‌ها را اینجا قرار دهید. هر افزونه باید فایل مشخصات plugins.json داشته باشد."
@@ -4904,6 +5225,9 @@
   "Profile not found": {
     "Profile not found": "پروفایل یافت نشد"
   },
+  "Profile not found in monitors.json": {
+    "Profile not found in monitors.json": ""
+  },
   "Profile saved: %1": {
     "Profile saved: %1": "پروفایل ذخیره شد: %1"
   },
@@ -5054,6 +5378,9 @@
   "Requires DMS %1": {
     "Requires DMS %1": "به DMS %1 نیاز دارد"
   },
+  "Requires DMS server with sysupdate capability": {
+    "Requires DMS server with sysupdate capability": ""
+  },
   "Requires DWL compositor": {
     "Requires DWL compositor": "به کامپازیتور DWL نیاز دارد"
   },
@@ -5098,6 +5425,9 @@
   },
   "Resume": {
     "Resume": "ازسرگیری"
+  },
+  "Reveal the arcs where surfaces meet the frame": {
+    "Reveal the arcs where surfaces meet the frame": ""
   },
   "Reverse Scrolling Direction": {
     "Reverse Scrolling Direction": "جهت اسکرول معکوس"
@@ -5174,6 +5504,9 @@
   "Run a shell command (e.g., notify-send)": {
     "Run a shell command (e.g., notify-send)": "اجرای یک دستور شِل (مانند notify-send)"
   },
+  "Run paru/yay with AUR enabled when 'Update All' is clicked.": {
+    "Run paru/yay with AUR enabled when 'Update All' is clicked.": ""
+  },
   "Running Apps": {
     "Running Apps": "برنامه‌های درحال اجرا"
   },
@@ -5182,6 +5515,9 @@
   },
   "Running greeter sync…": {
     "Running greeter sync…": ""
+  },
+  "Running in terminal": {
+    "Running in terminal": ""
   },
   "SDR Brightness": {
     "SDR Brightness": "روشنایی SDR"
@@ -5299,6 +5635,9 @@
   },
   "Search by key combo, description, or action name.\n\nDefault action copies the keybind to clipboard.\nRight-click or press Right Arrow to pin frequently used keybinds - they'll appear at the top when not searching.": {
     "Search by key combo, description, or action name.\n\nDefault action copies the keybind to clipboard.\nRight-click or press Right Arrow to pin frequently used keybinds - they'll appear at the top when not searching.": "با ترکیب کلید‌ها، توضیحات یا نام اقدام‌ جستجو کنید.\n\nاقدام پیش‌فرض نگاشت‌کلید را در کلیپ‌بورد کپی می‌کند.\nبرای سنجاق‌ کردن نگاشت‌کلید‌های پر استفاده راست‌کلیک کنید یا پیکان راست را فشار دهید - آن‌ها هنگام جستجو نکردن در بالای لیست ظاهر خواهند شد."
+  },
+  "Search devices...": {
+    "Search devices...": ""
   },
   "Search for a location...": {
     "Search for a location...": "جستجو برای موقعیت مکانی..."
@@ -5464,6 +5803,9 @@
   },
   "Sending": {
     "Sending": "درحال ارسال"
+  },
+  "Separate": {
+    "Separate": ""
   },
   "Separator": {
     "Separator": "جداکننده"
@@ -5723,6 +6065,9 @@
   "Show Top Processes": {
     "Show Top Processes": "نمایش فرایند‌های مهم"
   },
+  "Show Trash in Dock": {
+    "Show Trash in Dock": ""
+  },
   "Show Weather Condition": {
     "Show Weather Condition": "نمایش شرایط آب و هوا"
   },
@@ -5758,6 +6103,12 @@
   },
   "Show drop shadow on notification popups. Requires M3 Elevation to be enabled in Theme & Colors.": {
     "Show drop shadow on notification popups. Requires M3 Elevation to be enabled in Theme & Colors.": ""
+  },
+  "Show during Niri overview": {
+    "Show during Niri overview": ""
+  },
+  "Show foreground surfaces on blurred panels for stronger contrast": {
+    "Show foreground surfaces on blurred panels for stronger contrast": ""
   },
   "Show in GB": {
     "Show in GB": ""
@@ -5861,6 +6212,12 @@
   "Signal:": {
     "Signal:": "سیگنال:"
   },
+  "Silence for a while": {
+    "Silence for a while": ""
+  },
+  "Silence notifications": {
+    "Silence notifications": ""
+  },
   "Size": {
     "Size": "اندازه"
   },
@@ -5948,6 +6305,9 @@
   "Standard": {
     "Standard": "استاندارد"
   },
+  "Standard: Classic Material Design 3 — panels rise from below with a subtle scale. The DMS default.": {
+    "Standard: Classic Material Design 3 — panels rise from below with a subtle scale. The DMS default.": ""
+  },
   "Start": {
     "Start": "شروع"
   },
@@ -5996,8 +6356,20 @@
   "Surface": {
     "Surface": "زمینه"
   },
+  "Surface Behavior": {
+    "Surface Behavior": ""
+  },
+  "Surface Opacity": {
+    "Surface Opacity": ""
+  },
   "Surface Variant": {
     "Surface Variant": "سطح متغیر"
+  },
+  "Surfaces emerge flush from the bar": {
+    "Surfaces emerge flush from the bar": ""
+  },
+  "Surfaces float independently of the frame": {
+    "Surfaces float independently of the frame": ""
   },
   "Suspend": {
     "Suspend": "تعلیق"
@@ -6071,6 +6443,9 @@
   "System Tray": {
     "System Tray": "سینی سیستم"
   },
+  "System Tray Icon Tint": {
+    "System Tray Icon Tint": ""
+  },
   "System Update": {
     "System Update": "بروزرسانی سیستم"
   },
@@ -6101,8 +6476,23 @@
   "Tab/Shift+Tab: Nav • ←→↑↓: Grid Nav • Enter/Space: Select": {
     "Tab/Shift+Tab: Nav • ←→↑↓: Grid Nav • Enter/Space: Select": "Tab/Shift+Tab: پیمایش • ←→↑↓: پیمایش جدولی • Enter/Space: انتخاب"
   },
+  "Tags: %1": {
+    "Tags: %1": ""
+  },
+  "Tailscale": {
+    "Tailscale": ""
+  },
+  "Tailscale Network": {
+    "Tailscale Network": ""
+  },
+  "Tailscale not available": {
+    "Tailscale not available": ""
+  },
   "Terminal": {
     "Terminal": ""
+  },
+  "Terminal additional parameters": {
+    "Terminal additional parameters": ""
   },
   "Terminal custom additional parameters": {
     "Terminal custom additional parameters": "پارامتر‌های اضافی سفارشی ترمینال"
@@ -6188,6 +6578,9 @@
   "This bind is overridden by config.kdl": {
     "This bind is overridden by config.kdl": "این نگاشت توسط config.kdl بازنویسی شده"
   },
+  "This device": {
+    "This device": ""
+  },
   "This may take a few seconds": {
     "This may take a few seconds": "این ممکن است چند ثانیه طول بکشد"
   },
@@ -6262,6 +6655,12 @@
   },
   "Timeout for normal priority notifications": {
     "Timeout for normal priority notifications": "وقفه اعلان‌ها با اولویت عادی"
+  },
+  "Tint Saturation": {
+    "Tint Saturation": ""
+  },
+  "Tint Strength": {
+    "Tint Strength": ""
   },
   "Title": {
     "Title": "عنوان"
@@ -6353,6 +6752,12 @@
   "Transparency": {
     "Transparency": "شفافیت"
   },
+  "Trash": {
+    "Trash": ""
+  },
+  "Trash command failed (exit %1)": {
+    "Trash command failed (exit %1)": ""
+  },
   "Trending GIFs": {
     "Trending GIFs": "گیف‌های پرطرفدار"
   },
@@ -6374,11 +6779,23 @@
   "Try a different search": {
     "Try a different search": "یک جستجوی دیگر را امتحان کنید"
   },
+  "Turn off": {
+    "Turn off": ""
+  },
+  "Turn off Do Not Disturb": {
+    "Turn off Do Not Disturb": ""
+  },
   "Turn off all displays immediately when the lock screen activates": {
     "Turn off all displays immediately when the lock screen activates": "همه نمایشگر‌ها را هنگامی که صفحه قفل فعال می‌شود بلادرنگ خاموش کن"
   },
   "Turn off monitors after": {
     "Turn off monitors after": "خاموش‌کردن مانیتور پس از"
+  },
+  "Turn off monitors after lock": {
+    "Turn off monitors after lock": ""
+  },
+  "Turn off now": {
+    "Turn off now": ""
   },
   "Type": {
     "Type": "نوع"
@@ -6494,6 +6911,18 @@
   "Unsaved note...": {
     "Unsaved note...": "یادداشت ذخیره نشده..."
   },
+  "Until %1": {
+    "Until %1": ""
+  },
+  "Until 8 AM": {
+    "Until 8 AM": ""
+  },
+  "Until I turn it off": {
+    "Until I turn it off": ""
+  },
+  "Until tomorrow, 8:00 AM": {
+    "Until tomorrow, 8:00 AM": ""
+  },
   "Untitled": {
     "Untitled": "بدون عنوان"
   },
@@ -6511,6 +6940,9 @@
   },
   "Update Plugin": {
     "Update Plugin": "بروزرسانی افزونه"
+  },
+  "Upgrading...": {
+    "Upgrading...": ""
   },
   "Uptime": {
     "Uptime": "زمان اجرا"
@@ -6572,6 +7004,9 @@
   "Use custom border/focus-ring width": {
     "Use custom border/focus-ring width": "از طول حاشیه/focus-ring سفارشی استفاده کن"
   },
+  "Use custom command": {
+    "Use custom command": ""
+  },
   "Use custom command for update your system": {
     "Use custom command for update your system": "استفاده از دستور سفارشی برای بروزرسانی سیستم شما"
   },
@@ -6601,6 +7036,9 @@
   },
   "Use sound theme from system settings": {
     "Use sound theme from system settings": "استفاده از تم صدا در تنظیمات سیستم"
+  },
+  "Use the extended surface for launcher content": {
+    "Use the extended surface for launcher content": ""
   },
   "Use the same position and size on all displays": {
     "Use the same position and size on all displays": "از مکان و اندازه یکسان بین تمامی نمایشگرها استفاده کن"
@@ -6998,6 +7436,9 @@
   "dgop not available": {
     "dgop not available": "dgop در دسترس نیست"
   },
+  "direct": {
+    "direct": ""
+  },
   "dms is a highly customizable, modern desktop shell with a <a href=\"https://m3.material.io/\" style=\"text-decoration:none; color:%1;\">material 3 inspired</a> design.<br /><br/>It is built with <a href=\"https://quickshell.org\" style=\"text-decoration:none; color:%1;\">Quickshell</a>, a QT6 framework for building desktop shells, and <a href=\"https://go.dev\" style=\"text-decoration:none; color:%1;\">Go</a>, a statically typed, compiled programming language.": {
     "dms is a highly customizable, modern desktop shell with a <a href=\"https://m3.material.io/\" style=\"text-decoration:none; color:%1;\">material 3 inspired</a> design.<br /><br/>It is built with <a href=\"https://quickshell.org\" style=\"text-decoration:none; color:%1;\">Quickshell</a>, a QT6 framework for building desktop shells, and <a href=\"https://go.dev\" style=\"text-decoration:none; color:%1;\">Go</a>, a statically typed, compiled programming language.": ""
   },
@@ -7027,6 +7468,9 @@
   },
   "featured": {
     "featured": "پیشنهادی"
+  },
+  "last seen %1": {
+    "last seen %1": ""
   },
   "leave empty for default": {
     "leave empty for default": "برای پیش‌فرض خالی رها کنید"
@@ -7103,6 +7547,9 @@
   "r/niri Subreddit": {
     "r/niri Subreddit": ""
   },
+  "relay: %1": {
+    "relay: %1": ""
+  },
   "seconds": {
     "seconds": "ثانیه"
   },
@@ -7111,6 +7558,9 @@
   },
   "this app": {
     "this app": "این برنامه"
+  },
+  "until %1": {
+    "until %1": ""
   },
   "up": {
     "up": "روشن"

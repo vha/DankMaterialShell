@@ -9,6 +9,7 @@ import qs.Modules.Settings.DisplayConfig
 
 Item {
     id: root
+    readonly property var log: Log.scoped("DMSShellIPC")
 
     required property var powerMenuModalLoader
     required property var processListModalLoader
@@ -161,37 +162,36 @@ Item {
     }
 
     IpcHandler {
+        function resolveTabIndex(tab: string): int {
+            switch ((tab || "").toLowerCase()) {
+            case "media":
+                return 1;
+            case "wallpaper":
+                return 2;
+            case "weather":
+                return SettingsData.weatherEnabled ? 3 : 0;
+            default:
+                return 0;
+            }
+        }
+
         function open(tab: string): string {
             const bar = root.getPreferredBar("clockButtonRef");
             if (!bar)
                 return "DASH_OPEN_FAILED";
 
+            const tabIndex = resolveTabIndex(tab);
             const dash = root.dankDashPopoutLoader.item;
-            const onSameScreen = dash && dash.shouldBeVisible && dash.triggerScreen?.name === bar.screen?.name;
-
-            if (!onSameScreen) {
-                bar.triggerWallpaperBrowser();
+            if (dash && dash.shouldBeVisible && dash.triggerScreen?.name === bar.screen?.name) {
+                dash.currentTabIndex = tabIndex;
+                if (dash.updateSurfacePosition)
+                    dash.updateSurfacePosition();
+                return "DASH_OPEN_SUCCESS";
             }
 
-            if (!root.dankDashPopoutLoader.item)
+            if (!bar.triggerDashTab(tabIndex))
                 return "DASH_OPEN_FAILED";
 
-            switch (tab.toLowerCase()) {
-            case "media":
-                root.dankDashPopoutLoader.item.currentTabIndex = 1;
-                break;
-            case "wallpaper":
-                root.dankDashPopoutLoader.item.currentTabIndex = 2;
-                break;
-            case "weather":
-                root.dankDashPopoutLoader.item.currentTabIndex = SettingsData.weatherEnabled ? 3 : 0;
-                break;
-            default:
-                root.dankDashPopoutLoader.item.currentTabIndex = 0;
-                break;
-            }
-
-            root.dankDashPopoutLoader.item.dashVisible = true;
             return "DASH_OPEN_SUCCESS";
         }
 
@@ -211,23 +211,8 @@ Item {
 
             const bar = root.getPreferredBar("clockButtonRef");
             if (bar) {
-                bar.triggerWallpaperBrowser();
-                if (root.dankDashPopoutLoader.item) {
-                    switch (tab.toLowerCase()) {
-                    case "media":
-                        root.dankDashPopoutLoader.item.currentTabIndex = 1;
-                        break;
-                    case "wallpaper":
-                        root.dankDashPopoutLoader.item.currentTabIndex = 2;
-                        break;
-                    case "weather":
-                        root.dankDashPopoutLoader.item.currentTabIndex = SettingsData.weatherEnabled ? 3 : 0;
-                        break;
-                    default:
-                        root.dankDashPopoutLoader.item.currentTabIndex = 0;
-                        break;
-                    }
-                }
+                if (!bar.triggerDashTab(resolveTabIndex(tab)))
+                    return "DASH_TOGGLE_FAILED";
                 return "DASH_TOGGLE_SUCCESS";
             }
             return "DASH_TOGGLE_FAILED";
@@ -861,7 +846,7 @@ Item {
 
         function set(key: string, value: string): string {
             if (!(key in SettingsData)) {
-                console.warn("Cannot set property, not found:", key);
+                log.warn("Cannot set property, not found:", key);
                 return "SETTINGS_INVALID_KEY";
             }
 
@@ -894,12 +879,12 @@ Item {
                     throw "Unsupported type";
                 }
 
-                console.warn("Setting:", key, value);
+                log.warn("Setting:", key, value);
                 SettingsData[key] = value;
                 SettingsData.saveSettings();
                 return "SETTINGS_SET_SUCCESS";
             } catch (e) {
-                console.warn("Failed to set property:", key, "error:", e);
+                log.warn("Failed to set property:", key, "error:", e);
                 return "SETTINGS_SET_FAILURE";
             }
         }
@@ -1637,13 +1622,15 @@ Item {
 
             for (const id in profiles) {
                 const p = profiles[id];
+                if (!p.name)
+                    continue;
                 const flags = [];
                 if (id === activeId)
                     flags.push("active");
                 if (id === matchedId)
                     flags.push("matched");
                 const flagStr = flags.length > 0 ? " [" + flags.join(",") + "]" : "";
-                lines.push(p.name + flagStr + " -> " + JSON.stringify(p.outputSet));
+                lines.push(p.name + flagStr + " -> " + JSON.stringify(Object.keys(p.outputs)));
             }
 
             if (lines.length === 0)
@@ -1675,13 +1662,16 @@ Item {
             return `PROFILE_SET_SUCCESS: ${profileName}`;
         }
 
-        // ! TODO - auto profile switching is buggy on niri and other compositors
         function toggleAuto(): string {
-            return "ERROR: Auto profile selection is temporarily disabled due to compositor bugs";
+            SettingsData.displayProfileAutoSelect = !SettingsData.displayProfileAutoSelect;
+            SettingsData.saveSettings();
+            if (SettingsData.displayProfileAutoSelect)
+                DisplayConfigState.applyAutoConfig();
+            return `Auto profile selection: ${SettingsData.displayProfileAutoSelect ? "enabled" : "disabled"}`;
         }
 
         function status(): string {
-            const auto = "off"; // disabled for now
+            const auto = SettingsData.displayProfileAutoSelect ? "on" : "off";
             const activeId = SettingsData.getActiveDisplayProfile(CompositorService.compositor);
             const matchedId = DisplayConfigState.matchedProfile;
             const profiles = DisplayConfigState.validatedProfiles;
