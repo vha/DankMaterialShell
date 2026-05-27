@@ -108,7 +108,7 @@ Singleton {
             if (exitCode === 0) {
                 configValidationOutput = "";
             } else if (hasInitialConnection && configValidationOutput.length > 0) {
-                ToastService.showError("niri: failed to load config", configValidationOutput, "", "niri-config");
+                ToastService.showError(I18n.tr("niri: failed to load config"), configValidationOutput, "", "niri-config");
             }
         }
     }
@@ -568,7 +568,7 @@ Singleton {
         configReloaded();
 
         if (hasInitialConnection && !suppressConfigToast && !suppressNextConfigToast && !matugenSuppression) {
-            ToastService.showInfo("niri: config reloaded", "", "", "niri-config");
+            ToastService.showInfo(I18n.tr("niri: config reloaded"), "", "", "niri-config");
         } else if (suppressNextConfigToast) {
             suppressNextConfigToast = false;
             suppressResetTimer.stop();
@@ -734,12 +734,12 @@ Singleton {
         });
     }
 
-    function switchToWorkspace(workspaceIndex) {
+    function switchToWorkspace(workspaceId) {
         return send({
             "Action": {
                 "FocusWorkspace": {
                     "reference": {
-                        "Index": workspaceIndex
+                        "Id": workspaceId
                     }
                 }
             }
@@ -1317,6 +1317,8 @@ Singleton {
 
             if (niriSettings.disabled) {
                 kdlContent += `    off\n`;
+                kdlContent += `}\n\n`;
+                continue;
             }
 
             if (output.current_mode !== undefined && output.modes && output.modes[output.current_mode]) {
@@ -1447,13 +1449,13 @@ Singleton {
         });
     }
 
-    function moveWorkspaceToIndex(workspaceIdx, targetIndex) {
+    function moveWorkspaceToIndex(workspaceId, targetIndex) {
         return send({
             "Action": {
                 "MoveWorkspaceToIndex": {
                     "index": targetIndex,
                     "reference": {
-                        "Index": workspaceIdx
+                        "Id": workspaceId
                     }
                 }
             }

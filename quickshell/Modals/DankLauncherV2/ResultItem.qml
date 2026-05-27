@@ -33,6 +33,7 @@ Rectangle {
             return item.icon || "";
         }
     }
+    readonly property bool hasClipboardPreview: item?.type === "clipboard" && item?.data?.isImage === true && (item?.data?.mimeType ?? "").startsWith("image/")
 
     width: parent?.width ?? 200
     height: 52
@@ -95,7 +96,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         height: nameText.implicitHeight + (subText.visible ? subText.height + 2 : 0)
 
-        Text {
+        StyledText {
             id: nameText
             anchors.left: parent.left
             anchors.right: parent.right
@@ -128,7 +129,7 @@ Rectangle {
             return e.endsWith("…") ? e.length - 1 : e.length;
         }
 
-        Text {
+        StyledText {
             id: subText
             anchors.left: parent.left
             anchors.right: parent.right
@@ -153,6 +154,14 @@ Rectangle {
         anchors.rightMargin: Theme.spacingM
         anchors.verticalCenter: parent.verticalCenter
         spacing: Theme.spacingS
+
+        ClipboardLauncherPreview {
+            width: root.hasClipboardPreview ? 56 : 0
+            height: 36
+            visible: root.hasClipboardPreview
+            anchors.verticalCenter: parent.verticalCenter
+            entry: root.item?.data ?? null
+        }
 
         Rectangle {
             id: allModeToggle
@@ -208,9 +217,15 @@ Rectangle {
                 text: {
                     if (!root.item)
                         return "";
+                    if ((root.item.badgeLabel ?? "").length > 0)
+                        return root.item.badgeLabel;
                     switch (root.item.type) {
                     case "plugin":
                         return I18n.tr("Plugin");
+                    case "setting":
+                        return I18n.tr("Setting");
+                    case "clipboard":
+                        return I18n.tr("Clipboard");
                     case "file":
                         return root.item.data?.is_dir ? I18n.tr("Folder") : I18n.tr("File");
                     default:

@@ -26,9 +26,15 @@ Singleton {
     property int selectedIndex: 0
     property bool keyboardNavigationActive: false
     property int refCount: 0
+    property real _launcherLastRefresh: 0
+    property bool _launcherCacheValid: false
+    property string _launcherCachedQuery: ""
+    property var _launcherCachedEntries: []
+    property int _launcherSearchSeq: 0
 
     signal historyCopied
     signal historyCleared
+    signal launcherSearchReady(string query)
 
     Process {
         id: wtypeProcess
@@ -90,6 +96,125 @@ Singleton {
         });
     }
 
+    function ensureLauncherHistory() {
+        if (!clipboardAvailable) {
+            return;
+        }
+
+        const now = Date.now();
+        if (internalEntries.length === 0 || now - _launcherLastRefresh > 5000) {
+            _launcherLastRefresh = now;
+            refresh();
+        }
+    }
+
+    function requestLauncherSearch(query, limit) {
+        if (!clipboardAvailable) {
+            return;
+        }
+
+        const trimmed = (query || "").toString().trim();
+        const maxItems = limit > 0 ? limit : 20;
+        if (_launcherCacheValid && _launcherCachedQuery === trimmed) {
+            return;
+        }
+
+        _launcherSearchSeq++;
+        const seq = _launcherSearchSeq;
+        DMSService.sendRequest("clipboard.search", {
+            "query": trimmed,
+            "limit": maxItems
+        }, function (response) {
+            if (seq !== _launcherSearchSeq) {
+                return;
+            }
+            if (response.error) {
+                log.warn("Launcher clipboard search failed:", response.error);
+                _launcherCacheValid = true;
+                _launcherCachedQuery = trimmed;
+                _launcherCachedEntries = [];
+                launcherSearchReady(trimmed);
+                return;
+            }
+            const result = response.result || {};
+            _launcherCacheValid = true;
+            _launcherCachedQuery = trimmed;
+            _launcherCachedEntries = result.entries || [];
+            launcherSearchReady(trimmed);
+        });
+    }
+
+    function getCachedLauncherSearchEntries(query, limit) {
+        if (!clipboardAvailable) {
+            return [];
+        }
+
+        const trimmed = (query || "").toString().trim();
+        const maxItems = limit > 0 ? limit : 20;
+        if (!_launcherCacheValid || _launcherCachedQuery !== trimmed) {
+            requestLauncherSearch(trimmed, maxItems);
+            return [];
+        }
+        return _launcherCachedEntries.slice(0, maxItems);
+    }
+
+    function invalidateLauncherSearchCache() {
+        _launcherCacheValid = false;
+        _launcherCachedQuery = "";
+        _launcherCachedEntries = [];
+        _launcherSearchSeq++;
+    }
+
+    function getLauncherEntries(query, limit, minLength) {
+        if (!clipboardAvailable) {
+            return [];
+        }
+
+        const trimmed = (query || "").toString().trim();
+        const requiredLength = minLength !== undefined ? minLength : 2;
+        if (trimmed.length < requiredLength) {
+            return [];
+        }
+
+        const lowerQuery = trimmed.toLowerCase();
+        const maxItems = limit > 0 ? limit : 8;
+        const matches = [];
+
+        for (var i = 0; i < internalEntries.length; i++) {
+            const entry = internalEntries[i];
+            const preview = getEntryPreview(entry).toString();
+            const typeText = entry.isImage ? "image picture screenshot clipboard" : "text clipboard";
+            const haystack = (preview + " " + typeText).toLowerCase();
+            if (haystack.indexOf(lowerQuery) === -1) {
+                continue;
+            }
+            matches.push(entry);
+        }
+
+        matches.sort((a, b) => {
+            if (a.pinned !== b.pinned)
+                return b.pinned ? 1 : -1;
+            return (b.id || 0) - (a.id || 0);
+        });
+
+        return matches.slice(0, maxItems);
+    }
+
+    function getRecentLauncherEntries(limit) {
+        if (!clipboardAvailable) {
+            return [];
+        }
+
+        const maxItems = limit > 0 ? limit : 20;
+        const entries = internalEntries.slice();
+        entries.sort((a, b) => {
+            if (a.pinned !== b.pinned)
+                return b.pinned ? 1 : -1;
+            return (b.id || 0) - (a.id || 0);
+        });
+        return entries.slice(0, maxItems);
+    }
+
     function reset() {
         searchText = "";
         selectedIndex = 0;
@@ -113,6 +238,17 @@ Singleton {
                 closeCallback();
             }
         });
+    }
+
+    function pasteClipboard(closeCallback) {
+        if (!wtypeAvailable) {
+            ToastService.showError(I18n.tr("wtype not available - install wtype for paste support"));
+            return;
+        }
+        if (closeCallback) {
+            closeCallback();
+        }
+        pasteTimer.start();
     }
 
     function pasteEntry(entry, closeCallback) {

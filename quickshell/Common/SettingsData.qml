@@ -61,6 +61,20 @@ Singleton {
         Colorful
     }
 
+    enum TextRenderType {
+        Qt,
+        Native,
+        Curve
+    }
+
+    enum TextRenderQuality {
+        Default,
+        Low,
+        Normal,
+        High,
+        VeryHigh
+    }
+
     readonly property string _homeUrl: StandardPaths.writableLocation(StandardPaths.HomeLocation)
     readonly property string _configUrl: StandardPaths.writableLocation(StandardPaths.ConfigLocation)
     readonly property string _configDir: Paths.strip(_configUrl)
@@ -245,12 +259,10 @@ Singleton {
     property bool frameLauncherArcExtender: false
     onFrameLauncherArcExtenderChanged: saveSettings()
     readonly property string frameModalEmergeSide: frameLauncherEmergeSide === "top" ? "bottom" : "top"
-    property string frameMode: "separate"
+    property string frameMode: "connected"
     onFrameModeChanged: saveSettings()
     property var connectedFrameBarStyleBackups: ({})
     onConnectedFrameBarStyleBackupsChanged: saveSettings()
-    property var connectedFrameModalDarkenBackup: null
-    onConnectedFrameModalDarkenBackupChanged: saveSettings()
     readonly property bool connectedFrameModeActive: frameEnabled && frameMode === "connected"
     onConnectedFrameModeActiveChanged: {
         if (_loading)
@@ -380,6 +392,7 @@ Singleton {
     property string audioScrollMode: "volume"
     property int audioWheelScrollAmount: 5
     property bool clockCompactMode: false
+    property int focusedWindowSize: 1
     property bool focusedWindowCompactMode: false
     property bool runningAppsCompactMode: true
     property int barMaxVisibleApps: 0
@@ -422,6 +435,7 @@ Singleton {
     property int appLauncherGridColumns: 4
     property bool spotlightCloseNiriOverview: true
     property bool rememberLastQuery: false
+    property bool rememberLastMode: true
     property var spotlightSectionViewModes: ({})
     onSpotlightSectionViewModesChanged: saveSettings()
     property var appDrawerSectionViewModes: ({})
@@ -435,6 +449,9 @@ Singleton {
     property bool dankLauncherV2UnloadOnClose: false
     property bool dankLauncherV2IncludeFilesInAll: false
     property bool dankLauncherV2IncludeFoldersInAll: false
+    property bool launcherUseOverlayLayer: false
+    property string launcherStyle: "full"
+    property bool spotlightBarShowModeChips: false
 
     property string _legacyWeatherLocation: "New York, NY"
     property string _legacyWeatherCoordinates: "40.7128,-74.0060"
@@ -485,6 +502,8 @@ Singleton {
     property int fontWeight: Font.Normal
     property real fontScale: 1.0
     property real dankBarFontScale: 1.0
+    property int textRenderType: SettingsData.TextRenderType.Qt
+    property int textRenderQuality: SettingsData.TextRenderQuality.Default
 
     property bool notepadUseMonospace: true
     property string notepadFontFamily: ""
@@ -589,7 +608,7 @@ Singleton {
     property bool showDock: false
     property bool dockAutoHide: false
     property bool dockSmartAutoHide: false
-    property bool dockHideOnFullscreen: true
+    property bool dockUseOverlayLayer: false
     property bool dockGroupByApp: false
     property bool dockRestoreSpecialWorkspaceOnClick: false
     property bool dockOpenOnOverview: false
@@ -669,6 +688,7 @@ Singleton {
     property int notificationTimeoutNormal: 5000
     property int notificationTimeoutCritical: 0
     property bool notificationCompactMode: false
+    property bool notificationDedupeEnabled: true
     property int notificationPopupPosition: SettingsData.Position.Top
     property int notificationAnimationSpeed: SettingsData.AnimationSpeed.Short
     property int notificationCustomAnimationDuration: 400
@@ -689,6 +709,7 @@ Singleton {
     property bool osdBrightnessEnabled: true
     property bool osdIdleInhibitorEnabled: true
     property bool osdMicMuteEnabled: true
+    property bool osdMicVolumeEnabled: true
     property bool osdCapsLockEnabled: true
     property bool osdPowerProfileEnabled: true
     property bool osdAudioOutputEnabled: true
@@ -706,6 +727,7 @@ Singleton {
     property string customPowerActionPowerOff: ""
 
     property bool updaterHideWidget: false
+    property bool updaterCheckOnStart: false
     property bool updaterUseCustomCommand: false
     property string updaterCustomCommand: ""
     property string updaterTerminalAdditionalParams: ""
@@ -726,6 +748,7 @@ Singleton {
     property bool displayProfileAutoSelect: false
     property bool displayShowDisconnected: false
     property bool displaySnapToEdge: true
+    property var barIpcRevealStates: ({})
 
     property var barConfigs: [
         {
@@ -763,6 +786,7 @@ Singleton {
             "fontScale": 1.0,
             "iconScale": 1.0,
             "autoHide": false,
+            "autoHideStrict": false,
             "autoHideDelay": 250,
             "showOnWindowsOpen": false,
             "openOnOverview": false,
@@ -770,6 +794,7 @@ Singleton {
             "popupGapsAuto": true,
             "popupGapsManual": 4,
             "maximizeDetection": true,
+            "useOverlayLayer": false,
             "scrollEnabled": true,
             "scrollXBehavior": "column",
             "scrollYBehavior": "workspace",
@@ -1613,10 +1638,6 @@ Singleton {
     function _reconcileConnectedFrameBarStyles() {
         if (!connectedFrameModeActive) {
             _restoreConnectedFrameBarStyleBackups();
-            if (connectedFrameModalDarkenBackup === true) {
-                connectedFrameModalDarkenBackup = null;
-                set("modalDarkenBackground", true);
-            }
             return;
         }
         if (!_hasConnectedFrameBarStyleBackups())
@@ -1625,11 +1646,6 @@ Singleton {
         if (result.changed) {
             barConfigs = result.configs;
             updateBarConfigs();
-        }
-        // Force modalDarkenBackground off; capture backup if not already set
-        if (modalDarkenBackground) {
-            connectedFrameModalDarkenBackup = true;
-            set("modalDarkenBackground", false);
         }
     }
 
@@ -2016,6 +2032,33 @@ Singleton {
         return barConfigs.find(cfg => cfg.id === barId) || null;
     }
 
+    function isBarIpcRevealed(barId) {
+        if (!barId)
+            return false;
+        return !!barIpcRevealStates[barId];
+    }
+
+    function setBarIpcReveal(barId, revealed) {
+        if (!barId)
+            return;
+        const nextRevealed = !!revealed;
+        if (!!barIpcRevealStates[barId] === nextRevealed)
+            return;
+        const states = Object.assign({}, barIpcRevealStates);
+        if (nextRevealed) {
+            states[barId] = true;
+        } else {
+            delete states[barId];
+        }
+        barIpcRevealStates = states;
+    }
+
+    function toggleBarIpcReveal(barId) {
+        const revealed = !isBarIpcRevealed(barId);
+        setBarIpcReveal(barId, revealed);
+        return revealed;
+    }
+
     function addBarConfig(config) {
         const configs = JSON.parse(JSON.stringify(barConfigs));
         configs.push(config);
@@ -2031,6 +2074,8 @@ Singleton {
         if (index === -1)
             return;
         const positionChanged = updates.position !== undefined && configs[index].position !== updates.position;
+        if (updates.autoHide === false || updates.visible === false)
+            setBarIpcReveal(barId, false);
 
         Object.assign(configs[index], updates);
         barConfigs = _sanitizeBarConfigsForConnectedFrame(configs).configs;
@@ -2092,6 +2137,7 @@ Singleton {
             delete nextBackups[barId];
             connectedFrameBarStyleBackups = nextBackups;
         }
+        setBarIpcReveal(barId, false);
         updateBarConfigs();
     }
 

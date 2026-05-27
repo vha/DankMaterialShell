@@ -370,14 +370,6 @@ Item {
                         }
                     }
                 }
-
-                StyledText {
-                    text: I18n.tr("Idle monitoring not supported - requires newer Quickshell version")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.error
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    visible: !IdleService.idleMonitorAvailable
-                }
             }
 
             SettingsCard {
@@ -462,6 +454,11 @@ Item {
                                 key: "restart",
                                 label: I18n.tr("Show Restart DMS"),
                                 desc: I18n.tr("Restart the DankMaterialShell")
+                            },
+                            {
+                                key: "switchuser",
+                                label: I18n.tr("Show Switch User"),
+                                desc: I18n.tr("Opens a picker of other active sessions on this seat")
                             },
                             {
                                 key: "hibernate",

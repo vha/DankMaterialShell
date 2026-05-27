@@ -17,6 +17,7 @@ FloatingWindow {
     property bool keyboardNavigationActive: false
     property bool isLoading: false
     property var parentModal: null
+    parentWindow: parentModal
     property bool pendingInstallHandled: false
     property string typeFilter: ""
 
@@ -295,7 +296,7 @@ FloatingWindow {
                     }
 
                     DankActionButton {
-                        visible: windowControls.supported
+                        visible: windowControls.canMaximize
                         iconName: root.maximized ? "fullscreen_exit" : "fullscreen"
                         iconSize: Theme.iconSize - 2
                         iconColor: Theme.outline
@@ -375,6 +376,7 @@ FloatingWindow {
                             size: 48
                             color: Theme.primary
                             anchors.horizontalCenter: parent.horizontalCenter
+                            smoothTransform: root.isLoading
 
                             RotationAnimator on rotation {
                                 from: 0
@@ -568,7 +570,8 @@ FloatingWindow {
                                         return "available";
                                     }
 
-                                    width: buttonState === "incompatible" ? incompatRow.implicitWidth + Theme.spacingM * 2 : 80
+                                    implicitWidth: Math.max(80, incompatRow.implicitWidth + Theme.spacingM * 2)
+                                    width: implicitWidth
                                     height: 32
                                     radius: Theme.cornerRadius
                                     anchors.verticalCenter: parent.verticalCenter
@@ -636,6 +639,8 @@ FloatingWindow {
                                             }
                                             font.pixelSize: Theme.fontSizeSmall
                                             font.weight: Font.Medium
+                                            elide: Text.ElideNone
+                                            wrapMode: Text.NoWrap
                                             color: {
                                                 switch (installButton.buttonState) {
                                                 case "installed":
@@ -722,6 +727,7 @@ FloatingWindow {
             id: thirdPartyConfirmModal
 
             property bool disablePopupTransparency: true
+            parentWindow: root
 
             function show() {
                 visible = true;

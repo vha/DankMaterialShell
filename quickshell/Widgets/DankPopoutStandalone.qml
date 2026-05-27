@@ -52,6 +52,7 @@ Item {
     property real storedBarThickness: Theme.barHeight - 4
     property real storedBarSpacing: 4
     property var storedBarConfig: null
+    property bool triggerUsesOverlayLayer: false
     property var adjacentBarInfo: ({
             "topBar": 0,
             "bottomBar": 0,
@@ -59,11 +60,25 @@ Item {
             "rightBar": 0
         })
     property var screen: null
-    readonly property bool frameOnlyNoConnected: SettingsData.frameEnabled && !!screen && SettingsData.isScreenInPreferences(screen, SettingsData.frameScreenPreferences)
+    readonly property bool frameGapStandaloneActive: CompositorService.frameConfiguredForScreen(screen) && !CompositorService.usesConnectedFrameChromeForScreen(screen)
     readonly property bool fluidStandaloneActive: Theme.isDirectionalEffect
     readonly property bool backgroundDismissWindowRequired: backgroundInteractive
     readonly property bool backgroundWindowRequired: backgroundDismissWindowRequired || root.overlayContent !== null
     readonly property bool _fullHeight: fullHeightSurface
+    readonly property var effectivePopoutLayer: {
+        switch (Quickshell.env("DMS_POPOUT_LAYER")) {
+        case "bottom":
+            root.log.warn("'bottom' layer is not valid for popouts. Defaulting to 'top' layer.");
+            return WlrLayershell.Top;
+        case "background":
+            root.log.warn("'background' layer is not valid for popouts. Defaulting to 'top' layer.");
+            return WlrLayershell.Top;
+        case "overlay":
+            return WlrLayershell.Overlay;
+        default:
+            return root.triggerUsesOverlayLayer ? WlrLayershell.Overlay : WlrLayershell.Top;
+        }
+    }
 
     function _frameEdgeInset(side) {
         if (!screen)
@@ -76,7 +91,7 @@ Item {
     }
 
     function _edgeClearance(side, popupGap, adjacentInset) {
-        if (frameOnlyNoConnected)
+        if (frameGapStandaloneActive)
             return Math.max(adjacentInset, _frameGapMargin(side));
         return adjacentInset > 0 ? adjacentInset : popupGap;
     }
@@ -182,13 +197,18 @@ Item {
         setBarContext(pos, bottomGap);
     }
 
-    // Briefly forces backgroundWindow.updatesEnabled true while the surface
-    // body changes, so the contentHoleRect mask carve-out commits to the
-    // compositor — otherwise the input region stays stuck at the popup's
-    // initial size and clicks in any newly-grown area dismiss the popup.
-    // Cleared by the frameSwapped Connections below as soon as the dirty
-    // frame ships, so the bg window goes back to skipping buffer updates.
+    // Holds backgroundWindow.updatesEnabled true while the surface body is
+    // changing so the contentHoleRect mask carve-out tracks the popup body —
+    // otherwise clicks in newly-grown areas hit the bg window and dismiss.
+    // Debounced off ~250ms after the last change so a stable popup doesn't
+    // keep the bg window in active-update mode.
     property bool _bgCommitWindow: false
+
+    Timer {
+        id: bgCommitSettleTimer
+        interval: 250
+        onTriggered: root._bgCommitWindow = false
+    }
 
     function _setSurfaceGeometry(bodyX, bodyY, bodyW, bodyH) {
         const newX = Theme.snap(bodyX, dpr);
@@ -206,15 +226,7 @@ Item {
         _surfaceH = _surfaceBodyH + shadowBuffer * 2;
         if (changed && backgroundWindow.visible) {
             _bgCommitWindow = true;
-        }
-    }
-
-    Connections {
-        target: backgroundWindow
-        ignoreUnknownSignals: true
-        function onFrameSwapped() {
-            if (root._bgCommitWindow)
-                root._bgCommitWindow = false;
+            bgCommitSettleTimer.restart();
         }
     }
 
@@ -290,21 +302,43 @@ Item {
         _frozenMaskWidth = maskWidth;
         _frozenMaskHeight = maskHeight;
 
-        if (_lastOpenedScreen !== null && _lastOpenedScreen !== screen) {
+        const screenChanged = _lastOpenedScreen !== null && _lastOpenedScreen !== screen;
+        if (screenChanged) {
+            // Hide on this tick so Qt actually tears down the wl_surface; the show
+            // gets deferred below so the unmap is processed before the remap.
             contentWindow.visible = false;
             backgroundWindow.visible = false;
         }
         _lastOpenedScreen = screen;
 
-        if (contentContainer) {
-            // animationsEnabled is false here, so this snaps to closed without animating.
+        if (contentContainer && !shouldBeVisible) {
+            // Snap morph closed only on a fresh open; on screen-change re-open we stay at 1
+            // because shouldBeVisible doesn't change and won't drive morph back to 1.
             morph.openProgress = 0;
         }
 
         _setSurfaceGeometry(alignedX, alignedY, alignedWidth, alignedHeight);
-        if (backgroundWindowRequired)
-            backgroundWindow.visible = true;
-        contentWindow.visible = true;
+        if (screenChanged) {
+            // Defer the show one event-loop tick. Qt coalesces a synchronous
+            // false→true visibility flip into a no-op, leaving WindowBlur committed
+            // to the previous screen's wl_surface. Splitting the flip across ticks
+            // forces a real surface destroy+create so BackgroundEffect.surfaceCreated
+            // fires and the blur region republishes on the new surface.
+            Qt.callLater(() => {
+                if (!root.shouldBeVisible)
+                    return;
+                if (root.backgroundWindowRequired)
+                    backgroundWindow.visible = true;
+                contentWindow.visible = true;
+                popoutBlur.kick();
+                _bgCommitWindow = true;
+                bgCommitSettleTimer.restart();
+            });
+        } else {
+            if (backgroundWindowRequired)
+                backgroundWindow.visible = true;
+            contentWindow.visible = true;
+        }
 
         animationsEnabled = true;
         shouldBeVisible = true;
@@ -505,7 +539,7 @@ Item {
         updatesEnabled: root.overlayContent !== null || root._bgCommitWindow
 
         WlrLayershell.namespace: root.layerNamespace + ":background"
-        WlrLayershell.layer: WlrLayershell.Top
+        WlrLayershell.layer: root.effectivePopoutLayer
         WlrLayershell.exclusiveZone: -1
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
@@ -572,30 +606,18 @@ Item {
             targetWindow: contentWindow
             readonly property real s: Math.min(1, contentContainer.scaleValue)
             readonly property bool trackBlurFromBarEdge: root.fluidStandaloneActive
+            readonly property real op: Math.max(0, Math.min(1, (morph.openProgress - 0.08) * 1.6))
             readonly property bool blurAlive: trackBlurFromBarEdge ? (contentContainer.revealWidth > 0 && contentContainer.revealHeight > 0) : root.shouldBeVisible
 
-            blurX: trackBlurFromBarEdge ? contentContainer.x + contentContainer.revealX : contentContainer.x + contentContainer.width * (1 - s) * 0.5 + Theme.snap(contentContainer.animX, root.dpr)
-            blurY: trackBlurFromBarEdge ? contentContainer.y + contentContainer.revealY : contentContainer.y + contentContainer.height * (1 - s) * 0.5 + Theme.snap(contentContainer.animY, root.dpr)
-            blurWidth: blurAlive ? (trackBlurFromBarEdge ? contentContainer.revealWidth : contentContainer.width * s) : 0
-            blurHeight: blurAlive ? (trackBlurFromBarEdge ? contentContainer.revealHeight : contentContainer.height * s) : 0
+            blurX: trackBlurFromBarEdge ? contentContainer.x + contentContainer.revealX : contentContainer.x + contentContainer.width * (1 - s * op) * 0.5 + Theme.snap(contentContainer.animX, root.dpr)
+            blurY: trackBlurFromBarEdge ? contentContainer.y + contentContainer.revealY : contentContainer.y + contentContainer.height * (1 - s * op) * 0.5 + Theme.snap(contentContainer.animY, root.dpr)
+            blurWidth: blurAlive ? (trackBlurFromBarEdge ? contentContainer.revealWidth : contentContainer.width * s * op) : 0
+            blurHeight: blurAlive ? (trackBlurFromBarEdge ? contentContainer.revealHeight : contentContainer.height * s * op) : 0
             blurRadius: Theme.cornerRadius
         }
 
         WlrLayershell.namespace: root.layerNamespace
-        WlrLayershell.layer: {
-            switch (Quickshell.env("DMS_POPOUT_LAYER")) {
-            case "bottom":
-                root.log.warn("'bottom' layer is not valid for popouts. Defaulting to 'top' layer.");
-                return WlrLayershell.Top;
-            case "background":
-                root.log.warn("'background' layer is not valid for popouts. Defaulting to 'top' layer.");
-                return WlrLayershell.Top;
-            case "overlay":
-                return WlrLayershell.Overlay;
-            default:
-                return WlrLayershell.Top;
-            }
-        }
+        WlrLayershell.layer: root.effectivePopoutLayer
         WlrLayershell.exclusiveZone: -1
         WlrLayershell.keyboardFocus: {
             if (customKeyboardFocus !== null)
@@ -842,7 +864,9 @@ Item {
                         Connections {
                             target: contentWindow
                             function onVisibleChanged() {
-                                if (!contentWindow.visible)
+                                // open() flips contentWindow.visible to rebind the layer surface to
+                                // a new screen; don't deactivate the wrapper while still open.
+                                if (!contentWindow.visible && !root.shouldBeVisible)
                                     contentWrapper._renderActive = false;
                             }
                         }

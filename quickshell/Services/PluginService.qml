@@ -5,6 +5,7 @@ import QtCore
 import QtQuick
 import Qt.labs.folderlistmodel
 import Quickshell
+import Quickshell.Io
 import qs.Common
 import qs.Services
 
@@ -19,14 +20,9 @@ Singleton {
     property var pluginLauncherComponents: ({})
     property var pluginDesktopComponents: ({})
     property var availablePluginsList: []
-    property string pluginDirectory: {
-        var configDir = StandardPaths.writableLocation(StandardPaths.ConfigLocation);
-        var configDirStr = configDir.toString();
-        if (configDirStr.startsWith("file://")) {
-            configDirStr = configDirStr.substring(7);
-        }
-        return configDirStr + "/DankMaterialShell/plugins";
-    }
+    readonly property string pluginDirectory: Paths.strip(Paths.config) + "/plugins"
+
+    property bool pluginDirectoryExists: false
     property string systemPluginDirectory: "/etc/xdg/quickshell/dms-plugins"
 
     property var knownManifests: ({})
@@ -63,10 +59,23 @@ Singleton {
         onTriggered: root._flushDirtyStates()
     }
 
+    Process {
+        id: directoryCheckProcess
+        command: ["test", "-d", root.pluginDirectory]
+        onExited: (exitCode) => {
+            root.pluginDirectoryExists = (exitCode === 0);
+        }
+    }
+
+    function checkPluginDirectoryExists() {
+        directoryCheckProcess.running = true;
+    }
+
     Component.onCompleted: {
         userWatcher.folder = Paths.toFileUrl(root.pluginDirectory);
         systemWatcher.folder = Paths.toFileUrl(root.systemPluginDirectory);
         Qt.callLater(resyncAll);
+        Qt.callLater(checkPluginDirectoryExists);
     }
 
     FolderListModel {
@@ -154,35 +163,43 @@ Singleton {
     }
 
     function loadPluginManifestFile(manifestPathNoScheme, sourceTag, mtimeEpochMs) {
-        const manifestId = "m_" + Math.random().toString(36).slice(2);
-        const qml = `
-            import QtQuick
-            import Quickshell.Io
-            FileView {
-                id: fv
-                property string absPath: ""
-                onLoaded: {
-                    try {
-                        let raw = text()
-                        if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1)
-                        const manifest = JSON.parse(raw)
-                        root._onManifestParsed(absPath, manifest, "${sourceTag}", ${mtimeEpochMs})
-                    } catch (e) {
-                        log.error("bad manifest", absPath, e.message)
-                        knownManifests[absPath] = { mtime: ${mtimeEpochMs}, source: "${sourceTag}", bad: true }
-                    }
-                    fv.destroy()
-                }
-                onLoadFailed: (err) => {
-                    log.warn("manifest load failed", absPath, err)
-                    fv.destroy()
-                }
-            }
-        `;
+        const loader = manifestFvComp.createObject(root, {
+            absPath: manifestPathNoScheme,
+            path: manifestPathNoScheme,
+            sourceTag: sourceTag,
+            mtimeEpochMs: mtimeEpochMs
+        });
+    }
 
-        const loader = Qt.createQmlObject(qml, root, "mf_" + manifestId);
-        loader.absPath = manifestPathNoScheme;
-        loader.path = manifestPathNoScheme;
+    Component {
+        id: manifestFvComp
+        FileView {
+            id: fv
+            property string absPath: ""
+            property string sourceTag: ""
+            property double mtimeEpochMs: 0
+            onLoaded: {
+                try {
+                    let raw = text();
+                    if (raw.charCodeAt(0) === 0xFEFF)
+                        raw = raw.slice(1);
+                    const manifest = JSON.parse(raw);
+                    root._onManifestParsed(absPath, manifest, sourceTag, mtimeEpochMs);
+                } catch (e) {
+                    root.log.error("bad manifest", absPath, e.message);
+                    root.knownManifests[absPath] = {
+                        mtime: mtimeEpochMs,
+                        source: sourceTag,
+                        bad: true
+                    };
+                }
+                fv.destroy();
+            }
+            onLoadFailed: err => {
+                root.log.warn("manifest load failed", absPath, err);
+                fv.destroy();
+            }
+        }
     }
 
     function _onManifestParsed(absPath, manifest, sourceTag, mtimeEpochMs) {
@@ -670,10 +687,10 @@ Singleton {
         _stateLoaded[pluginId] = true;
         _ensureStateDir();
         const path = getPluginStatePath(pluginId);
-        const escapedPath = path.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
         try {
-            const qml = 'import QtQuick; import Quickshell.Io; FileView { path: "' + escapedPath + '"; blockLoading: true; blockWrites: true; atomicWrites: true }';
-            const fv = Qt.createQmlObject(qml, root, "sf_" + pluginId);
+            const fv = stateLoadFvComp.createObject(root, {
+                path: path
+            });
             const raw = fv.text();
             if (raw && raw.trim()) {
                 _stateCache[pluginId] = JSON.parse(raw);
@@ -694,10 +711,10 @@ Singleton {
             return;
         }
         const path = getPluginStatePath(pluginId);
-        const escapedPath = path.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
         try {
-            const qml = 'import QtQuick; import Quickshell.Io; FileView { path: "' + escapedPath + '"; blockWrites: true; atomicWrites: true }';
-            const fv = Qt.createQmlObject(qml, root, "sw_" + pluginId);
+            const fv = stateSaveFvComp.createObject(root, {
+                path: path
+            });
             _stateWriters[pluginId] = fv;
             fv.loaded.connect(function () {
                 fv.setText(content);
@@ -707,6 +724,23 @@ Singleton {
             });
         } catch (e) {
             log.warn("Failed to write state for", pluginId, e.message);
+        }
+    }
+
+    Component {
+        id: stateLoadFvComp
+        FileView {
+            blockLoading: true
+            blockWrites: true
+            atomicWrites: true
+        }
+    }
+
+    Component {
+        id: stateSaveFvComp
+        FileView {
+            blockWrites: true
+            atomicWrites: true
         }
     }
 
@@ -732,6 +766,7 @@ Singleton {
         systemWatcher.folder = "";
         systemWatcher.folder = systemUrl;
         resyncDebounce.restart();
+        checkPluginDirectoryExists();
     }
 
     function forceRescanPlugin(pluginId) {
@@ -748,22 +783,14 @@ Singleton {
     }
 
     function createPluginDirectory() {
-        const mkdirProcess = Qt.createComponent("data:text/plain,import Quickshell.Io; Process { }");
-        if (mkdirProcess.status === Component.Ready) {
-            const process = mkdirProcess.createObject(root);
-            process.command = ["mkdir", "-p", pluginDirectory];
-            process.exited.connect(function (exitCode) {
-                if (exitCode !== 0) {
-                    log.error("Failed to create plugin directory, exit code:", exitCode);
-                }
-                process.destroy();
-            });
-            process.running = true;
-            return true;
-        } else {
-            log.error("Failed to create mkdir process");
-            return false;
-        }
+        Quickshell.execDetached(["mkdir", "-p", pluginDirectory]);
+        Qt.callLater(checkPluginDirectoryExists);
+        return true;
+    }
+
+    function openPluginDirectory() {
+        Qt.openUrlExternally(Paths.toFileUrl(pluginDirectory));
+        return true;
     }
 
     // Launcher plugin helper functions

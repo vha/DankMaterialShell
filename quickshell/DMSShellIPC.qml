@@ -176,7 +176,7 @@ Item {
         }
 
         function open(tab: string): string {
-            const bar = root.getPreferredBar("clockButtonRef");
+            const bar = root.getPreferredBar("clockButtonRef") || root.getPreferredBar();
             if (!bar)
                 return "DASH_OPEN_FAILED";
 
@@ -209,7 +209,7 @@ Item {
                 return "DASH_TOGGLE_SUCCESS";
             }
 
-            const bar = root.getPreferredBar("clockButtonRef");
+            const bar = root.getPreferredBar("clockButtonRef") || root.getPreferredBar();
             if (bar) {
                 if (!bar.triggerDashTab(resolveTabIndex(tab)))
                     return "DASH_TOGGLE_FAILED";
@@ -582,7 +582,7 @@ Item {
 
     IpcHandler {
         function wallpaper(): string {
-            const bar = root.getPreferredBar("clockButtonRef");
+            const bar = root.getPreferredBar("clockButtonRef") || root.getPreferredBar();
             if (bar) {
                 bar.triggerWallpaperBrowser();
                 return "SUCCESS: Toggled wallpaper browser";
@@ -697,6 +697,26 @@ Item {
                 autoHide: !barConfig.autoHide
             });
             return barConfig.autoHide ? "BAR_MANUAL_HIDE_SUCCESS" : "BAR_AUTO_HIDE_SUCCESS";
+        }
+
+        function toggleReveal(selector: string, value: string): string {
+            const {
+                barConfig,
+                error
+            } = getBarConfig(selector, value);
+            if (error)
+                return error;
+            if (!barConfig.autoHide)
+                return "BAR_AUTO_HIDE_DISABLED";
+            if (!(barConfig.visible ?? true)) {
+                SettingsData.updateBarConfig(barConfig.id, {
+                    visible: true
+                });
+                SettingsData.setBarIpcReveal(barConfig.id, true);
+                return "BAR_REVEAL_SUCCESS";
+            }
+            const revealed = SettingsData.toggleBarIpcReveal(barConfig.id);
+            return revealed ? "BAR_REVEAL_SUCCESS" : "BAR_TUCK_SUCCESS";
         }
 
         function getPosition(selector: string, value: string): string {
@@ -1161,6 +1181,50 @@ Item {
     }
 
     IpcHandler {
+        function toggle(): string {
+            if (PopoutService.systemUpdatePopout?.shouldBeVisible) {
+                PopoutService.systemUpdatePopout.close();
+                return "SYSTEMUPDATER_TOGGLE_SUCCESS";
+            }
+            const bar = root.getPreferredBar("systemUpdateButtonRef");
+            if (bar) {
+                bar.triggerSystemUpdate();
+                return "SYSTEMUPDATER_TOGGLE_SUCCESS";
+            }
+            return "SYSTEMUPDATER_TOGGLE_FAILED";
+        }
+
+        function open(): string {
+            if (PopoutService.systemUpdatePopout?.shouldBeVisible)
+                return "SYSTEMUPDATER_ALREADY_OPEN";
+            const bar = root.getPreferredBar("systemUpdateButtonRef");
+            if (bar) {
+                bar.triggerSystemUpdate();
+                return "SYSTEMUPDATER_OPEN_SUCCESS";
+            }
+            return "SYSTEMUPDATER_OPEN_FAILED";
+        }
+
+        function close(): string {
+            PopoutService.closeSystemUpdate();
+            return "SYSTEMUPDATER_CLOSE_SUCCESS";
+        }
+
+        function updatestatus(): string {
+            if (SystemUpdateService.isChecking) {
+                return "ERROR: already checking";
+            }
+            if (SystemUpdateService.backends.length === 0) {
+                return "ERROR: no package manager available";
+            }
+            SystemUpdateService.checkForUpdates();
+            return "SUCCESS: Now checking...";
+        }
+
+        target: "systemupdater"
+    }
+
+    IpcHandler {
         function open(): string {
             if (!PopoutService.clipboardHistoryModal) {
                 return "CLIPBOARD_NOT_AVAILABLE";
@@ -1274,6 +1338,25 @@ Item {
         }
 
         target: "spotlight"
+    }
+
+    IpcHandler {
+        function open(): string {
+            PopoutService.openSpotlightBar();
+            return "SPOTLIGHT_BAR_OPEN_SUCCESS";
+        }
+
+        function close(): string {
+            PopoutService.closeSpotlightBar();
+            return "SPOTLIGHT_BAR_CLOSE_SUCCESS";
+        }
+
+        function toggle(): string {
+            PopoutService.toggleSpotlightBar();
+            return "SPOTLIGHT_BAR_TOGGLE_SUCCESS";
+        }
+
+        target: "spotlight-bar"
     }
 
     IpcHandler {
@@ -1662,6 +1745,22 @@ Item {
             return `PROFILE_SET_SUCCESS: ${profileName}`;
         }
 
+        function cycleProfile(): string {
+            if (SettingsData.displayProfileAutoSelect)
+                return "ERROR: Auto profile selection is enabled. Use toggleAuto first";
+
+            const profiles = DisplayConfigState.validatedProfiles;
+            const ids = Object.keys(profiles).filter(id => profiles[id].name);
+            if (ids.length === 0)
+                return "ERROR: No profiles configured";
+
+            const activeId = SettingsData.getActiveDisplayProfile(CompositorService.compositor);
+            const idx = ids.indexOf(activeId);
+            const nextId = ids[(idx + 1) % ids.length];
+            DisplayConfigState.activateProfile(nextId);
+            return `PROFILE_SET_SUCCESS: ${profiles[nextId].name}`;
+        }
+
         function toggleAuto(): string {
             SettingsData.displayProfileAutoSelect = !SettingsData.displayProfileAutoSelect;
             SettingsData.saveSettings();
@@ -1693,6 +1792,36 @@ Item {
         }
 
         target: "outputs"
+    }
+
+    IpcHandler {
+        target: "mic"
+
+        function setvolume(percentage: string): string {
+            return AudioService.setMicVolume(parseInt(percentage));
+        }
+
+        function increment(step: string): string {
+            return AudioService.incrementMicVolume(step);
+        }
+
+        function decrement(step: string): string {
+            return AudioService.decrementMicVolume(step);
+        }
+
+        function mute(): string {
+            return AudioService.toggleMicMute();
+        }
+
+        function status(): string {
+            if (!AudioService.source || !AudioService.source.audio) {
+                return "No audio source available";
+            }
+
+            const volume = Math.round(AudioService.source.audio.volume * 100);
+            const muteStatus = AudioService.source.audio.muted ? " (muted)" : "";
+            return `Microphone: ${volume}%${muteStatus}`;
+        }
     }
 
     IpcHandler {

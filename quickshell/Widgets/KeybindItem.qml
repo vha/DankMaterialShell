@@ -41,16 +41,7 @@ Item {
     property string _actionType: ""
     property bool addingNewKey: false
     property bool useCustomCompositor: false
-    property var _shortcutInhibitor: null
     property bool _altShiftGhost: false
-
-    readonly property bool _shortcutInhibitorAvailable: {
-        try {
-            return typeof ShortcutInhibitor !== "undefined";
-        } catch (e) {
-            return false;
-        }
-    }
 
     readonly property var keys: bindData.keys || []
     readonly property bool hasOverride: {
@@ -75,12 +66,11 @@ Item {
     signal toggleExpand
     signal saveBind(string originalKey, var newData)
     signal removeBind(string key)
+    signal resetBind(string key)
     signal cancelEdit
 
     implicitHeight: contentColumn.implicitHeight
     height: implicitHeight
-
-    Component.onDestruction: _destroyShortcutInhibitor()
 
     Component.onCompleted: {
         if (isNew && isExpanded)
@@ -251,41 +241,17 @@ Item {
         addingNewKey = false;
     }
 
-    function _createShortcutInhibitor() {
-        if (!_shortcutInhibitorAvailable || _shortcutInhibitor)
-            return;
-        const qmlString = `
-        import QtQuick
-        import Quickshell.Wayland
-
-        ShortcutInhibitor {
-        enabled: false
-        window: null
-        }
-        `;
-
-        _shortcutInhibitor = Qt.createQmlObject(qmlString, root, "KeybindItem.ShortcutInhibitor");
-        _shortcutInhibitor.enabled = Qt.binding(() => root.recording);
-        _shortcutInhibitor.window = Qt.binding(() => root.panelWindow);
-    }
-
-    function _destroyShortcutInhibitor() {
-        if (_shortcutInhibitor) {
-            _shortcutInhibitor.enabled = false;
-            _shortcutInhibitor.destroy();
-            _shortcutInhibitor = null;
-        }
+    ShortcutInhibitor {
+        window: root.panelWindow
+        enabled: root.recording
     }
 
     function startRecording() {
-        _destroyShortcutInhibitor();
-        _createShortcutInhibitor();
         recording = true;
     }
 
     function stopRecording() {
         recording = false;
-        _destroyShortcutInhibitor();
     }
 
     Column {
@@ -864,9 +830,12 @@ Item {
                                 color: root._actionType === modelData.id ? Theme.surfaceContainerHighest : Theme.surfaceContainer
                                 border.color: root._actionType === modelData.id ? Theme.outline : (typeArea.containsMouse ? Theme.outlineVariant : "transparent")
                                 border.width: 1
+                                clip: true
 
                                 RowLayout {
-                                    anchors.centerIn: parent
+                                    anchors.fill: parent
+                                    anchors.leftMargin: Theme.spacingS
+                                    anchors.rightMargin: Theme.spacingS
                                     spacing: Theme.spacingXS
 
                                     DankIcon {
@@ -876,10 +845,13 @@ Item {
                                     }
 
                                     StyledText {
+                                        Layout.fillWidth: true
                                         text: typeDelegate.modelData.label
                                         font.pixelSize: Theme.fontSizeSmall
                                         color: root._actionType === typeDelegate.modelData.id ? Theme.surfaceText : Theme.surfaceVariantText
                                         visible: typeDelegate.width > 100
+                                        elide: Text.ElideRight
+                                        horizontalAlignment: Text.AlignHCenter
                                     }
                                 }
 
@@ -1796,8 +1768,17 @@ Item {
                         iconName: "delete"
                         iconSize: Theme.iconSize - 4
                         iconColor: Theme.error
-                        visible: root.editingKeyIndex >= 0 && root.editingKeyIndex < root.keys.length && root.keys[root.editingKeyIndex].isOverride && !root.isNew
+                        visible: root.editingKeyIndex >= 0 && root.editingKeyIndex < root.keys.length && (root.keys[root.editingKeyIndex].isDMSManaged || root.keys[root.editingKeyIndex].isOverride) && !root.isNew
                         onClicked: root.removeBind(root._originalKey)
+                    }
+
+                    DankButton {
+                        text: I18n.tr("Reset to default")
+                        buttonHeight: root._buttonHeight
+                        backgroundColor: Theme.surfaceContainer
+                        textColor: Theme.primary
+                        visible: root.editingKeyIndex >= 0 && root.editingKeyIndex < root.keys.length && root.keys[root.editingKeyIndex].isOverride === true && root.keys[root.editingKeyIndex].hasDefault === true && !root.isNew
+                        onClicked: root.resetBind(root._originalKey)
                     }
 
                     Item {

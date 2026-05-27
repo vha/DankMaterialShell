@@ -6,7 +6,6 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
 import Quickshell.I3
-import Quickshell.Wayland
 import qs.Common
 import qs.Services
 
@@ -21,14 +20,6 @@ Singleton {
     property bool idleInhibited: false
     property string inhibitReason: "Keep system awake"
     property string nvidiaCommand: ""
-
-    readonly property bool nativeInhibitorAvailable: {
-        try {
-            return typeof IdleInhibitor !== "undefined";
-        } catch (e) {
-            return false;
-        }
-    }
 
     property bool loginctlAvailable: false
     property bool wtypeAvailable: false
@@ -66,8 +57,6 @@ Singleton {
             detectHibernateProcess.running = true;
             detectPrimeRunProcess.running = true;
             detectWtypeProcess.running = true;
-            cleanupOrphanedInhibitors();
-            log.info("Native inhibitor available:", nativeInhibitorAvailable);
             if (!SettingsData.loginctlLockIntegration) {
                 log.debug("loginctl lock integration disabled by user");
                 return;
@@ -127,7 +116,7 @@ Singleton {
                 errorOutput = "";
                 return;
             }
-            ToastService.showError("Hibernate failed", errorOutput);
+            ToastService.showError(I18n.tr("Hibernate failed"), errorOutput);
             errorOutput = "";
         }
     }
@@ -216,6 +205,8 @@ Singleton {
     }
 
     function launchDesktopEntry(desktopEntry, useNvidia) {
+        if (!desktopEntry || !desktopEntry.command)
+            return;
         let cmd = desktopEntry.command;
 
         const appId = desktopEntry.id || desktopEntry.execString || desktopEntry.exec || "";
@@ -272,6 +263,8 @@ Singleton {
     }
 
     function launchDesktopAction(desktopEntry, action, useNvidia) {
+        if (!desktopEntry || !action || !action.command)
+            return;
         let cmd = action.command;
 
         const appId = desktopEntry.id || desktopEntry.execString || desktopEntry.exec || "";
@@ -338,7 +331,7 @@ Singleton {
                 return;
             }
 
-            Hyprland.dispatch("exit");
+            HyprlandService.exit();
         } else {
             Quickshell.execDetached(["sh", "-c", SettingsData.customPowerActionLogout]);
         }
@@ -396,19 +389,15 @@ Singleton {
     signal inhibitorChanged
 
     function enableIdleInhibit() {
-        if (idleInhibited) {
+        if (idleInhibited)
             return;
-        }
-        log.debug("Enabling idle inhibit (native:", nativeInhibitorAvailable, ")");
         idleInhibited = true;
         inhibitorChanged();
     }
 
     function disableIdleInhibit() {
-        if (!idleInhibited) {
+        if (!idleInhibited)
             return;
-        }
-        log.debug("Disabling idle inhibit (native:", nativeInhibitorAvailable, ")");
         idleInhibited = false;
         inhibitorChanged();
     }
@@ -423,66 +412,6 @@ Singleton {
 
     function setInhibitReason(reason) {
         inhibitReason = reason;
-
-        if (idleInhibited && !nativeInhibitorAvailable) {
-            const wasActive = idleInhibited;
-            idleInhibited = false;
-
-            Qt.callLater(() => {
-                if (wasActive) {
-                    idleInhibited = true;
-                }
-            });
-        }
-    }
-
-    Process {
-        id: idleInhibitProcess
-
-        command: {
-            if (!idleInhibited || nativeInhibitorAvailable) {
-                return ["true"];
-            }
-
-            log.debug("Starting systemd/elogind inhibit process");
-            return [isElogind ? "elogind-inhibit" : "systemd-inhibit", "--what=idle", "--who=quickshell", `--why=${inhibitReason}`, "--mode=block", "sleep", "infinity"];
-        }
-
-        running: idleInhibited && !nativeInhibitorAvailable
-
-        onRunningChanged: {
-            log.debug("Inhibit process running:", running, "(native:", nativeInhibitorAvailable, ")");
-        }
-
-        onExited: function (exitCode) {
-            if (idleInhibited && exitCode !== 0 && !nativeInhibitorAvailable) {
-                log.warn("Inhibitor process crashed with exit code:", exitCode);
-                idleInhibited = false;
-                if (SettingsData.osdIdleInhibitorEnabled) {
-                    ToastService.showWarning("Idle inhibitor failed");
-                }
-            }
-        }
-    }
-
-    // Kill orphaned idle inhibitor processes left behind by previous quickshell sessions.
-    // When quickshell crashes or is force-killed, the child systemd-inhibit process gets
-    // reparented to PID 1 and continues to block idle indefinitely.
-    function cleanupOrphanedInhibitors() {
-        if (nativeInhibitorAvailable) return;
-        orphanCleanupProcess.running = true;
-    }
-
-    Process {
-        id: orphanCleanupProcess
-        running: false
-        command: ["pkill", "-f", "systemd-inhibit --what=idle --who=quickshell.*sleep infinity"]
-
-        onExited: function (exitCode) {
-            if (exitCode === 0) {
-                log.info("Cleaned up orphaned idle inhibitor process(es) from a previous session");
-            }
-        }
     }
 
     Connections {

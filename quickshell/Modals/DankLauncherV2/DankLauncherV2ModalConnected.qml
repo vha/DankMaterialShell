@@ -13,13 +13,14 @@ Item {
     readonly property var log: Log.scoped("DankLauncherV2ModalConnected")
 
     property var modalHandle: root
+    property bool triggerUsesOverlayLayer: false
 
     visible: false
 
     property bool spotlightOpen: false
     property bool keyboardActive: false
     property bool contentVisible: false
-    readonly property bool launcherMotionVisible: Theme.isConnectedEffect ? _motionActive : (Theme.isDirectionalEffect ? spotlightOpen : _motionActive)
+    readonly property bool launcherMotionVisible: frameOwnsConnectedChrome ? _motionActive : (Theme.isDirectionalEffect ? spotlightOpen : _motionActive)
     property var spotlightContent: launcherContentLoader.item
     property bool openedFromOverview: false
     property bool isClosing: false
@@ -40,6 +41,21 @@ Item {
     readonly property real screenWidth: effectiveScreen?.width ?? 1920
     readonly property real screenHeight: effectiveScreen?.height ?? 1080
     readonly property real dpr: effectiveScreen ? CompositorService.getScreenScale(effectiveScreen) : 1
+    readonly property bool usesOverlayLayer: SettingsData.launcherUseOverlayLayer || triggerUsesOverlayLayer
+    readonly property var effectiveLauncherLayer: {
+        switch (Quickshell.env("DMS_MODAL_LAYER")) {
+        case "bottom":
+            log.error("'bottom' layer is not valid for modals. Defaulting to 'top' layer.");
+            return WlrLayershell.Top;
+        case "background":
+            log.error("'background' layer is not valid for modals. Defaulting to 'top' layer.");
+            return WlrLayershell.Top;
+        case "overlay":
+            return WlrLayershell.Overlay;
+        default:
+            return root.usesOverlayLayer ? WlrLayershell.Overlay : WlrLayershell.Top;
+        }
+    }
 
     readonly property int baseWidth: {
         switch (SettingsData.dankLauncherV2Size) {
@@ -74,7 +90,7 @@ Item {
 
     readonly property string resolvedConnectedBarSide: frameConnectedMode ? preferredConnectedBarSide : ""
 
-    readonly property bool frameOwnsConnectedChrome: frameConnectedMode && resolvedConnectedBarSide !== ""
+    readonly property bool frameOwnsConnectedChrome: frameConnectedMode && resolvedConnectedBarSide !== "" && CompositorService.usesConnectedFrameChromeForScreen(effectiveScreen)
     readonly property bool launcherArcExtenderActive: frameOwnsConnectedChrome && SettingsData.frameLauncherArcExtender && (resolvedConnectedBarSide === "top" || resolvedConnectedBarSide === "bottom")
 
     function _dockOccupiesSide(side) {
@@ -140,10 +156,10 @@ Item {
     readonly property real modalX: frameOwnsConnectedChrome ? _connectedModalPos.x : ((screenWidth - modalWidth) / 2)
     readonly property real modalY: frameOwnsConnectedChrome ? _connectedModalPos.y : ((screenHeight - modalHeight) / 2)
 
-    readonly property bool connectedSurfaceOverride: Theme.isConnectedEffect
-    readonly property int launcherAnimationDuration: Theme.isConnectedEffect ? Theme.popoutAnimationDuration : Theme.modalAnimationDuration
-    readonly property list<real> launcherEnterCurve: Theme.isConnectedEffect ? Theme.variantPopoutEnterCurve : Theme.variantModalEnterCurve
-    readonly property list<real> launcherExitCurve: Theme.isConnectedEffect ? Theme.variantPopoutExitCurve : Theme.variantModalExitCurve
+    readonly property bool connectedSurfaceOverride: frameOwnsConnectedChrome
+    readonly property int launcherAnimationDuration: frameOwnsConnectedChrome ? Theme.popoutAnimationDuration : Theme.modalAnimationDuration
+    readonly property list<real> launcherEnterCurve: frameOwnsConnectedChrome ? Theme.variantPopoutEnterCurve : Theme.variantModalEnterCurve
+    readonly property list<real> launcherExitCurve: frameOwnsConnectedChrome ? Theme.variantPopoutExitCurve : Theme.variantModalExitCurve
     readonly property color backgroundColor: connectedSurfaceOverride ? Theme.connectedSurfaceColor : Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
     readonly property real cornerRadius: connectedSurfaceOverride ? Theme.connectedSurfaceRadius : Theme.cornerRadius
     readonly property color borderColor: {
@@ -235,11 +251,11 @@ Item {
         return effectiveScreen ? effectiveScreen.name : "";
     }
 
-    function _publishModalChromeState() {
+    function _publishModalChromeState(isClaim) {
         const screenName = _currentScreenName();
         if (!screenName)
             return;
-        ConnectedModeState.setModalState(screenName, {
+        const state = {
             "visible": spotlightOpen || contentWindow.visible,
             "barSide": resolvedConnectedBarSide,
             "bodyX": _connectedChromeX,
@@ -250,7 +266,11 @@ Item {
             "animY": contentContainer ? contentContainer.animY : 0,
             "omitStartConnector": false,
             "omitEndConnector": false
-        });
+        };
+        if (isClaim)
+            ConnectedModeState.claimModalState(screenName, state, _chromeClaimId);
+        else
+            ConnectedModeState.updateModalState(screenName, state, _chromeClaimId);
     }
 
     function _syncModalChromeState() {
@@ -258,9 +278,10 @@ Item {
             _releaseModalChrome();
             return;
         }
+        const isClaim = !_chromeClaimId;
         if (!_chromeClaimId)
             _chromeClaimId = _nextChromeClaimId();
-        _publishModalChromeState();
+        _publishModalChromeState(isClaim);
         if (_dockBlocksEmergence && (spotlightOpen || contentWindow.visible))
             ConnectedModeState.requestDockRetract(_chromeClaimId, _currentScreenName(), resolvedConnectedBarSide);
         else
@@ -306,7 +327,7 @@ Item {
         const screenName = _currentScreenName();
         if (!screenName || !contentContainer)
             return;
-        ConnectedModeState.setModalAnim(screenName, contentContainer.animX, contentContainer.animY);
+        ConnectedModeState.setModalAnim(screenName, contentContainer.animX, contentContainer.animY, _chromeClaimId);
     }
 
     function _syncModalBody() {
@@ -315,17 +336,18 @@ Item {
         const screenName = _currentScreenName();
         if (!screenName)
             return;
-        ConnectedModeState.setModalBody(screenName, _connectedChromeX, _connectedChromeY, _connectedChromeWidth, _connectedChromeHeight);
+        ConnectedModeState.setModalBody(screenName, _connectedChromeX, _connectedChromeY, _connectedChromeWidth, _connectedChromeHeight, _chromeClaimId);
     }
 
     function _releaseModalChrome() {
-        if (_chromeClaimId) {
-            ConnectedModeState.releaseDockRetract(_chromeClaimId);
-            _chromeClaimId = "";
-        }
+        if (!_chromeClaimId)
+            return;
+        ConnectedModeState.releaseDockRetract(_chromeClaimId);
+        const claimId = _chromeClaimId;
+        _chromeClaimId = "";
         const screenName = _currentScreenName();
         if (screenName)
-            ConnectedModeState.clearModalState(screenName);
+            ConnectedModeState.clearModalState(screenName, claimId);
     }
 
     onFrameOwnsConnectedChromeChanged: _syncModalChromeState()
@@ -366,6 +388,7 @@ Item {
         if (!spotlightContent)
             return;
         contentVisible = true;
+        spotlightContent.closeTransientUi?.();
         // NOTE: forceActiveFocus() is deliberately NOT called here.
         // It is deferred to after animation starts to avoid compositor IPC stalls.
 
@@ -373,12 +396,12 @@ Item {
             spotlightContent.searchField.text = query;
         }
         if (spotlightContent.controller) {
-            var targetMode = mode || SessionData.launcherLastMode || "all";
+            var targetMode = mode || SessionData.getLauncherRestoreMode();
             spotlightContent.controller.searchMode = targetMode;
             spotlightContent.controller.activePluginId = "";
             spotlightContent.controller.activePluginName = "";
             spotlightContent.controller.pluginFilter = "";
-            spotlightContent.controller.fileSearchType = "all";
+            spotlightContent.controller.fileSearchType = SessionData.launcherLastFileSearchType || "all";
             spotlightContent.controller.fileSearchExt = "";
             spotlightContent.controller.fileSearchFolder = "";
             spotlightContent.controller.fileSearchSort = "score";
@@ -458,6 +481,7 @@ Item {
     function hide() {
         if (!spotlightOpen)
             return;
+        spotlightContent?.closeTransientUi?.();
         openedFromOverview = false;
         isClosing = true;
         // For directional effects, defer contentVisible=false so content stays rendered during exit slide
@@ -515,8 +539,8 @@ Item {
 
     Connections {
         target: spotlightContent?.controller ?? null
-        function onModeChanged(mode) {
-            if (spotlightContent.controller.autoSwitchedToFiles)
+        function onModeChanged(mode, userInitiated) {
+            if (!userInitiated || !SettingsData.rememberLastMode)
                 return;
             SessionData.setLauncherLastMode(mode);
         }
@@ -590,7 +614,7 @@ Item {
         readonly property real _rightMargin: contentContainer.dockRight ? contentContainer.dockThickness : (typeof SettingsData !== "undefined" && SettingsData.barPosition === 3 ? Theme.px(42, root.dpr) : 0)
 
         WlrLayershell.namespace: "dms:spotlight:bg"
-        WlrLayershell.layer: WlrLayershell.Top
+        WlrLayershell.layer: root.effectiveLauncherLayer
         WlrLayershell.exclusiveZone: -1
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
@@ -663,20 +687,7 @@ Item {
         }
 
         WlrLayershell.namespace: "dms:spotlight"
-        WlrLayershell.layer: {
-            switch (Quickshell.env("DMS_MODAL_LAYER")) {
-            case "bottom":
-                log.error("'bottom' layer is not valid for modals. Defaulting to 'top' layer.");
-                return WlrLayershell.Top;
-            case "background":
-                log.error("'background' layer is not valid for modals. Defaulting to 'top' layer.");
-                return WlrLayershell.Top;
-            case "overlay":
-                return WlrLayershell.Overlay;
-            default:
-                return WlrLayershell.Top;
-            }
-        }
+        WlrLayershell.layer: root.effectiveLauncherLayer
         WlrLayershell.exclusiveZone: -1
         WlrLayershell.keyboardFocus: keyboardActive ? (root.useHyprlandFocusGrab ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.Exclusive) : WlrKeyboardFocus.None
 
@@ -796,14 +807,31 @@ Item {
                 id: directionalClipMask
                 readonly property bool shouldClip: Theme.isDirectionalEffect
                 readonly property real clipOversize: 2000
+                readonly property bool connectedClip: root.frameOwnsConnectedChrome
+                readonly property bool clipLeft: connectedClip ? root.resolvedConnectedBarSide === "left" : contentContainer.dockLeft
+                readonly property bool clipRight: connectedClip ? root.resolvedConnectedBarSide === "right" : contentContainer.dockRight
+                readonly property bool clipTop: connectedClip ? root.resolvedConnectedBarSide === "top" : contentContainer.dockTop
+                readonly property bool clipBottom: connectedClip ? root.resolvedConnectedBarSide === "bottom" : contentContainer.dockBottom
 
                 clip: shouldClip
 
-                x: shouldClip ? (contentContainer.dockRight ? -clipOversize : (contentContainer.dockLeft ? contentContainer.dockThickness - root._ccX : -clipOversize)) : 0
-                y: shouldClip ? (contentContainer.dockBottom ? -clipOversize : (contentContainer.dockTop ? contentContainer.dockThickness - root._ccY : -clipOversize)) : 0
+                x: shouldClip ? (clipLeft ? (connectedClip ? 0 : contentContainer.dockThickness - root._ccX) : -clipOversize) : 0
+                y: shouldClip ? (clipTop ? (connectedClip ? 0 : contentContainer.dockThickness - root._ccY) : -clipOversize) : 0
 
-                width: shouldClip ? parent.width + clipOversize + (contentContainer.dockRight ? (root.screenWidth - contentContainer.dockThickness - root._ccX - parent.width) : (contentContainer.dockLeft ? clipOversize : clipOversize)) : parent.width
-                height: shouldClip ? parent.height + clipOversize + (contentContainer.dockBottom ? (root.screenHeight - contentContainer.dockThickness - root._ccY - parent.height) : (contentContainer.dockTop ? clipOversize : clipOversize)) : parent.height
+                width: {
+                    if (!shouldClip)
+                        return parent.width;
+                    if (connectedClip && (clipLeft || clipRight))
+                        return parent.width + clipOversize;
+                    return parent.width + clipOversize + (clipRight ? (root.screenWidth - contentContainer.dockThickness - root._ccX - parent.width) : clipOversize);
+                }
+                height: {
+                    if (!shouldClip)
+                        return parent.height;
+                    if (connectedClip && (clipTop || clipBottom))
+                        return parent.height + clipOversize;
+                    return parent.height + clipOversize + (clipBottom ? (root.screenHeight - contentContainer.dockThickness - root._ccY - parent.height) : clipOversize);
+                }
 
                 Item {
                     id: aligner
@@ -900,8 +928,12 @@ Item {
                                 }
                             }
 
+                            Keys.onPressed: event => root.spotlightContent?.activeContextMenu?.handleKey(event)
+
                             Keys.onEscapePressed: event => {
-                                root.hide();
+                                root.spotlightContent?.activeContextMenu?.handleKey(event);
+                                if (!event.accepted)
+                                    root.hide();
                                 event.accepted = true;
                             }
                         }

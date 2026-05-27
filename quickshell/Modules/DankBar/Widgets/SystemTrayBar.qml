@@ -428,7 +428,7 @@ BasePill {
                             }
                         }
 
-                        Text {
+                        StyledText {
                             anchors.centerIn: parent
                             visible: !iconImg.visible
                             text: {
@@ -649,7 +649,7 @@ BasePill {
                     }
                 }
 
-                Text {
+                StyledText {
                     anchors.centerIn: parent
                     visible: !inlineIconImg.visible
                     text: {
@@ -783,7 +783,7 @@ BasePill {
                     }
                 }
 
-                Text {
+                StyledText {
                     anchors.centerIn: parent
                     visible: !iconImg.visible
                     text: {
@@ -978,7 +978,7 @@ BasePill {
 
         visible: root.useOverflowPopup && root.menuOpen
         screen: root.parentScreen
-        WlrLayershell.layer: WlrLayershell.Top
+        WlrLayershell.layer: root.barUsesOverlayLayer ? WlrLayershell.Overlay : WlrLayershell.Top
         WlrLayershell.exclusiveZone: -1
         WlrLayershell.keyboardFocus: {
             if (!root.menuOpen)
@@ -1290,7 +1290,7 @@ BasePill {
                             }
                         }
 
-                        Text {
+                        StyledText {
                             anchors.centerIn: parent
                             visible: !menuIconImg.visible
                             text: {
@@ -1362,16 +1362,6 @@ BasePill {
                 axis = axisObj;
                 menuHandle = item?.menu;
 
-                if (parentScreen) {
-                    for (var i = 0; i < Quickshell.screens.length; i++) {
-                        const s = Quickshell.screens[i];
-                        if (s === parentScreen) {
-                            menuWindow.screen = s;
-                            break;
-                        }
-                    }
-                }
-
                 showMenu = true;
             }
 
@@ -1405,6 +1395,13 @@ BasePill {
 
             function closeWithAction() {
                 close();
+            }
+
+            Timer {
+                id: pendingActionCloseTimer
+                interval: 80
+                repeat: false
+                onTriggered: menuRoot.closeWithAction()
             }
 
             function showSubMenu(entry) {
@@ -1448,7 +1445,8 @@ BasePill {
 
                 WlrLayershell.namespace: "dms:tray-menu-window"
                 visible: menuRoot.showMenu && (menuRoot.trayItem?.hasMenu ?? false)
-                WlrLayershell.layer: WlrLayershell.Top
+                screen: menuRoot.parentScreen
+                WlrLayershell.layer: root.barUsesOverlayLayer ? WlrLayershell.Overlay : WlrLayershell.Top
                 WlrLayershell.exclusiveZone: -1
                 WlrLayershell.keyboardFocus: {
                     if (!menuRoot.showMenu)
@@ -1862,7 +1860,7 @@ BasePill {
                                         } else if (typeof menuEntry.triggered === "function") {
                                             menuEntry.triggered();
                                         }
-                                        Qt.createQmlObject('import QtQuick; Timer { interval: 80; running: true; repeat: false; onTriggered: menuRoot.closeWithAction() }', menuRoot);
+                                        pendingActionCloseTimer.restart();
                                     }
                                 }
 

@@ -11,6 +11,7 @@ Item {
     readonly property var log: Log.scoped("DankLauncherV2ModalStandalone")
 
     property var modalHandle: root
+    property bool triggerUsesOverlayLayer: false
 
     visible: false
 
@@ -31,7 +32,7 @@ Item {
     readonly property real screenHeight: effectiveScreen?.height ?? 1080
     readonly property real dpr: effectiveScreen ? CompositorService.getScreenScale(effectiveScreen) : 1
 
-    readonly property bool frameOwnsConnectedChrome: SettingsData.connectedFrameModeActive && !!effectiveScreen && SettingsData.isScreenInPreferences(effectiveScreen, SettingsData.frameScreenPreferences)
+    readonly property bool frameOwnsConnectedChrome: CompositorService.usesConnectedFrameChromeForScreen(effectiveScreen)
     readonly property string resolvedConnectedBarSide: frameOwnsConnectedChrome ? (SettingsData.frameLauncherEmergeSide || "bottom") : ""
 
     readonly property int baseWidth: {
@@ -78,6 +79,22 @@ Item {
     readonly property real windowHeight: alignedHeight + contentY + shadowPad
 
     readonly property color backgroundColor: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
+    readonly property bool useBackgroundDarken: !SettingsData.frameEnabled && SettingsData.modalDarkenBackground
+    readonly property bool usesOverlayLayer: useBackgroundDarken || SettingsData.launcherUseOverlayLayer || triggerUsesOverlayLayer
+    readonly property var effectiveLauncherLayer: {
+        switch (Quickshell.env("DMS_MODAL_LAYER")) {
+        case "bottom":
+            log.error("'bottom' layer is not valid for modals. Defaulting to 'top' layer.");
+            return WlrLayershell.Top;
+        case "background":
+            log.error("'background' layer is not valid for modals. Defaulting to 'top' layer.");
+            return WlrLayershell.Top;
+        case "overlay":
+            return WlrLayershell.Overlay;
+        default:
+            return root.usesOverlayLayer ? WlrLayershell.Overlay : WlrLayershell.Top;
+        }
+    }
     readonly property real cornerRadius: Theme.cornerRadius
     readonly property color borderColor: {
         if (!SettingsData.dankLauncherV2BorderEnabled)
@@ -116,6 +133,7 @@ Item {
         if (!spotlightContent)
             return;
         contentVisible = true;
+        spotlightContent.closeTransientUi?.();
         spotlightContent.searchField.forceActiveFocus();
 
         var targetQuery = "";
@@ -130,12 +148,12 @@ Item {
             spotlightContent.searchField.text = targetQuery;
         }
         if (spotlightContent.controller) {
-            var targetMode = mode || SessionData.launcherLastMode || "all";
+            var targetMode = mode || SessionData.getLauncherRestoreMode();
             spotlightContent.controller.searchMode = targetMode;
             spotlightContent.controller.activePluginId = "";
             spotlightContent.controller.activePluginName = "";
             spotlightContent.controller.pluginFilter = "";
-            spotlightContent.controller.fileSearchType = "all";
+            spotlightContent.controller.fileSearchType = SessionData.launcherLastFileSearchType || "all";
             spotlightContent.controller.fileSearchExt = "";
             spotlightContent.controller.fileSearchFolder = "";
             spotlightContent.controller.fileSearchSort = "score";
@@ -194,6 +212,7 @@ Item {
     function hide() {
         if (!spotlightOpen)
             return;
+        spotlightContent?.closeTransientUi?.();
         openedFromOverview = false;
         isClosing = true;
         contentVisible = false;
@@ -241,8 +260,8 @@ Item {
     Connections {
         target: spotlightContent?.controller ?? null
 
-        function onModeChanged(mode) {
-            if (spotlightContent.controller.autoSwitchedToFiles)
+        function onModeChanged(mode, userInitiated) {
+            if (!userInitiated || !SettingsData.rememberLastMode || (mode !== "all" && mode !== "apps"))
                 return;
             SessionData.setLauncherLastMode(mode);
         }
@@ -295,12 +314,11 @@ Item {
     PanelWindow {
         id: clickCatcher
         screen: launcherWindow.screen
-        visible: spotlightOpen
+        visible: (spotlightOpen || isClosing) && !root.useBackgroundDarken
         color: "transparent"
-        updatesEnabled: false
 
         WlrLayershell.namespace: "dms:spotlight:clickcatcher"
-        WlrLayershell.layer: WlrLayershell.Top
+        WlrLayershell.layer: root.effectiveLauncherLayer
         WlrLayershell.exclusiveZone: -1
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
@@ -330,10 +348,10 @@ Item {
             id: outsideClickHole
             visible: false
             color: "transparent"
-            x: root.alignedX
-            y: root.alignedY
-            width: root.alignedWidth
-            height: root.alignedHeight
+            x: root.windowX
+            y: root.windowY
+            width: root.windowWidth
+            height: root.windowHeight
         }
 
         MouseArea {
@@ -352,45 +370,35 @@ Item {
         WindowBlur {
             targetWindow: launcherWindow
             readonly property real s: Math.min(1, modalContainer.publishedScale)
-            blurX: modalContainer.x + modalContainer.width * (1 - s) * 0.5
-            blurY: modalContainer.y + modalContainer.height * (1 - s) * 0.5
-            blurWidth: contentVisible ? modalContainer.width * s : 0
-            blurHeight: contentVisible ? modalContainer.height * s : 0
+            readonly property real op: Math.max(0, Math.min(1, (modalContainer.publishedOpacity - 0.06) * 2))
+            blurX: modalContainer.x + modalContainer.width * (1 - s * op) * 0.5
+            blurY: modalContainer.y + modalContainer.height * (1 - s * op) * 0.5
+            blurWidth: contentVisible ? modalContainer.width * s * op : 0
+            blurHeight: contentVisible ? modalContainer.height * s * op : 0
             blurRadius: root.cornerRadius
         }
 
         WlrLayershell.namespace: "dms:spotlight"
-        WlrLayershell.layer: {
-            switch (Quickshell.env("DMS_MODAL_LAYER")) {
-            case "bottom":
-                log.error("'bottom' layer is not valid for modals. Defaulting to 'top' layer.");
-                return WlrLayershell.Top;
-            case "background":
-                log.error("'background' layer is not valid for modals. Defaulting to 'top' layer.");
-                return WlrLayershell.Top;
-            case "overlay":
-                return WlrLayershell.Overlay;
-            default:
-                return WlrLayershell.Top;
-            }
-        }
+        WlrLayershell.layer: root.effectiveLauncherLayer
         WlrLayershell.exclusiveZone: -1
         WlrLayershell.keyboardFocus: keyboardActive ? (root.useHyprlandFocusGrab ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.Exclusive) : WlrKeyboardFocus.None
 
         anchors {
             top: true
             left: true
+            right: root.useBackgroundDarken
+            bottom: root.useBackgroundDarken
         }
 
         WlrLayershell.margins {
-            left: root.windowX
-            top: root.windowY
+            left: root.useBackgroundDarken ? 0 : root.windowX
+            top: root.useBackgroundDarken ? 0 : root.windowY
             right: 0
             bottom: 0
         }
 
-        implicitWidth: root.windowWidth
-        implicitHeight: root.windowHeight
+        implicitWidth: root.useBackgroundDarken ? 0 : root.windowWidth
+        implicitHeight: root.useBackgroundDarken ? 0 : root.windowHeight
 
         mask: Region {
             item: launcherInputMask
@@ -400,22 +408,48 @@ Item {
             id: launcherInputMask
             visible: false
             color: "transparent"
-            x: modalContainer.x
-            y: modalContainer.y
-            width: modalContainer.width
-            height: modalContainer.height
+            x: root.useBackgroundDarken ? 0 : modalContainer.x
+            y: root.useBackgroundDarken ? 0 : modalContainer.y
+            width: root.useBackgroundDarken ? launcherWindow.width : modalContainer.width
+            height: root.useBackgroundDarken ? launcherWindow.height : modalContainer.height
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            enabled: root.useBackgroundDarken && spotlightOpen
+            z: -2
+            onClicked: root.hide()
+        }
+
+        Rectangle {
+            id: backgroundDarken
+            anchors.fill: parent
+            color: "black"
+            opacity: contentVisible && root.useBackgroundDarken ? 0.5 : 0
+            visible: (spotlightOpen || isClosing) && (root.useBackgroundDarken || opacity > 0)
+            z: -3
+
+            Behavior on opacity {
+                NumberAnimation {
+                    easing.type: Easing.BezierSpline
+                    duration: Theme.modalAnimationDuration
+                    easing.bezierCurve: contentVisible ? Theme.expressiveCurves.expressiveDefaultSpatial : Theme.expressiveCurves.emphasized
+                }
+            }
         }
 
         Item {
             id: modalContainer
-            x: root.contentX
-            y: root.contentY
+            x: root.useBackgroundDarken ? root.alignedX : root.contentX
+            y: root.useBackgroundDarken ? root.alignedY : root.contentY
             width: root.alignedWidth
             height: root.alignedHeight
             visible: _renderActive
+            z: 0
 
             property bool _renderActive: contentVisible
             property real publishedScale: contentVisible ? 1 : 0.96
+            property real publishedOpacity: contentVisible ? 1 : 0
 
             opacity: contentVisible ? 1 : 0
             scale: contentVisible ? 1 : 0.96
@@ -440,6 +474,14 @@ Item {
             }
 
             Behavior on publishedScale {
+                NumberAnimation {
+                    easing.type: Easing.BezierSpline
+                    duration: Theme.modalAnimationDuration
+                    easing.bezierCurve: contentVisible ? Theme.expressiveCurves.expressiveDefaultSpatial : Theme.expressiveCurves.emphasized
+                }
+            }
+
+            Behavior on publishedOpacity {
                 NumberAnimation {
                     easing.type: Easing.BezierSpline
                     duration: Theme.modalAnimationDuration
@@ -494,8 +536,12 @@ Item {
                     }
                 }
 
+                Keys.onPressed: event => root.spotlightContent?.activeContextMenu?.handleKey(event)
+
                 Keys.onEscapePressed: event => {
-                    root.hide();
+                    root.spotlightContent?.activeContextMenu?.handleKey(event);
+                    if (!event.accepted)
+                        root.hide();
                     event.accepted = true;
                 }
             }

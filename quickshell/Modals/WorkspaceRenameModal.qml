@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Io
 import qs.Common
 import qs.Services
 import qs.Widgets
@@ -97,7 +96,7 @@ FloatingWindow {
                     spacing: Theme.spacingXS
 
                     DankActionButton {
-                        visible: windowControls.supported && windowControls.canMaximize
+                        visible: windowControls.canMaximize
                         iconName: root.maximized ? "fullscreen_exit" : "fullscreen"
                         iconSize: Theme.iconSize - 4
                         iconColor: Theme.surfaceText
@@ -212,20 +211,5 @@ FloatingWindow {
     FloatingWindowControls {
         id: windowControls
         targetWindow: root
-    }
-
-    IpcHandler {
-        target: "workspace-rename"
-
-        function open(): string {
-            const ws = NiriService.workspaces[NiriService.focusedWorkspaceId];
-            show(ws?.name || "");
-            return "WORKSPACE_RENAME_MODAL_OPENED";
-        }
-
-        function close(): string {
-            hide();
-            return "WORKSPACE_RENAME_MODAL_CLOSED";
-        }
     }
 }

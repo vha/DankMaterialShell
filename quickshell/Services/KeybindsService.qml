@@ -5,31 +5,16 @@ import QtCore
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Wayland
-// ! Even though qmlls says this is unused, it is wrong
 import qs.Common
 import qs.Services
+import "../Common/ConfigIncludeResolve.js" as ConfigIncludeResolve
 import "../Common/KeybindActions.js" as Actions
 
 Singleton {
     id: root
     readonly property var log: Log.scoped("KeybindsService")
 
-    Component.onCompleted: {
-        if (!shortcutInhibitorAvailable) {
-            log.warn("ShortcutInhibitor is not available in this environment, keybinds editor disabled.");
-        }
-    }
-
-    readonly property bool shortcutInhibitorAvailable: {
-        try {
-            return typeof ShortcutInhibitor !== "undefined";
-        } catch (e) {
-            return false;
-        }
-    }
-
-    property bool available: (CompositorService.isNiri || CompositorService.isHyprland || CompositorService.isDwl) && shortcutInhibitorAvailable
+    property bool available: CompositorService.isNiri || CompositorService.isHyprland || CompositorService.isDwl
     property string currentProvider: {
         if (CompositorService.isNiri)
             return "niri";
@@ -98,6 +83,7 @@ Singleton {
         case "niri":
             return compositorConfigDir + "/dms/binds.kdl";
         case "hyprland":
+            return compositorConfigDir + "/dms/binds.lua";
         case "mangowc":
             return compositorConfigDir + "/dms/binds.conf";
         default:
@@ -109,7 +95,7 @@ Singleton {
         case "niri":
             return compositorConfigDir + "/config.kdl";
         case "hyprland":
-            return compositorConfigDir + "/hyprland.conf";
+            return compositorConfigDir + "/hyprland.lua";
         case "mangowc":
             return compositorConfigDir + "/config.conf";
         default:
@@ -263,8 +249,8 @@ Singleton {
             root.lastError = "";
             root.dmsBindsIncluded = true;
             root.dmsBindsFixed();
-            const bindsFile = root.currentProvider === "niri" ? "dms/binds.kdl" : "dms/binds.conf";
-            ToastService.showInfo(I18n.tr("Binds include added"), I18n.tr("%1 is now included in config").arg(bindsFile), "", "keybinds");
+            const bindsRel = root.currentProvider === "niri" ? "dms/binds.kdl" : root.currentProvider === "hyprland" ? "dms/binds.lua" : "dms/binds.conf";
+            ToastService.showInfo(I18n.tr("Binds include added"), I18n.tr("%1 is now included in config").arg(bindsRel), "", "keybinds");
             Qt.callLater(root.forceReload);
         }
     }
@@ -278,13 +264,36 @@ Singleton {
         let script;
         switch (currentProvider) {
         case "niri":
-            script = `mkdir -p "${compositorConfigDir}/dms" && touch "${compositorConfigDir}/dms/binds.kdl" && cp "${mainConfigPath}" "${backupPath}" && echo 'include "dms/binds.kdl"' >> "${mainConfigPath}"`;
+            script = ConfigIncludeResolve.buildRepairScript({
+                configFile: mainConfigPath,
+                backupFile: backupPath,
+                fragmentFile: compositorConfigDir + "/dms/binds.kdl",
+                grepPattern: 'include.*"dms/binds.kdl"',
+                includeLine: 'include "dms/binds.kdl"'
+            });
             break;
         case "hyprland":
-            script = `mkdir -p "${compositorConfigDir}/dms" && touch "${compositorConfigDir}/dms/binds.conf" && cp "${mainConfigPath}" "${backupPath}" && echo 'source = ./dms/binds.conf' >> "${mainConfigPath}"`;
+            script = ConfigIncludeResolve.buildRepairScript({
+                configFile: mainConfigPath,
+                backupFile: backupPath,
+                fragmentFiles: [compositorConfigDir + "/dms/binds.lua", compositorConfigDir + "/dms/binds-user.lua"],
+                includes: [{
+                        grepPattern: "dms.binds",
+                        includeLine: "require(\"dms.binds\")"
+                    }, {
+                        grepPattern: "dms.binds-user",
+                        includeLine: "require(\"dms.binds-user\")"
+                    }]
+            });
             break;
         case "mangowc":
-            script = `mkdir -p "${compositorConfigDir}/dms" && touch "${compositorConfigDir}/dms/binds.conf" && cp "${mainConfigPath}" "${backupPath}" && echo 'source = ./dms/binds.conf' >> "${mainConfigPath}"`;
+            script = ConfigIncludeResolve.buildRepairScript({
+                configFile: mainConfigPath,
+                backupFile: backupPath,
+                fragmentFile: compositorConfigDir + "/dms/binds.conf",
+                grepPattern: "source.*dms/binds.conf",
+                includeLine: "source = ./dms/binds.conf"
+            });
             break;
         default:
             fixing = false;
@@ -337,6 +346,7 @@ Singleton {
                 "statusMessage": status.statusMessage ?? ""
             };
         }
+        _maybeWarnHyprlandLegacyConf();
 
         if (!_rawData?.binds) {
             _allBinds = {};
@@ -381,10 +391,13 @@ Singleton {
             for (var i = 0; i < binds.length; i++) {
                 const bind = binds[i];
                 const action = bind.action || "";
+                const sourceStr = bind.source || "config";
                 const keyData = {
                     "key": bind.key || "",
-                    "source": bind.source || "config",
-                    "isOverride": bind.source === "dms",
+                    "source": sourceStr,
+                    "isOverride": sourceStr === "dms",
+                    "isDMSManaged": sourceStr === "dms" || sourceStr === "dms-default",
+                    "hasDefault": bind.hasDefault === true,
                     "cooldownMs": bind.cooldownMs || 0,
                     "flags": bind.flags || "",
                     "allowWhenLocked": bind.allowWhenLocked || false,
@@ -450,6 +463,24 @@ Singleton {
         return _flatCache;
     }
 
+    function keysForAction(actionId) {
+        if (!actionId)
+            return [];
+        for (let i = 0; i < _flatCache.length; i++) {
+            const group = _flatCache[i];
+            if (!group || group.action !== actionId || !Array.isArray(group.keys))
+                continue;
+            const keys = [];
+            for (let k = 0; k < group.keys.length; k++) {
+                const key = group.keys[k]?.key || "";
+                if (key)
+                    keys.push(key);
+            }
+            return keys;
+        }
+        return [];
+    }
+
     function saveBind(originalKey, bindData) {
         if (!bindData.key || !Actions.isValidAction(bindData.action))
             return;
@@ -472,10 +503,31 @@ Singleton {
         _pendingSavedKey = bindData.key;
     }
 
+    property bool _hyprlandLegacyWarnShown: false
+
+    function _maybeWarnHyprlandLegacyConf() {
+        if (_hyprlandLegacyWarnShown)
+            return;
+        if (currentProvider !== "hyprland")
+            return;
+        if (!dmsStatus.exists || dmsStatus.included)
+            return;
+        _hyprlandLegacyWarnShown = true;
+        ToastService.showWarning(I18n.tr("Hyprland config still uses hyprlang"), I18n.tr("DMS Settings now writes Lua. Edits won't apply until you migrate."), "dms setup", "hyprland-migration");
+    }
+
     function removeBind(key) {
         if (!key)
             return;
         removeProcess.command = ["dms", "keybinds", "remove", currentProvider, key];
+        removeProcess.running = true;
+        bindRemoved(key);
+    }
+
+    function resetBind(key) {
+        if (!key)
+            return;
+        removeProcess.command = ["dms", "keybinds", "reset", currentProvider, key];
         removeProcess.running = true;
         bindRemoved(key);
     }

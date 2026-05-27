@@ -735,16 +735,21 @@
     "keywords": [
       "background",
       "bar",
+      "corner",
       "corners",
       "dank",
       "panel",
       "radius",
+      "remove",
       "round",
       "rounded",
+      "rounding",
       "statusbar",
+      "taskbar",
       "topbar"
     ],
-    "icon": "rounded_corner"
+    "icon": "rounded_corner",
+    "description": "Remove corner rounding from the bar"
   },
   {
     "section": "_tab_3",
@@ -861,18 +866,24 @@
     "category": "Dank Bar",
     "keywords": [
       "bar",
+      "between",
       "dank",
+      "edges",
       "gap",
       "gaps",
       "margin",
       "margins",
       "padding",
       "panel",
+      "screen",
+      "space",
       "spacing",
       "statusbar",
+      "taskbar",
       "topbar"
     ],
-    "icon": "space_bar"
+    "icon": "space_bar",
+    "description": "Space between the bar and screen edges"
   },
   {
     "section": "trayIconTint",
@@ -909,17 +920,40 @@
     "category": "Dank Bar",
     "keywords": [
       "alpha",
+      "background",
       "bar",
       "dank",
       "opacity",
       "panel",
       "statusbar",
+      "taskbar",
       "topbar",
       "translucent",
       "transparency",
       "transparent"
     ],
-    "icon": "opacity"
+    "icon": "opacity",
+    "description": "Opacity of the bar background"
+  },
+  {
+    "section": "barUseOverlayLayer",
+    "label": "Use Overlay Layer",
+    "tabIndex": 3,
+    "category": "Dank Bar",
+    "keywords": [
+      "bar",
+      "dank",
+      "fullscreen",
+      "layer",
+      "overlay",
+      "panel",
+      "place",
+      "statusbar",
+      "taskbar",
+      "topbar",
+      "wayland"
+    ],
+    "description": "Place the bar on the Wayland overlay layer"
   },
   {
     "section": "barVisibility",
@@ -929,18 +963,27 @@
     "keywords": [
       "auto-hide",
       "autohide",
+      "automatically",
+      "away",
       "bar",
       "dank",
+      "fullscreen",
       "hidden",
       "hide",
+      "layer",
+      "moves",
+      "overlay",
       "panel",
+      "pointer",
       "show",
       "statusbar",
+      "taskbar",
       "topbar",
       "visibility",
       "visible"
     ],
-    "icon": "visibility_off"
+    "icon": "visibility_off",
+    "description": "Automatically hide the bar when the pointer moves away"
   },
   {
     "section": "workspaceDragReorder",
@@ -1431,7 +1474,7 @@
       "start menu",
       "taskbar"
     ],
-    "icon": "apps"
+    "icon": "shelf_auto_hide"
   },
   {
     "section": "dockVisibility",
@@ -1873,6 +1916,24 @@
     "description": "Place a trash bin at the end of the dock"
   },
   {
+    "section": "dockUseOverlayLayer",
+    "label": "Use Overlay Layer",
+    "tabIndex": 5,
+    "category": "Dock",
+    "keywords": [
+      "dock",
+      "fullscreen",
+      "launcher bar",
+      "layer",
+      "overlay",
+      "panel",
+      "place",
+      "taskbar",
+      "wayland"
+    ],
+    "description": "Place the dock on the Wayland overlay layer"
+  },
+  {
     "section": "_tab_7",
     "label": "Network",
     "tabIndex": 7,
@@ -2006,6 +2067,50 @@
       "start"
     ],
     "icon": "extension"
+  },
+  {
+    "section": "launcherStyle",
+    "label": "Default Launcher",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "app drawer",
+      "app menu",
+      "applications",
+      "default",
+      "drawer",
+      "full",
+      "launcher",
+      "layer",
+      "menu",
+      "minimal",
+      "opening",
+      "overlay",
+      "spotlight",
+      "start",
+      "start menu",
+      "style"
+    ],
+    "icon": "search",
+    "description": "Use the overlay layer when opening the launcher"
+  },
+  {
+    "section": "launcherStyleSelector",
+    "label": "Default Opens",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "default",
+      "drawer",
+      "full",
+      "launcher",
+      "menu",
+      "minimal",
+      "opens",
+      "spotlight",
+      "start",
+      "style"
+    ]
   },
   {
     "section": "niriOverviewOverlayEnabled",
@@ -2243,6 +2348,30 @@
     "icon": "history"
   },
   {
+    "section": "rememberLastMode",
+    "label": "Remember Last Mode",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "app drawer",
+      "app menu",
+      "applications",
+      "drawer",
+      "last",
+      "launcher",
+      "menu",
+      "mode",
+      "opened",
+      "remember",
+      "restore",
+      "selected",
+      "start",
+      "start menu",
+      "tab"
+    ],
+    "description": "Restore the last selected mode (tab) when the launcher is opened"
+  },
+  {
     "section": "rememberLastQuery",
     "label": "Remember Last Query",
     "tabIndex": 9,
@@ -2325,6 +2454,40 @@
     "description": "Show mode tabs and keyboard hints at the bottom."
   },
   {
+    "section": "spotlightBarShowModeChips",
+    "label": "Show Mode Chips",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "addons",
+      "apps",
+      "bar",
+      "beside",
+      "chips",
+      "day",
+      "drawer",
+      "extensions",
+      "files",
+      "input",
+      "launcher",
+      "light mode",
+      "menu",
+      "mode",
+      "modes",
+      "panel",
+      "plugins",
+      "show",
+      "spotlight",
+      "start",
+      "statusbar",
+      "tabs",
+      "taskbar",
+      "topbar",
+      "widgets"
+    ],
+    "description": "Show All, Apps, Files, and Plugins chips beside the Spotlight Bar input."
+  },
+  {
     "section": "launcherLogoSizeOffset",
     "label": "Size Offset",
     "tabIndex": 9,
@@ -2388,6 +2551,40 @@
     "description": "When enabled, apps are sorted alphabetically. When disabled, apps are sorted by usage frequency."
   },
   {
+    "section": "spotlightBarLauncher",
+    "label": "Spotlight Bar",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "addons",
+      "apps",
+      "bar",
+      "beside",
+      "chips",
+      "day",
+      "drawer",
+      "extensions",
+      "files",
+      "input",
+      "launcher",
+      "light mode",
+      "menu",
+      "modes",
+      "panel",
+      "plugins",
+      "show",
+      "spotlight",
+      "start",
+      "statusbar",
+      "tabs",
+      "taskbar",
+      "topbar",
+      "widgets"
+    ],
+    "icon": "search",
+    "description": "Show All, Apps, Files, and Plugins chips beside the Spotlight Bar input."
+  },
+  {
     "section": "dankLauncherV2BorderThickness",
     "label": "Thickness",
     "tabIndex": 9,
@@ -2429,6 +2626,27 @@
       "vram"
     ],
     "description": "Free VRAM/memory when the launcher is closed. May cause a slight delay when reopening."
+  },
+  {
+    "section": "launcherUseOverlayLayer",
+    "label": "Use Overlay Layer",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "app drawer",
+      "app menu",
+      "applications",
+      "drawer",
+      "fullscreen",
+      "launcher",
+      "layer",
+      "menu",
+      "opening",
+      "overlay",
+      "start",
+      "start menu"
+    ],
+    "description": "Use the overlay layer when opening the launcher"
   },
   {
     "section": "matugenTemplateAlacritty",
@@ -5289,6 +5507,27 @@
     "description": "Popouts and Modals follow global Animation Speed (disable to customize independently)"
   },
   {
+    "section": "textRenderType",
+    "label": "Text Rendering",
+    "tabIndex": 14,
+    "category": "Typography & Motion",
+    "keywords": [
+      "animation",
+      "anti-aliasing",
+      "distance",
+      "field",
+      "fonts",
+      "freetype",
+      "motion",
+      "quality",
+      "render",
+      "rendering",
+      "text",
+      "typography"
+    ],
+    "icon": "text_format"
+  },
+  {
     "section": "typography",
     "label": "Typography",
     "tabIndex": 14,
@@ -6126,6 +6365,28 @@
       "until"
     ],
     "description": "Hide notification content until expanded; popups show collapsed by default"
+  },
+  {
+    "section": "notificationDedupeEnabled",
+    "label": "Suppress Duplicate Notifications",
+    "tabIndex": 17,
+    "category": "Notifications",
+    "keywords": [
+      "alert",
+      "alerts",
+      "coalesce",
+      "dedupe",
+      "duplicate",
+      "messages",
+      "notif",
+      "notification",
+      "notifications",
+      "notifs",
+      "repeat",
+      "stack",
+      "suppress",
+      "toast"
+    ]
   },
   {
     "section": "osdAlwaysShowValue",
@@ -7466,5 +7727,31 @@
       "settings"
     ],
     "icon": "frame_source"
+  },
+  {
+    "section": "_tab_34",
+    "label": "Applications",
+    "tabIndex": 34,
+    "category": "Settings",
+    "keywords": [
+      "app",
+      "applications",
+      "apps",
+      "program",
+      "programs",
+      "settings"
+    ],
+    "icon": "apps"
+  },
+  {
+    "section": "_tab_35",
+    "label": "Users",
+    "tabIndex": 35,
+    "category": "Settings",
+    "keywords": [
+      "settings",
+      "users"
+    ],
+    "icon": "manage_accounts"
   }
 ]

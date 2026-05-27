@@ -38,7 +38,7 @@ Item {
 
     readonly property string resolvedConnectedBarSide: frameConnectedMode ? preferredConnectedBarSide : ""
 
-    readonly property bool frameOwnsConnectedChrome: frameConnectedMode && resolvedConnectedBarSide !== "" && !allowStacking
+    readonly property bool frameOwnsConnectedChrome: frameConnectedMode && resolvedConnectedBarSide !== "" && !allowStacking && CompositorService.usesConnectedFrameChromeForScreen(effectiveScreen)
 
     function _dockOccupiesSide(side) {
         if (!SettingsData.showDock)
@@ -58,7 +58,7 @@ Item {
 
     readonly property bool _dockBlocksEmergence: frameOwnsConnectedChrome && _dockOccupiesSide(resolvedConnectedBarSide)
 
-    readonly property bool connectedMotionParity: Theme.isConnectedEffect
+    readonly property bool connectedMotionParity: frameOwnsConnectedChrome
     property int animationDuration: connectedMotionParity ? Theme.popoutAnimationDuration : Theme.modalAnimationDuration
     property real animationScaleCollapsed: Theme.effectScaleCollapsed
     property real animationOffset: Theme.effectAnimOffset
@@ -68,7 +68,7 @@ Item {
     property color borderColor: Theme.outlineMedium
     property real borderWidth: 0
     property real cornerRadius: Theme.cornerRadius
-    readonly property bool connectedSurfaceOverride: Theme.isConnectedEffect
+    readonly property bool connectedSurfaceOverride: frameOwnsConnectedChrome
     readonly property color effectiveBackgroundColor: connectedSurfaceOverride ? Theme.connectedSurfaceColor : backgroundColor
     readonly property color effectiveBorderColor: connectedSurfaceOverride ? "transparent" : borderColor
     readonly property real effectiveBorderWidth: connectedSurfaceOverride ? 0 : borderWidth
@@ -116,11 +116,11 @@ Item {
         return effectiveScreen ? effectiveScreen.name : "";
     }
 
-    function _publishModalChromeState() {
+    function _publishModalChromeState(isClaim) {
         const screenName = _currentScreenName();
         if (!screenName)
             return;
-        ConnectedModeState.setModalState(screenName, {
+        const state = {
             "visible": shouldBeVisible || contentWindow.visible,
             "barSide": resolvedConnectedBarSide,
             "bodyX": alignedX,
@@ -131,7 +131,11 @@ Item {
             "animY": modalContainer ? modalContainer.animY : 0,
             "omitStartConnector": false,
             "omitEndConnector": false
-        });
+        };
+        if (isClaim)
+            ConnectedModeState.claimModalState(screenName, state, _chromeClaimId);
+        else
+            ConnectedModeState.updateModalState(screenName, state, _chromeClaimId);
     }
 
     function _syncModalChromeState() {
@@ -139,9 +143,10 @@ Item {
             _releaseModalChrome();
             return;
         }
+        const isClaim = !_chromeClaimId;
         if (!_chromeClaimId)
             _chromeClaimId = _nextChromeClaimId();
-        _publishModalChromeState();
+        _publishModalChromeState(isClaim);
         if (_dockBlocksEmergence && (shouldBeVisible || contentWindow.visible))
             ConnectedModeState.requestDockRetract(_chromeClaimId, _currentScreenName(), resolvedConnectedBarSide);
         else
@@ -187,7 +192,7 @@ Item {
         const screenName = _currentScreenName();
         if (!screenName || !modalContainer)
             return;
-        ConnectedModeState.setModalAnim(screenName, modalContainer.animX, modalContainer.animY);
+        ConnectedModeState.setModalAnim(screenName, modalContainer.animX, modalContainer.animY, _chromeClaimId);
     }
 
     function _syncModalBody() {
@@ -196,17 +201,18 @@ Item {
         const screenName = _currentScreenName();
         if (!screenName)
             return;
-        ConnectedModeState.setModalBody(screenName, alignedX, alignedY, alignedWidth, alignedHeight);
+        ConnectedModeState.setModalBody(screenName, alignedX, alignedY, alignedWidth, alignedHeight, _chromeClaimId);
     }
 
     function _releaseModalChrome() {
         if (!_chromeClaimId)
             return;
         ConnectedModeState.releaseDockRetract(_chromeClaimId);
+        const claimId = _chromeClaimId;
         _chromeClaimId = "";
         const screenName = _currentScreenName();
         if (screenName)
-            ConnectedModeState.clearModalState(screenName);
+            ConnectedModeState.clearModalState(screenName, claimId);
     }
 
     onFrameOwnsConnectedChromeChanged: _syncModalChromeState()
@@ -262,6 +268,10 @@ Item {
     }
 
     function close() {
+        if (modalContainer) {
+            frozenMotionOffsetX = modalContainer.offsetX;
+            frozenMotionOffsetY = modalContainer.offsetY;
+        }
         shouldBeVisible = false;
         shouldHaveFocus = false;
         ModalManager.closeModal(modalHandle);
@@ -336,7 +346,7 @@ Item {
     readonly property real shadowFallbackOffset: 6
     readonly property real shadowRenderPadding: (!frameOwnsConnectedChrome && root.enableShadow && Theme.elevationEnabled && SettingsData.modalElevationEnabled) ? Theme.elevationRenderPadding(shadowLevel, Theme.elevationLightDirection, shadowFallbackOffset, 8, 16) : 0
     readonly property real shadowMotionPadding: {
-        if (Theme.isConnectedEffect)
+        if (frameOwnsConnectedChrome)
             return 0;
         if (animationType === "slide")
             return 30;

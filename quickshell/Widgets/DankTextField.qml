@@ -40,8 +40,8 @@ StyledRect {
     property color focusedBorderColor: Theme.primary
     property color normalBorderColor: Theme.outlineMedium
     property color placeholderColor: Theme.outlineButton
-    property int borderWidth: 1
-    property int focusedBorderWidth: 2
+    property real borderWidth: 1
+    property real focusedBorderWidth: 2
     property real cornerRadius: Theme.cornerRadius
     readonly property real leftPadding: Theme.spacingM + (leftIconName ? leftIconSize + Theme.spacingM : 0)
     readonly property real rightPadding: {
@@ -116,6 +116,7 @@ StyledRect {
         anchors.bottom: parent.bottom
         anchors.bottomMargin: root.bottomPadding
         font.pixelSize: Theme.fontSizeMedium
+        font.family: Theme.fontFamily
         color: Theme.surfaceText
         selectionColor: Theme.primaryContainer
         selectedTextColor: Theme.primary

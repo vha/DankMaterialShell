@@ -20,6 +20,24 @@ PanelWindow {
 
     property var controlCenterButtonRef: null
     property var clockButtonRef: null
+    property var systemUpdateButtonRef: null
+
+    function triggerSystemUpdate() {
+        systemUpdateLoader.active = true;
+        if (!systemUpdateLoader.item)
+            return;
+        const popout = systemUpdateLoader.item;
+        const barPosition = axis?.edge === "left" ? 2 : (axis?.edge === "right" ? 3 : (axis?.edge === "top" ? 0 : 1));
+        if (systemUpdateButtonRef && popout.setTriggerPosition) {
+            const screenPos = systemUpdateButtonRef.mapToItem(null, 0, 0);
+            const pos = SettingsData.getPopupTriggerPosition(screenPos, barWindow.screen, barWindow.effectiveBarThickness, systemUpdateButtonRef.width, barConfig?.spacing ?? 4, barPosition, barConfig);
+            const section = systemUpdateButtonRef.section || "right";
+            popout.setTriggerPosition(pos.x, pos.y, pos.width, section, barWindow.screen, barPosition, barWindow.effectiveBarThickness, barConfig?.spacing ?? 4, barConfig);
+        } else {
+            popout.screen = barWindow.screen;
+        }
+        PopoutManager.requestPopout(popout, undefined, "systemUpdate");
+    }
 
     function triggerControlCenter() {
         controlCenterLoader.active = true;
@@ -90,6 +108,8 @@ PanelWindow {
         triggerDashTab(2);
     }
 
+    readonly property bool usesOverlayLayer: CompositorService.framePeerSurfacesUseOverlayForScreen(barWindow.screen) || (barConfig?.useOverlayLayer ?? false)
+
     readonly property var dBarLayer: {
         switch (Quickshell.env("DMS_DANKBAR_LAYER")) {
         case "bottom":
@@ -101,10 +121,7 @@ PanelWindow {
         case "top":
             return WlrLayer.Top;
         default:
-            // Elevate to Overlay when Frame is enabled so the bar stays above
-            // the FrameWindow (WlrLayer.Top) when it is re-mapped on mode switch,
-            // but drop back to Top while a true fullscreen app owns this screen.
-            return SettingsData.frameEnabled && !barWindow.hasFullscreenToplevel ? WlrLayer.Overlay : WlrLayer.Top;
+            return barWindow.usesOverlayLayer ? WlrLayer.Overlay : WlrLayer.Top;
         }
     }
 
@@ -134,6 +151,30 @@ PanelWindow {
         onTriggered: barBlur.rebuild()
     }
 
+    Connections {
+        target: barWindow
+        function onUsesConnectedFrameChromeChanged() {
+            _blurRebuildTimer.restart();
+        }
+        function onUsesFrameBarChromeChanged() {
+            _blurRebuildTimer.restart();
+        }
+    }
+
+    Component {
+        id: blurRegionComp
+        Region {}
+    }
+
+    Component {
+        id: blurSubRegionComp
+        Region {
+            property Item w
+            item: w
+            radius: Theme.cornerRadius
+        }
+    }
+
     Item {
         id: barBlur
         visible: false
@@ -147,7 +188,7 @@ PanelWindow {
             // In frame mode, FrameWindow owns the blur region for the entire screen edge
             // (including the bar area). The bar must not set its own competing blur region
             // so that frameBlurEnabled acts as the single control for all blur in frame mode.
-            if (SettingsData.frameEnabled)
+            if (SettingsData.frameEnabled && barWindow.usesFrameBarChrome)
                 return;
 
             const widgets = barWindow._blurWidgetItems.filter(w => w && w.visible && w.width > 0 && w.height > 0);
@@ -155,33 +196,32 @@ PanelWindow {
             if (!hasBar && widgets.length === 0)
                 return;
 
-            const cr = Theme.cornerRadius;
-            let qml = 'import QtQuick; import Quickshell; Region {';
+            const region = blurRegionComp.createObject(barWindow);
+            if (!region) {
+                log.warn("BarBlur: Failed to create blur region");
+                return;
+            }
+
+            if (hasBar) {
+                region.x = Qt.binding(() => topBarMouseArea.x + barUnitInset.x + topBarSlide.x);
+                region.y = Qt.binding(() => topBarMouseArea.y + barUnitInset.y + topBarSlide.y);
+                region.width = Qt.binding(() => barUnitInset.width);
+                region.height = Qt.binding(() => barUnitInset.height);
+                region.radius = Qt.binding(() => barBackground.rt);
+            }
+
+            const subRegions = [];
             for (let i = 0; i < widgets.length; i++) {
-                qml += ` property Item w${i}; Region { item: w${i}; radius: ${cr} }`;
+                const sub = blurSubRegionComp.createObject(region, {
+                    w: widgets[i]
+                });
+                if (sub)
+                    subRegions.push(sub);
             }
-            qml += '}';
+            region.regions = subRegions;
 
-            try {
-                const region = Qt.createQmlObject(qml, barWindow, "BarBlurRegion");
-
-                if (hasBar) {
-                    region.x = Qt.binding(() => topBarMouseArea.x + barUnitInset.x + topBarSlide.x);
-                    region.y = Qt.binding(() => topBarMouseArea.y + barUnitInset.y + topBarSlide.y);
-                    region.width = Qt.binding(() => barUnitInset.width);
-                    region.height = Qt.binding(() => barUnitInset.height);
-                    region.radius = Qt.binding(() => barBackground.rt);
-                }
-
-                for (let i = 0; i < widgets.length; i++) {
-                    region[`w${i}`] = widgets[i];
-                }
-
-                barWindow.BackgroundEffect.blurRegion = region;
-                barWindow.blurRegion = region;
-            } catch (e) {
-                log.warn("BarBlur: Failed to create blur region:", e);
-            }
+            barWindow.BackgroundEffect.blurRegion = region;
+            barWindow.blurRegion = region;
         }
 
         function teardown() {
@@ -261,7 +301,7 @@ PanelWindow {
     readonly property color _surfaceContainer: Theme.surfaceContainer
     readonly property string _barId: barConfig?.id ?? "default"
     property real _backgroundAlpha: barConfig?.transparency ?? 1.0
-    readonly property color _bgColor: SettingsData.frameEnabled ? Qt.rgba(SettingsData.effectiveFrameColor.r, SettingsData.effectiveFrameColor.g, SettingsData.effectiveFrameColor.b, SettingsData.frameOpacity) : Theme.withAlpha(_surfaceContainer, _backgroundAlpha)
+    readonly property color _bgColor: (SettingsData.frameEnabled && usesFrameBarChrome) ? Qt.rgba(SettingsData.effectiveFrameColor.r, SettingsData.effectiveFrameColor.g, SettingsData.effectiveFrameColor.b, SettingsData.frameOpacity) : Theme.withAlpha(_surfaceContainer, _backgroundAlpha)
 
     function _updateBackgroundAlpha() {
         const live = SettingsData.barConfigs.find(c => c.id === _barId);
@@ -285,8 +325,14 @@ PanelWindow {
 
     property string screenName: modelData.name
 
+    readonly property bool usesConnectedFrameChrome: CompositorService.usesConnectedFrameChromeForScreen(screenName)
+    readonly property bool usesFrameBarChrome: CompositorService.frameWindowVisibleForScreen(screenName)
+
+    // Flatten/spacing collapse for maximized windows is only for frame-integrated layout.
+    // When the bar draws its own pill, keep rounded corners and spacing like the dock.
+    readonly property bool flattenForMaximizedWindow: !SettingsData.frameEnabled || usesFrameBarChrome
+
     property bool hasMaximizedToplevel: false
-    property bool hasFullscreenToplevel: false
     property bool shouldHideForWindows: false
 
     function _updateHasMaximizedToplevel() {
@@ -307,14 +353,6 @@ PanelWindow {
             }
         }
         hasMaximizedToplevel = false;
-    }
-
-    function _updateHasFullscreenToplevel() {
-        if (!(barConfig?.fullscreenDetection ?? true)) {
-            hasFullscreenToplevel = false;
-            return;
-        }
-        hasFullscreenToplevel = CompositorService.hasFullscreenToplevelOnScreen(screenName);
     }
 
     function _updateShouldHideForWindows() {
@@ -396,7 +434,7 @@ PanelWindow {
         shouldHideForWindows = filtered.length > 0;
     }
 
-    property real effectiveSpacing: SettingsData.frameEnabled ? 0 : (hasMaximizedToplevel ? 0 : (barConfig?.spacing ?? 4))
+    property real effectiveSpacing: (SettingsData.frameEnabled && usesFrameBarChrome) ? 0 : ((flattenForMaximizedWindow && hasMaximizedToplevel) ? 0 : (barConfig?.spacing ?? 4))
 
     Behavior on effectiveSpacing {
         enabled: barWindow.visible
@@ -407,7 +445,7 @@ PanelWindow {
     }
 
     readonly property int notificationCount: NotificationService.notifications.length
-    readonly property real effectiveBarThickness: SettingsData.frameEnabled ? SettingsData.frameBarSize : Theme.snap(Math.max(barWindow.widgetThickness + (barConfig?.innerPadding ?? 4) + 4, Theme.barHeight - 4 - (8 - (barConfig?.innerPadding ?? 4))), _dpr)
+    readonly property real effectiveBarThickness: (SettingsData.frameEnabled && usesFrameBarChrome) ? SettingsData.frameBarSize : Theme.snap(Math.max(barWindow.widgetThickness + (barConfig?.innerPadding ?? 4) + 4, Theme.barHeight - 4 - (8 - (barConfig?.innerPadding ?? 4))), _dpr)
     readonly property bool effectiveOpenOnOverview: SettingsData.frameEnabled ? SettingsData.frameShowOnOverview : (barConfig?.openOnOverview ?? false)
     readonly property real widgetThickness: Theme.snap(Math.max(20, 26 + (barConfig?.innerPadding ?? 4) * 0.6), _dpr)
 
@@ -511,27 +549,16 @@ PanelWindow {
     implicitWidth: isVertical ? Theme.px(effectiveBarThickness + effectiveSpacing + ((barConfig?.gothCornersEnabled ?? false) && !hasMaximizedToplevel ? _wingR : 0), _dpr) + _shadowBuffer : 0
     color: "transparent"
 
-    property var nativeInhibitor: null
-
     Component.onCompleted: {
         updateGpuTempConfig();
         _updateBackgroundAlpha();
         _updateHasMaximizedToplevel();
-        _updateHasFullscreenToplevel();
         _updateShouldHideForWindows();
-
-        inhibitorInitTimer.start();
     }
 
-    Timer {
-        id: inhibitorInitTimer
-        interval: 300
-        repeat: false
-        onTriggered: {
-            if (SessionService.nativeInhibitorAvailable) {
-                createNativeInhibitor();
-            }
-        }
+    IdleInhibitor {
+        window: barWindow
+        enabled: SessionService.idleInhibited
     }
 
     Connections {
@@ -563,41 +590,11 @@ PanelWindow {
         DgopService.nonNvidiaGpuTempEnabled = hasGpuTempWidget || SessionData.nonNvidiaGpuTempEnabled;
     }
 
-    function createNativeInhibitor() {
-        if (!SessionService.nativeInhibitorAvailable) {
-            return;
-        }
-
-        try {
-            const qmlString = `
-            import QtQuick
-            import Quickshell.Wayland
-
-            IdleInhibitor {
-            enabled: false
-            }
-            `;
-
-            nativeInhibitor = Qt.createQmlObject(qmlString, barWindow, "DankBar.NativeInhibitor");
-            nativeInhibitor.window = barWindow;
-            nativeInhibitor.enabled = Qt.binding(() => SessionService.idleInhibited);
-            nativeInhibitor.enabledChanged.connect(function () {
-                if (SessionService.idleInhibited !== nativeInhibitor.enabled) {
-                    SessionService.idleInhibited = nativeInhibitor.enabled;
-                    SessionService.inhibitorChanged();
-                }
-            });
-        } catch (e) {
-            nativeInhibitor = null;
-        }
-    }
-
     Connections {
         function onBarConfigChanged() {
             barWindow.updateGpuTempConfig();
             barWindow._updateBackgroundAlpha();
             barWindow._updateHasMaximizedToplevel();
-            barWindow._updateHasFullscreenToplevel();
             barWindow._updateShouldHideForWindows();
         }
 
@@ -615,7 +612,6 @@ PanelWindow {
         target: CompositorService
         function onToplevelsChanged() {
             barWindow._updateHasMaximizedToplevel();
-            barWindow._updateHasFullscreenToplevel();
             barWindow._updateShouldHideForWindows();
         }
     }
@@ -624,15 +620,7 @@ PanelWindow {
         target: NiriService
         function onAllWorkspacesChanged() {
             barWindow._updateHasMaximizedToplevel();
-            barWindow._updateHasFullscreenToplevel();
             barWindow._updateShouldHideForWindows();
-        }
-    }
-
-    Connections {
-        target: ToplevelManager
-        function onActiveToplevelChanged() {
-            barWindow._updateHasFullscreenToplevel();
         }
     }
 
@@ -655,7 +643,9 @@ PanelWindow {
     anchors.left: !isVertical ? true : (barPos === SettingsData.Position.Left)
     anchors.right: !isVertical ? true : (barPos === SettingsData.Position.Right)
 
-    exclusiveZone: (barWindow.hasFullscreenToplevel || !(barConfig?.visible ?? true) || topBarCore.autoHide) ? -1 : (barWindow.effectiveBarThickness + effectiveSpacing + (Theme.isConnectedEffect ? 0 : (barConfig?.bottomGap ?? 0)))
+    readonly property bool reserveExclusiveWhenAutoHidden: SettingsData.frameEnabled && usesFrameBarChrome && !!barWindow.screen && SettingsData.isScreenInPreferences(barWindow.screen, SettingsData.frameScreenPreferences)
+
+    exclusiveZone: (!(barConfig?.visible ?? true) || (topBarCore.autoHide && !barWindow.reserveExclusiveWhenAutoHidden)) ? -1 : (barWindow.effectiveBarThickness + effectiveSpacing + (usesFrameBarChrome ? 0 : (barConfig?.bottomGap ?? 0)))
 
     Item {
         id: inputMask
@@ -664,9 +654,9 @@ PanelWindow {
 
         readonly property bool inOverviewWithShow: CompositorService.isNiri && NiriService.inOverview && barWindow.effectiveOpenOnOverview
         readonly property bool effectiveVisible: (barConfig?.visible ?? true) || inOverviewWithShow
-        readonly property bool showing: effectiveVisible && !barWindow.hasFullscreenToplevel && (topBarCore.reveal || inOverviewWithShow || !topBarCore.autoHide)
+        readonly property bool showing: effectiveVisible && (topBarCore.reveal || inOverviewWithShow || !topBarCore.autoHide)
 
-        readonly property int maskThickness: barWindow.hasFullscreenToplevel ? 0 : (showing ? barThickness : 1)
+        readonly property int maskThickness: showing ? barThickness : 1
 
         x: {
             if (!axis.isVertical) {
@@ -736,7 +726,7 @@ PanelWindow {
         item: clickThroughEnabled ? null : inputMask
 
         Region {
-            readonly property var r: barWindow.clickThroughEnabled ? barWindow.sectionRect(barWindow._leftSection, false, barWindow._revealProgress) : {
+            readonly property var r: barWindow.clickThroughEnabled ? barWindow.sectionRect(barWindow._leftSection, false, barWindow._revealProgress + barWindow.width * 0) : {
                 "x": 0,
                 "y": 0,
                 "w": 0,
@@ -749,7 +739,7 @@ PanelWindow {
         }
 
         Region {
-            readonly property var r: barWindow.clickThroughEnabled ? barWindow.sectionRect(barWindow._centerSection, true, barWindow._revealProgress) : {
+            readonly property var r: barWindow.clickThroughEnabled ? barWindow.sectionRect(barWindow._centerSection, true, barWindow._revealProgress + barWindow.width * 0) : {
                 "x": 0,
                 "y": 0,
                 "w": 0,
@@ -762,7 +752,7 @@ PanelWindow {
         }
 
         Region {
-            readonly property var r: barWindow.clickThroughEnabled ? barWindow.sectionRect(barWindow._rightSection, false, barWindow._revealProgress) : {
+            readonly property var r: barWindow.clickThroughEnabled ? barWindow.sectionRect(barWindow._rightSection, false, barWindow._revealProgress + barWindow.width * 0) : {
                 "x": 0,
                 "y": 0,
                 "w": 0,
@@ -790,42 +780,25 @@ PanelWindow {
 
         property bool autoHide: barConfig?.autoHide ?? false
         property bool revealSticky: false
+        readonly property bool ipcReveal: !!SettingsData.barIpcRevealStates[barConfig?.id ?? ""]
 
         Timer {
             id: revealHold
             interval: barWindow.clickThroughEnabled ? Math.max((barConfig?.autoHideDelay ?? 250) * 6, 1500) : (barConfig?.autoHideDelay ?? 250)
             repeat: false
             onTriggered: {
-                if (!topBarMouseArea.containsMouse && !topBarCore.hasActivePopout) {
+                if (!topBarMouseArea.containsMouse && !topBarCore.popoutPinsReveal)
                     topBarCore.revealSticky = false;
-                }
             }
-        }
-
-        property bool reveal: {
-            if (barWindow.hasFullscreenToplevel)
-                return false;
-
-            const inOverviewWithShow = CompositorService.isNiri && NiriService.inOverview && barWindow.effectiveOpenOnOverview;
-            if (inOverviewWithShow)
-                return true;
-
-            const showOnWindowsSetting = barConfig?.showOnWindowsOpen ?? false;
-            if (showOnWindowsSetting && autoHide && (CompositorService.isNiri || CompositorService.isHyprland)) {
-                if (barWindow.shouldHideForWindows)
-                    return topBarMouseArea.containsMouse || hasActivePopout || revealSticky;
-                return true;
-            }
-
-            if (CompositorService.isNiri && NiriService.inOverview)
-                return topBarMouseArea.containsMouse || hasActivePopout || revealSticky;
-
-            return (barConfig?.visible ?? true) && (!autoHide || topBarMouseArea.containsMouse || hasActivePopout || revealSticky);
         }
 
         property bool hasActivePopout: false
 
+        readonly property bool popoutPinsReveal: !!(hasActivePopout && !(barConfig?.autoHideStrict ?? false))
+
         onHasActivePopoutChanged: evaluateReveal()
+
+        onPopoutPinsRevealChanged: evaluateReveal()
 
         function updateActivePopoutState() {
             if (!barWindow.screen)
@@ -841,31 +814,65 @@ PanelWindow {
 
         Connections {
             target: PopoutManager
+
             function onPopoutChanged() {
                 topBarCore.updateActivePopoutState();
+            }
+
+            function onPopoutOpening() {
+                topBarCore.evaluateReveal();
             }
         }
 
         Connections {
             target: TrayMenuManager
+
             function onActiveTrayMenusChanged() {
                 topBarCore.updateActivePopoutState();
             }
         }
 
+        property bool reveal: {
+            const inOverviewWithShow = CompositorService.isNiri && NiriService.inOverview && barWindow.effectiveOpenOnOverview;
+            if (inOverviewWithShow)
+                return true;
+
+            const showOnWindowsSetting = barConfig?.showOnWindowsOpen ?? false;
+            if (showOnWindowsSetting && autoHide && (CompositorService.isNiri || CompositorService.isHyprland)) {
+                if (barWindow.shouldHideForWindows)
+                    return topBarMouseArea.containsMouse || popoutPinsReveal || revealSticky || ipcReveal;
+                return true;
+            }
+
+            if (CompositorService.isNiri && NiriService.inOverview)
+                return topBarMouseArea.containsMouse || popoutPinsReveal || revealSticky || ipcReveal;
+
+            return (barConfig?.visible ?? true) && (!autoHide || topBarMouseArea.containsMouse || popoutPinsReveal || revealSticky || ipcReveal);
+        }
+
         Connections {
             function onBarConfigChanged() {
                 topBarCore.autoHide = barConfig?.autoHide ?? false;
+                topBarCore.evaluateReveal();
             }
 
             target: rootWindow
         }
 
+        Component.onCompleted: topBarCore.updateActivePopoutState()
+
         function evaluateReveal() {
             if (!autoHide)
                 return;
 
-            if (topBarMouseArea.containsMouse || hasActivePopout) {
+            if (topBarMouseArea.containsMouse) {
+                SettingsData.setBarIpcReveal(barConfig?.id ?? "", false);
+                revealSticky = true;
+                revealHold.stop();
+                return;
+            }
+
+            if (popoutPinsReveal) {
                 revealSticky = true;
                 revealHold.stop();
                 return;
@@ -877,13 +884,6 @@ PanelWindow {
         Connections {
             target: topBarMouseArea
             function onContainsMouseChanged() {
-                topBarCore.evaluateReveal();
-            }
-        }
-
-        Connections {
-            target: PopoutManager
-            function onPopoutOpening() {
                 topBarCore.evaluateReveal();
             }
         }
@@ -901,9 +901,9 @@ PanelWindow {
                 bottom: barWindow.isVertical ? parent.bottom : undefined
             }
             readonly property bool inOverview: CompositorService.isNiri && NiriService.inOverview && barWindow.effectiveOpenOnOverview
-            hoverEnabled: (barConfig?.autoHide ?? false) && !inOverview && !barWindow.hasFullscreenToplevel && !topBarCore.hasActivePopout
+            hoverEnabled: (barConfig?.autoHide ?? false) && !inOverview && !topBarCore.popoutPinsReveal
             acceptedButtons: Qt.NoButton
-            enabled: (barConfig?.autoHide ?? false) && !inOverview && !barWindow.hasFullscreenToplevel
+            enabled: (barConfig?.autoHide ?? false) && !inOverview
 
             Item {
                 id: topBarContainer

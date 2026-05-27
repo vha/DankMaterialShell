@@ -10,7 +10,7 @@ import qs.Widgets
 PanelWindow {
     id: win
 
-    readonly property bool connectedFrameMode: SettingsData.frameEnabled && Theme.isConnectedEffect && SettingsData.isScreenInPreferences(win.screen, SettingsData.frameScreenPreferences)
+    readonly property bool connectedFrameMode: CompositorService.usesConnectedFrameChromeForScreen(win.screen)
     readonly property string notifBarSide: {
         const pos = SettingsData.notificationPopupPosition;
         if (pos === -1)
@@ -370,9 +370,9 @@ PanelWindow {
         return Math.max(0, Math.round(Theme.px(raw, dpr)));
     }
 
-    readonly property bool frameOnlyNoConnected: SettingsData.frameEnabled && !connectedFrameMode && !!screen && SettingsData.isScreenInPreferences(screen, SettingsData.frameScreenPreferences)
+    readonly property bool frameVisibleWithoutConnectedChrome: CompositorService.frameWindowVisibleForScreen(screen) && !connectedFrameMode
 
-    // Frame ON + Connected OFF. frameEdgeInset is the full bar/frame inset
+    // Frame visible without connected chrome. frameEdgeInset is the full bar/frame inset.
     function _frameGapMargin(side) {
         return _frameEdgeInset(side) + Theme.popupDistance;
     }
@@ -387,7 +387,7 @@ PanelWindow {
             const cornerClear = (isCenterPosition || SettingsData.frameCloseGaps) ? 0 : (Theme.px(SettingsData.frameRounding, dpr) + Theme.px(Theme.connectedCornerRadius, dpr));
             return _frameEdgeInset("top") + cornerClear + screenY;
         }
-        if (frameOnlyNoConnected)
+        if (frameVisibleWithoutConnectedChrome)
             return _frameGapMargin("top") + screenY;
         const barInfo = getBarInfo();
         const base = barInfo.topBar > 0 ? barInfo.topBar : Theme.popupDistance;
@@ -404,7 +404,7 @@ PanelWindow {
             const cornerClear = (isCenterPosition || SettingsData.frameCloseGaps) ? 0 : (Theme.px(SettingsData.frameRounding, dpr) + Theme.px(Theme.connectedCornerRadius, dpr));
             return _frameEdgeInset("bottom") + cornerClear + screenY;
         }
-        if (frameOnlyNoConnected)
+        if (frameVisibleWithoutConnectedChrome)
             return _frameGapMargin("bottom") + screenY;
         const barInfo = getBarInfo();
         const base = barInfo.bottomBar > 0 ? barInfo.bottomBar : Theme.popupDistance;
@@ -422,7 +422,7 @@ PanelWindow {
 
         if (connectedFrameMode)
             return _frameEdgeInset("left");
-        if (frameOnlyNoConnected)
+        if (frameVisibleWithoutConnectedChrome)
             return _frameGapMargin("left");
         const barInfo = getBarInfo();
         return barInfo.leftBar > 0 ? barInfo.leftBar : Theme.popupDistance;
@@ -439,7 +439,7 @@ PanelWindow {
 
         if (connectedFrameMode)
             return _frameEdgeInset("right");
-        if (frameOnlyNoConnected)
+        if (frameVisibleWithoutConnectedChrome)
             return _frameGapMargin("right");
         const barInfo = getBarInfo();
         return barInfo.rightBar > 0 ? barInfo.rightBar : Theme.popupDistance;
@@ -586,10 +586,11 @@ PanelWindow {
         width: alignedWidth
         height: alignedHeight
         visible: !win._finalized && !chromeOnlyExit
-        scale: (!win.inlineHeightAnimating && cardHoverHandler.hovered) ? 1.01 : 1.0
         transformOrigin: Item.Center
 
-        Behavior on scale {
+        property real chromeScale: (!win.inlineHeightAnimating && cardHoverHandler.hovered) ? 1.01 : 1.0
+
+        Behavior on chromeScale {
             NumberAnimation {
                 duration: Theme.shortDuration
                 easing.type: Theme.standardEasing
@@ -650,6 +651,8 @@ PanelWindow {
             id: bgShadowLayer
             anchors.fill: parent
             anchors.margins: -content.shadowRenderPadding
+            scale: content.chromeScale
+            transformOrigin: Item.Center
             level: content.elevLevel
             fallbackOffset: 6
             shadowBlurPx: content.shadowBlurPx
@@ -684,6 +687,8 @@ PanelWindow {
             visible: win.notificationData && win.notificationData.urgency === NotificationUrgency.Critical
             opacity: 1
             clip: true
+            scale: content.chromeScale
+            transformOrigin: Item.Center
 
             gradient: Gradient {
                 orientation: Gradient.Horizontal
@@ -713,6 +718,8 @@ PanelWindow {
             border.color: win.connectedFrameMode ? "transparent" : BlurService.borderColor
             border.width: win.connectedFrameMode ? 0 : BlurService.borderWidth
             z: 100
+            scale: content.chromeScale
+            transformOrigin: Item.Center
         }
 
         Item {

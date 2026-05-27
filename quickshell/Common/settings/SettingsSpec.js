@@ -153,6 +153,7 @@ var SPEC = {
     audioWheelScrollAmount: { def: 5 },
     clockCompactMode: { def: false },
     focusedWindowCompactMode: { def: false },
+    focusedWindowSize: { def: 1 },
     runningAppsCompactMode: { def: true },
     barMaxVisibleApps: { def: 0 },
     barMaxVisibleRunningApps: { def: 0 },
@@ -202,6 +203,7 @@ var SPEC = {
     appLauncherGridColumns: { def: 4 },
     spotlightCloseNiriOverview: { def: true },
     rememberLastQuery: { def: false },
+    rememberLastMode: { def: true },
     spotlightSectionViewModes: { def: {} },
     appDrawerSectionViewModes: { def: {} },
     niriOverviewOverlayEnabled: { def: true },
@@ -213,6 +215,9 @@ var SPEC = {
     dankLauncherV2UnloadOnClose: { def: false },
     dankLauncherV2IncludeFilesInAll: { def: false },
     dankLauncherV2IncludeFoldersInAll: { def: false },
+    launcherUseOverlayLayer: { def: false },
+    launcherStyle: { def: "full" },
+    spotlightBarShowModeChips: { def: false },
 
     useAutoLocation: { def: false },
     weatherEnabled: { def: true },
@@ -242,6 +247,8 @@ var SPEC = {
     monoFontFamily: { def: "Fira Code" },
     fontWeight: { def: 400 },
     fontScale: { def: 1.0 },
+    textRenderType: { def: 0 },
+    textRenderQuality: { def: 0 },
 
     notepadUseMonospace: { def: true },
     notepadFontFamily: { def: "" },
@@ -329,7 +336,7 @@ var SPEC = {
     showDock: { def: false },
     dockAutoHide: { def: false },
     dockSmartAutoHide: { def: false },
-    dockHideOnFullscreen: { def: true },
+    dockUseOverlayLayer: { def: false },
     dockGroupByApp: { def: false },
     dockRestoreSpecialWorkspaceOnClick: { def: false },
     dockOpenOnOverview: { def: false },
@@ -392,6 +399,7 @@ var SPEC = {
     notificationTimeoutNormal: { def: 5000 },
     notificationTimeoutCritical: { def: 0 },
     notificationCompactMode: { def: false },
+    notificationDedupeEnabled: { def: true },
     notificationPopupPosition: { def: 0 },
     notificationAnimationSpeed: { def: 1 },
     notificationCustomAnimationDuration: { def: 400 },
@@ -429,6 +437,7 @@ var SPEC = {
     customPowerActionPowerOff: { def: "" },
 
     updaterHideWidget: { def: false },
+    updaterCheckOnStart: { def: false },
     updaterUseCustomCommand: { def: false },
     updaterCustomCommand: { def: "" },
     updaterTerminalAdditionalParams: { def: "" },
@@ -450,7 +459,6 @@ var SPEC = {
     displayShowDisconnected: { def: false },
     displaySnapToEdge: { def: true },
     connectedFrameBarStyleBackups: { def: {} },
-    connectedFrameModalDarkenBackup: { def: null },
 
     barConfigs: {
         def: [{
@@ -488,6 +496,7 @@ var SPEC = {
             fontScale: 1.0,
             iconScale: 1.0,
             autoHide: false,
+            autoHideStrict: false,
             autoHideDelay: 250,
             showOnWindowsOpen: false,
             openOnOverview: false,
@@ -495,7 +504,7 @@ var SPEC = {
             popupGapsAuto: true,
             popupGapsManual: 4,
             maximizeDetection: true,
-            fullscreenDetection: true,
+            useOverlayLayer: false,
             scrollEnabled: true,
             scrollXBehavior: "column",
             scrollYBehavior: "workspace",
@@ -572,7 +581,7 @@ var SPEC = {
     frameCloseGaps: { def: true },
     frameLauncherEmergeSide: { def: "bottom" },
     frameLauncherArcExtender: { def: false },
-    frameMode: { def: "separate" }
+    frameMode: { def: "connected" }
 };
 
 function getValidKeys() {

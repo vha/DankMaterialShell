@@ -17,6 +17,7 @@ FloatingWindow {
     property bool keyboardNavigationActive: false
     property bool isLoading: false
     property var parentModal: null
+    parentWindow: parentModal
     property bool pendingInstallHandled: false
     property string pendingApplyThemeId: ""
 
@@ -264,7 +265,7 @@ FloatingWindow {
                     }
 
                     DankActionButton {
-                        visible: windowControls.supported
+                        visible: windowControls.canMaximize
                         iconName: root.maximized ? "fullscreen_exit" : "fullscreen"
                         iconSize: Theme.iconSize - 2
                         iconColor: Theme.outline
@@ -343,6 +344,7 @@ FloatingWindow {
                             size: 48
                             color: Theme.primary
                             anchors.horizontalCenter: parent.horizontalCenter
+                            smoothTransform: root.isLoading
 
                             RotationAnimator on rotation {
                                 from: 0

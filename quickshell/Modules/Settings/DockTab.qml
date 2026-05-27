@@ -10,6 +10,7 @@ Item {
 
     property var parentModal: null
     readonly property bool connectedFrameModeActive: SettingsData.connectedFrameModeActive
+    readonly property bool connectedPersistentDockActive: connectedFrameModeActive && SettingsData.showDock && !SettingsData.dockAutoHide && !SettingsData.dockSmartAutoHide
 
     FileBrowserModal {
         id: dockLogoFileBrowser
@@ -89,13 +90,13 @@ Item {
                 }
 
                 SettingsToggleRow {
-                    settingKey: "dockHideOnFullscreen"
-                    tags: ["dock", "fullscreen", "hide"]
-                    text: I18n.tr("Hide When Fullscreen", "dock visibility toggle: hide the dock when a window is fullscreen")
-                    description: I18n.tr("Hide the dock when a window is fullscreen", "dock visibility toggle description")
-                    checked: SettingsData.dockHideOnFullscreen
+                    settingKey: "dockUseOverlayLayer"
+                    tags: ["dock", "fullscreen", "overlay", "layer"]
+                    text: I18n.tr("Use Overlay Layer", "dock layer toggle: use Wayland overlay layer")
+                    description: I18n.tr("Place the dock on the Wayland overlay layer")
+                    checked: SettingsData.dockUseOverlayLayer
                     visible: SettingsData.showDock
-                    onToggled: checked => SettingsData.set("dockHideOnFullscreen", checked)
+                    onToggled: checked => SettingsData.set("dockUseOverlayLayer", checked)
                 }
             }
 
@@ -611,16 +612,18 @@ Item {
                     value: SettingsData.dockSpacing
                     minimum: 0
                     maximum: 32
+                    unit: "px"
                     defaultValue: 8
                     onSliderValueChanged: newValue => SettingsData.set("dockSpacing", newValue)
                 }
 
                 SettingsSliderRow {
                     text: I18n.tr("Exclusive Zone Offset")
-                    visible: !root.connectedFrameModeActive
+                    visible: !root.connectedFrameModeActive || root.connectedPersistentDockActive
                     value: SettingsData.dockBottomGap
                     minimum: -100
                     maximum: 100
+                    unit: "px"
                     defaultValue: 0
                     onSliderValueChanged: newValue => SettingsData.set("dockBottomGap", newValue)
                 }
@@ -631,6 +634,7 @@ Item {
                     value: SettingsData.dockMargin
                     minimum: 0
                     maximum: 100
+                    unit: "px"
                     defaultValue: 0
                     onSliderValueChanged: newValue => SettingsData.set("dockMargin", newValue)
                 }
@@ -639,7 +643,7 @@ Item {
             SettingsControlledByFrame {
                 visible: root.connectedFrameModeActive
                 parentModal: root.parentModal
-                settingLabel: I18n.tr("Dock spacing, transparency, and border")
+                settingLabel: I18n.tr("Dock margin, transparency, and border")
                 reason: I18n.tr("Managed by Frame in Connected Mode")
             }
 

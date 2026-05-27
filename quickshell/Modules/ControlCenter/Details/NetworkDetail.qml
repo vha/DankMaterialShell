@@ -177,6 +177,7 @@ Rectangle {
                 name: "sync"
                 size: 32
                 color: Theme.primary
+                smoothTransform: NetworkService.wifiToggling
 
                 RotationAnimator on rotation {
                     running: NetworkService.wifiToggling
@@ -493,6 +494,7 @@ Rectangle {
             name: "refresh"
             size: 48
             color: Qt.rgba(Theme.surfaceText.r || 0.8, Theme.surfaceText.g || 0.8, Theme.surfaceText.b || 0.8, 0.3)
+            smoothTransform: wifiScanningOverlay.visible
 
             RotationAnimator on rotation {
                 running: wifiScanningOverlay.visible
@@ -539,7 +541,11 @@ Rectangle {
                     return -1;
                 if (b.ssid === ssid)
                     return 1;
-                return b.signal - a.signal;
+                const aBucket = Math.floor((a.signal || 0) / 25);
+                const bBucket = Math.floor((b.signal || 0) / 25);
+                if (aBucket !== bBucket)
+                    return bBucket - aBucket;
+                return (a.ssid || "").localeCompare(b.ssid || "");
             });
             return sorted;
         }
@@ -642,6 +648,7 @@ Rectangle {
                     wifiContent.menuOpen = true;
                     networkContextMenu.currentSSID = modelData.ssid;
                     networkContextMenu.currentSecured = modelData.secured;
+                    networkContextMenu.currentEnterprise = modelData.enterprise;
                     networkContextMenu.currentConnected = wifiDelegate.isConnected;
                     networkContextMenu.currentSaved = modelData.saved;
                     networkContextMenu.currentSignal = modelData.signal;
@@ -742,7 +749,7 @@ Rectangle {
                         event.accepted = true;
                         return;
                     }
-                    if (modelData.secured && !modelData.saved && DMSService.apiVersion < 7) {
+                    if (modelData.secured && !modelData.saved && (DMSService.apiVersion < 7 || modelData.enterprise)) {
                         PopoutService.showWifiPasswordModal(modelData.ssid);
                     } else {
                         NetworkService.connectToWifi(modelData.ssid);
@@ -760,6 +767,7 @@ Rectangle {
 
         property string currentSSID: ""
         property bool currentSecured: false
+        property bool currentEnterprise: false
         property bool currentConnected: false
         property bool currentSaved: false
         property int currentSignal: 0
@@ -800,7 +808,7 @@ Rectangle {
                     NetworkService.disconnectWifi();
                     return;
                 }
-                if (networkContextMenu.currentSecured && !networkContextMenu.currentSaved && DMSService.apiVersion < 7) {
+                if (networkContextMenu.currentSecured && !networkContextMenu.currentSaved && (DMSService.apiVersion < 7 || networkContextMenu.currentEnterprise)) {
                     PopoutService.showWifiPasswordModal(networkContextMenu.currentSSID);
                     return;
                 }

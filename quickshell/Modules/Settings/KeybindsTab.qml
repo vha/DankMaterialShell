@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import qs.Common
+import qs.Modals.Common
 import qs.Services
 import qs.Widgets
 
@@ -15,6 +16,7 @@ Item {
     property var parentModal: null
     property string selectedCategory: ""
     property string searchQuery: ""
+    property string requestedSearchQuery: ""
     property string expandedKey: ""
     property bool showingNewBind: false
 
@@ -96,6 +98,32 @@ Item {
         expandedKey = bindData.action;
     }
 
+    function confirmRemoveBind(key, remainingKey) {
+        removeBindConfirm.showWithOptions({
+            title: I18n.tr("Remove Shortcut?"),
+            message: KeybindsService.currentProvider === "hyprland" ? I18n.tr("Remove the shortcut %1? An unbind entry will be saved to dms/binds-user.lua so it stays removed across DMS updates.").arg(key) : I18n.tr("Remove the shortcut %1?").arg(key),
+            confirmText: I18n.tr("Remove"),
+            confirmColor: Theme.primary,
+            onConfirm: () => {
+                KeybindsService.removeBind(key);
+                keybindsTab._editingKey = remainingKey;
+            }
+        });
+    }
+
+    function confirmResetBind(key, remainingKey) {
+        removeBindConfirm.showWithOptions({
+            title: I18n.tr("Reset to Default?"),
+            message: I18n.tr("Drop your override for %1 so the DMS default action re-applies?").arg(key),
+            confirmText: I18n.tr("Reset"),
+            confirmColor: Theme.primary,
+            onConfirm: () => {
+                KeybindsService.resetBind(key);
+                keybindsTab._editingKey = remainingKey;
+            }
+        });
+    }
+
     function _onSaveSuccess() {
         if (showingNewBind) {
             showingNewBind = false;
@@ -127,6 +155,10 @@ Item {
         id: searchDebounce
         interval: 150
         onTriggered: keybindsTab._updateFiltered()
+    }
+
+    ConfirmModal {
+        id: removeBindConfirm
     }
 
     Connections {
@@ -175,13 +207,34 @@ Item {
         }
     }
 
-    Component.onCompleted: _ensureCurrentProvider()
+    function _applyRequestedSearch() {
+        if (!requestedSearchQuery)
+            return;
+        const query = requestedSearchQuery;
+        selectedCategory = "";
+        searchField.text = query;
+        searchQuery = query;
+        _updateFiltered();
+        if (parentModal?.keybindSearchQuery === query)
+            parentModal.keybindSearchQuery = "";
+        Qt.callLater(scrollToTop);
+    }
+
+    Component.onCompleted: {
+        _ensureCurrentProvider();
+        Qt.callLater(_applyRequestedSearch);
+    }
+
+    onRequestedSearchQueryChanged: Qt.callLater(_applyRequestedSearch)
 
     onVisibleChanged: {
         if (!visible)
             return;
-        Qt.callLater(scrollToTop);
         _ensureCurrentProvider();
+        Qt.callLater(() => {
+            _applyRequestedSearch();
+            scrollToTop();
+        });
     }
 
     DankFlickable {
@@ -238,7 +291,7 @@ Item {
                             }
 
                             StyledText {
-                                readonly property string bindsFile: KeybindsService.currentProvider === "niri" ? "dms/binds.kdl" : "dms/binds.conf"
+                                readonly property string bindsFile: KeybindsService.currentProvider === "niri" ? "dms/binds.kdl" : KeybindsService.currentProvider === "hyprland" ? "dms/binds-user.lua" : "dms/binds.conf"
                                 text: I18n.tr("Click any shortcut to edit. Changes save to %1").arg(bindsFile)
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.surfaceVariantText
@@ -336,7 +389,7 @@ Item {
                             }
 
                             StyledText {
-                                readonly property string bindsFile: KeybindsService.currentProvider === "niri" ? "dms/binds.kdl" : "dms/binds.conf"
+                                readonly property string bindsFile: KeybindsService.currentProvider === "niri" ? "dms/binds.kdl" : KeybindsService.currentProvider === "hyprland" ? "dms/binds-user.lua" : "dms/binds.conf"
                                 text: {
                                     if (warningBox.showSetup)
                                         return I18n.tr("Click 'Setup' to create %1 and add include to config.").arg(bindsFile);
@@ -562,6 +615,7 @@ Item {
                             size: 20
                             color: Theme.primary
                             anchors.verticalCenter: parent.verticalCenter
+                            smoothTransform: KeybindsService.loading
 
                             RotationAnimator on rotation {
                                 from: 0
@@ -622,8 +676,11 @@ Item {
                             }
                             onRemoveBind: key => {
                                 const remainingKey = bindItem.keys.find(k => k.key !== key)?.key ?? "";
-                                KeybindsService.removeBind(key);
-                                keybindsTab._editingKey = remainingKey;
+                                keybindsTab.confirmRemoveBind(key, remainingKey);
+                            }
+                            onResetBind: key => {
+                                const remainingKey = bindItem.keys.find(k => k.key !== key)?.key ?? "";
+                                keybindsTab.confirmResetBind(key, remainingKey);
                             }
                             onIsExpandedChanged: {
                                 if (!isExpanded || !keybindsTab._editingKey)

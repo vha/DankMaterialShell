@@ -7,12 +7,14 @@ import qs.Modals.FileBrowser
 import qs.Services
 import qs.Widgets
 import qs.Modules.Settings.Widgets
+import "../../Common/ConfigIncludeResolve.js" as ConfigIncludeResolve
 
 Item {
     id: themeColorsTab
 
     property var parentModal: null
     readonly property bool connectedFrameModeActive: SettingsData.connectedFrameModeActive
+    readonly property bool frameModeActive: SettingsData.frameEnabled
     property var cachedIconThemes: SettingsData.availableIconThemes
     property var cachedCursorThemes: SettingsData.availableCursorThemes
     property var cachedMatugenSchemes: Theme.availableMatugenSchemes.map(option => option.label)
@@ -38,10 +40,10 @@ Item {
             };
         case "hyprland":
             return {
-                "configFile": configDir + "/hypr/hyprland.conf",
-                "cursorFile": configDir + "/hypr/dms/cursor.conf",
-                "grepPattern": 'source.*dms/cursor.conf',
-                "includeLine": "source = ./dms/cursor.conf"
+                "configFile": configDir + "/hypr/hyprland.lua",
+                "cursorFile": configDir + "/hypr/dms/cursor.lua",
+                "grepPattern": "dms.cursor",
+                "includeLine": "require(\"dms.cursor\")"
             };
         case "dwl":
             return {
@@ -65,7 +67,7 @@ Item {
             return;
         }
 
-        const filename = (compositor === "niri") ? "cursor.kdl" : "cursor.conf";
+        const filename = (compositor === "niri") ? "cursor.kdl" : ((compositor === "hyprland") ? "cursor.lua" : "cursor.conf");
         const compositorArg = (compositor === "dwl") ? "mangowc" : compositor;
 
         checkingCursorInclude = true;
@@ -94,10 +96,16 @@ Item {
         if (!paths)
             return;
         fixingCursorInclude = true;
-        const cursorDir = paths.cursorFile.substring(0, paths.cursorFile.lastIndexOf("/"));
         const unixTime = Math.floor(Date.now() / 1000);
         const backupFile = paths.configFile + ".backup" + unixTime;
-        Proc.runCommand("fix-cursor-include", ["sh", "-c", `cp "${paths.configFile}" "${backupFile}" 2>/dev/null; ` + `mkdir -p "${cursorDir}" && ` + `touch "${paths.cursorFile}" && ` + `if ! grep -v '^[[:space:]]*\\(//\\|#\\)' "${paths.configFile}" 2>/dev/null | grep -q '${paths.grepPattern}'; then ` + `echo '' >> "${paths.configFile}" && ` + `echo '${paths.includeLine}' >> "${paths.configFile}"; fi`], (output, exitCode) => {
+        const script = ConfigIncludeResolve.buildRepairScript({
+            configFile: paths.configFile,
+            backupFile: backupFile,
+            fragmentFile: paths.cursorFile,
+            grepPattern: paths.grepPattern,
+            includeLine: paths.includeLine
+        });
+        Proc.runCommand("fix-cursor-include", ["sh", "-c", script], (output, exitCode) => {
             fixingCursorInclude = false;
             if (exitCode !== 0)
                 return;
@@ -2251,10 +2259,10 @@ Item {
                 iconName: "layers"
 
                 SettingsControlledByFrame {
-                    visible: themeColorsTab.connectedFrameModeActive
+                    visible: themeColorsTab.frameModeActive
                     parentModal: themeColorsTab.parentModal
                     settingLabel: I18n.tr("Darken Modal Background")
-                    reason: I18n.tr("Managed by Frame in Connected Mode")
+                    reason: I18n.tr("Disabled by Frame Mode")
                 }
 
                 SettingsToggleRow {
@@ -2263,7 +2271,7 @@ Item {
                     settingKey: "modalDarkenBackground"
                     text: I18n.tr("Darken Modal Background")
                     description: I18n.tr("Show darkened overlay behind modal dialogs")
-                    visible: !themeColorsTab.connectedFrameModeActive
+                    visible: !themeColorsTab.frameModeActive
                     checked: SettingsData.modalDarkenBackground
                     onToggled: checked => SettingsData.set("modalDarkenBackground", checked)
                 }
@@ -3063,6 +3071,7 @@ Item {
 
         ThemeBrowser {
             id: themeBrowserItem
+            parentModal: themeColorsTab.parentModal
         }
     }
 

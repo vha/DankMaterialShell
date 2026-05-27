@@ -24,8 +24,9 @@ Item {
     readonly property real innerPadding: barConfig?.innerPadding ?? 4
     readonly property real outlineThickness: (barConfig?.widgetOutlineEnabled ?? false) ? (barConfig?.widgetOutlineThickness ?? 1) : 0
     readonly property real _edgeBaseMargin: Math.max(Theme.spacingXS, innerPadding * 0.8)
-    readonly property real _frameEdgeFloorInset: SettingsData.frameEnabled ? Math.max(0, SettingsData.frameThickness - _edgeBaseMargin) : 0
     readonly property bool _hasBarWindow: barWindow !== undefined && barWindow !== null
+    readonly property bool _usesFrameBarChrome: _hasBarWindow && (barWindow.usesFrameBarChrome ?? false)
+    readonly property real _frameEdgeFloorInset: (SettingsData.frameEnabled && _usesFrameBarChrome) ? Math.max(0, SettingsData.frameThickness - _edgeBaseMargin) : 0
     readonly property bool _barIsVertical: _hasBarWindow ? barWindow.isVertical : false
     readonly property string _barScreenName: _hasBarWindow ? (barWindow.screenName || "") : ""
     readonly property bool hasAdjacentTopBarLive: _hasBarWindow && barWindow.hasAdjacentTopBar
@@ -37,34 +38,34 @@ Item {
     property bool _hadAdjacentLeftBar: false
     property bool _hadAdjacentRightBar: false
 
-    onHasAdjacentTopBarLiveChanged: if (hasAdjacentTopBarLive) _hadAdjacentTopBar = true
-    onHasAdjacentBottomBarLiveChanged: if (hasAdjacentBottomBarLive) _hadAdjacentBottomBar = true
-    onHasAdjacentLeftBarLiveChanged: if (hasAdjacentLeftBarLive) _hadAdjacentLeftBar = true
-    onHasAdjacentRightBarLiveChanged: if (hasAdjacentRightBarLive) _hadAdjacentRightBar = true
+    onHasAdjacentTopBarLiveChanged: if (hasAdjacentTopBarLive)
+        _hadAdjacentTopBar = true
+    onHasAdjacentBottomBarLiveChanged: if (hasAdjacentBottomBarLive)
+        _hadAdjacentBottomBar = true
+    onHasAdjacentLeftBarLiveChanged: if (hasAdjacentLeftBarLive)
+        _hadAdjacentLeftBar = true
+    onHasAdjacentRightBarLiveChanged: if (hasAdjacentRightBarLive)
+        _hadAdjacentRightBar = true
 
     readonly property real _frameLeftInset: {
-        if (!_hasBarWindow || !SettingsData.frameEnabled || _barIsVertical) return 0
-        return hasAdjacentLeftBarLive
-            ? SettingsData.frameBarSize
-            : (_hadAdjacentLeftBar ? _frameEdgeFloorInset : 0)
+        if (!_hasBarWindow || !SettingsData.frameEnabled || !_usesFrameBarChrome || _barIsVertical)
+            return 0;
+        return hasAdjacentLeftBarLive ? SettingsData.frameBarSize : (_hadAdjacentLeftBar ? _frameEdgeFloorInset : 0);
     }
     readonly property real _frameRightInset: {
-        if (!_hasBarWindow || !SettingsData.frameEnabled || _barIsVertical) return 0
-        return hasAdjacentRightBarLive
-            ? SettingsData.frameBarSize
-            : (_hadAdjacentRightBar ? _frameEdgeFloorInset : 0)
+        if (!_hasBarWindow || !SettingsData.frameEnabled || !_usesFrameBarChrome || _barIsVertical)
+            return 0;
+        return hasAdjacentRightBarLive ? SettingsData.frameBarSize : (_hadAdjacentRightBar ? _frameEdgeFloorInset : 0);
     }
     readonly property real _frameTopInset: {
-        if (!_hasBarWindow || !SettingsData.frameEnabled || !_barIsVertical) return 0
-        return hasAdjacentTopBarLive
-            ? SettingsData.frameThickness
-            : (_hadAdjacentTopBar ? _frameEdgeFloorInset : 0)
+        if (!_hasBarWindow || !SettingsData.frameEnabled || !_usesFrameBarChrome || !_barIsVertical)
+            return 0;
+        return hasAdjacentTopBarLive ? SettingsData.frameThickness : (_hadAdjacentTopBar ? _frameEdgeFloorInset : 0);
     }
     readonly property real _frameBottomInset: {
-        if (!_hasBarWindow || !SettingsData.frameEnabled || !_barIsVertical) return 0
-        return hasAdjacentBottomBarLive
-            ? SettingsData.frameThickness
-            : (_hadAdjacentBottomBar ? _frameEdgeFloorInset : 0)
+        if (!_hasBarWindow || !SettingsData.frameEnabled || !_usesFrameBarChrome || !_barIsVertical)
+            return 0;
+        return hasAdjacentBottomBarLive ? SettingsData.frameThickness : (_hadAdjacentBottomBar ? _frameEdgeFloorInset : 0);
     }
 
     property alias hLeftSection: hLeftSection
@@ -75,14 +76,10 @@ Item {
     property alias vRightSection: vRightSection
 
     anchors.fill: parent
-    anchors.leftMargin:   _edgeBaseMargin + _frameLeftInset
-    anchors.rightMargin:  _edgeBaseMargin + _frameRightInset
-    anchors.topMargin:    (_barIsVertical
-        ? (hasAdjacentTopBarLive ? outlineThickness : Theme.spacingXS)
-        : 0) + _frameTopInset
-    anchors.bottomMargin: (_barIsVertical
-        ? (hasAdjacentBottomBarLive ? outlineThickness : Theme.spacingXS)
-        : 0) + _frameBottomInset
+    anchors.leftMargin: _edgeBaseMargin + _frameLeftInset
+    anchors.rightMargin: _edgeBaseMargin + _frameRightInset
+    anchors.topMargin: (_barIsVertical ? (hasAdjacentTopBarLive ? outlineThickness : Theme.spacingXS) : 0) + _frameTopInset
+    anchors.bottomMargin: (_barIsVertical ? (hasAdjacentBottomBarLive ? outlineThickness : Theme.spacingXS) : 0) + _frameBottomInset
     clip: false
 
     DeferredAction {
@@ -99,7 +96,7 @@ Item {
     }
 
     Behavior on anchors.leftMargin {
-        enabled: _animateFrameInsets && SettingsData.frameEnabled
+        enabled: _animateFrameInsets && _usesFrameBarChrome
         NumberAnimation {
             duration: Theme.shortDuration
             easing.type: Easing.OutCubic
@@ -107,7 +104,7 @@ Item {
     }
 
     Behavior on anchors.rightMargin {
-        enabled: _animateFrameInsets && SettingsData.frameEnabled
+        enabled: _animateFrameInsets && _usesFrameBarChrome
         NumberAnimation {
             duration: Theme.shortDuration
             easing.type: Easing.OutCubic
@@ -115,7 +112,7 @@ Item {
     }
 
     Behavior on anchors.topMargin {
-        enabled: _animateFrameInsets && SettingsData.frameEnabled
+        enabled: _animateFrameInsets && _usesFrameBarChrome
         NumberAnimation {
             duration: Theme.shortDuration
             easing.type: Easing.OutCubic
@@ -123,7 +120,7 @@ Item {
     }
 
     Behavior on anchors.bottomMargin {
-        enabled: _animateFrameInsets && SettingsData.frameEnabled
+        enabled: _animateFrameInsets && _usesFrameBarChrome
         NumberAnimation {
             duration: Theme.shortDuration
             easing.type: Easing.OutCubic
@@ -271,10 +268,10 @@ Item {
 
             if (nextIndex !== validIndex) {
                 const nextWorkspace = realWorkspaces[nextIndex];
-                if (!nextWorkspace || nextWorkspace.idx === undefined) {
+                if (!nextWorkspace || nextWorkspace.id === undefined) {
                     return;
                 }
-                NiriService.switchToWorkspace(nextWorkspace.idx);
+                NiriService.switchToWorkspace(nextWorkspace.id);
             }
         } else if (CompositorService.isHyprland) {
             const currentWs = getCurrentWorkspace();
@@ -283,7 +280,7 @@ Item {
             const nextIndex = direction > 0 ? Math.min(validIndex + 1, realWorkspaces.length - 1) : Math.max(validIndex - 1, 0);
 
             if (nextIndex !== validIndex) {
-                Hyprland.dispatch(`workspace ${realWorkspaces[nextIndex].id}`);
+                HyprlandService.focusWorkspace(realWorkspaces[nextIndex].id);
             }
         } else if (CompositorService.isDwl) {
             const currentTag = getCurrentWorkspace();
@@ -1535,6 +1532,16 @@ Item {
             section: topBarContent.getWidgetSection(parent) || "right"
             popoutTarget: systemUpdateLoader.item ?? null
             parentScreen: barWindow.screen
+
+            Component.onCompleted: {
+                barWindow.systemUpdateButtonRef = this;
+            }
+
+            Component.onDestruction: {
+                if (barWindow.systemUpdateButtonRef === this)
+                    barWindow.systemUpdateButtonRef = null;
+            }
+
             onClicked: {
                 systemUpdateLoader.active = true;
                 if (!systemUpdateLoader.item)
